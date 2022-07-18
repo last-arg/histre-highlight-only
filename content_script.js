@@ -10,6 +10,7 @@ function initActionBar() {
   container.style.setProperty("position", "absolute");
   container.style.setProperty("top", "0");
   container.style.setProperty("left", "0");
+  container.style.visibility = "hidden";
   const button = document.createElement("button");
   button.type = "button";
   const button_text = document.createTextNode("Save selection");
@@ -41,11 +42,27 @@ function selectionStartClientRect(sel_obj) {
 }
 
 // TODO: implement saving selection
-function saveSelection() {
-  for (let i = 0; i < sel_obj.rangeCount; i++) {
-    console.log(sel_obj.getRangeAt(i));
-    console.log(sel_obj.getRangeAt(i).toString());
-  }
+function saveSelection(e) {
+  console.log("Event: ", e.type)
+
+  const sel_obj = window.getSelection();
+  const len = Math.abs(sel_obj.anchorOffset - sel_obj.focusOffset);
+  if (len <= MIN_SELECTION_LEN || sel_obj.anchorNode === null) return;
+  const r = sel_obj.getRangeAt(0);
+  // console.log(sel_obj.anchorNode);
+  // console.log(sel_obj.focusNode);
+  console.log(r.cloneContents())
+  // {
+  // const t = document.createElement("span");
+  // t.style.background = "red";
+  // r.surroundContents(t);
+  // }
+  sel_obj.removeAllRanges();
+
+  // for (let i = 0; i < sel_obj.rangeCount; i++) {
+  //   console.log(sel_obj.getRangeAt(i));
+  //   console.log(sel_obj.getRangeAt(i).toString());
+  // }
 }
 
 function handleMouseUp(e) {
@@ -55,10 +72,10 @@ function handleMouseUp(e) {
   if (len <= MIN_SELECTION_LEN || sel_obj.anchorNode === null) return;
   const action_bar_rect = g.action_bar_elem.getBoundingClientRect();
   const new_pos = selectionNewPosition(sel_obj, action_bar_rect);
-  console.log("selection obj pos: ", new_pos)
   g.action_bar_elem.style.setProperty("top", `${new_pos.top}px`);
   g.action_bar_elem.style.setProperty("left", `${new_pos.left}px`);
-
+  g.action_bar_elem.style.visibility = "visible";
+  document.addEventListener("selectionchange", debounceSelectionChange);
 }
 
 function selectionNewPosition(selection, action_bar_rect) {
@@ -68,9 +85,6 @@ function selectionNewPosition(selection, action_bar_rect) {
   return { top: top, left: left };
 }
 
-// Use "selectstart" for initializing code.
-// Stop listening "selectstart" event after initializing.
-// TODO: selection changes size. Use throttle or debounce
 // Can change selection size with:
 // - touch device (most obvious)
 // - keyboard (ctrl [+ shift] + arrow_keys)
@@ -81,6 +95,7 @@ function initSelectionChange(e) {
   const sel_obj = window.getSelection();
   const action_bar_rect = g.action_bar_elem.getBoundingClientRect();
   const new_pos = selectionNewPosition(sel_obj, action_bar_rect);
+  console.log(new_pos.top, action_bar_rect.top)
   if (new_pos.top != action_bar_rect.top) {
     g.action_bar_elem.style.setProperty("top", `${new_pos.top}px`);
     g.action_bar_elem.style.setProperty("left", `${new_pos.left}px`);
@@ -101,6 +116,7 @@ function debounce(f, delay) {
 
 const debounceSelectionChange = debounce(initSelectionChange, 100);
 function deinitSelectionChange() {
+  g.action_bar_elem.style.visibility = "hidden";
   document.removeEventListener("selectionchange", debounceSelectionChange);
 }
 
@@ -109,10 +125,10 @@ function initSelectionCode() {
   console.log("Event(init): selectstart")
   g.action_bar_elem = initActionBar();
   document.removeEventListener("selectstart", initSelectionCode);
+  g.action_bar_elem.addEventListener("click", saveSelection);
   document.addEventListener("mouseup", handleMouseUp)
   document.addEventListener("touchend", handleMouseUp)
   document.addEventListener("mousedown", deinitSelectionChange)
   document.addEventListener("touchstart", deinitSelectionChange)
-  document.addEventListener("selectionchange", debounceSelectionChange);
 }
 document.addEventListener("selectstart", initSelectionCode)

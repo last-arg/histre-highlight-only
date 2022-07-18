@@ -1,32 +1,43 @@
-console.log("==== LOAD 'content_script.js' ====")
-const g = {
+console.log("==== LOAD 'content_script.js' TD ====")
+
+type ActionBar = HTMLDivElement;
+interface Window {
+  g: {
+    action_bar_elem?: HTMLDivElement
+  };
+}
+window.g = {
   action_bar_elem: undefined
 };
 
 const MIN_SELECTION_LEN = 3;
 
-function initActionBar() {
-  const container = document.createElement("div");
-  container.style.setProperty("position", "absolute");
-  container.style.setProperty("top", "0");
-  container.style.setProperty("left", "0");
-  const button = document.createElement("button");
-  button.type = "button";
-  button.addEventListener("click", saveSelection);
-  const button_text = document.createTextNode("Save selection");
-  button.appendChild(button_text);
-  container.appendChild(button);
-  document.body.appendChild(container)
-  return container;
+function initActionBar(): ActionBar {
+  if (!window.g?.action_bar_elem) {
+    const container = document.createElement("div");
+    container.style.setProperty("position", "absolute");
+    container.style.setProperty("top", "0");
+    container.style.setProperty("left", "0");
+    const button = document.createElement("button");
+    button.type = "button";
+    button.addEventListener("click", saveSelection);
+    const button_text = document.createTextNode("Save selection");
+    button.appendChild(button_text);
+    container.appendChild(button);
+    document.body.appendChild(container)
+    window.g.action_bar_elem = container;
+  }
+
+  return window.g.action_bar_elem;
 }
 
 // NOTE: Not used at the moment. Use it if you need.
 // This gets exact coordinates of selection start. Use this if you want
 // exact location of 'left'.
-function selectionStartClientRect(sel_obj) {
+function selectionStartClientRect(sel_obj: Selection) {
   // TODO: there is Range.insertNode which enters Node at the start of the range
   // https://developer.mozilla.org/en-US/docs/Web/API/Range/insertNode
-  const node = sel_obj.anchorNode;
+  const node = sel_obj.anchorNode as Text;
   const parent = node.parentNode;
   const char = node.splitText(sel_obj.anchorOffset);
   // This makes an one character text node out of 'char'
@@ -36,7 +47,7 @@ function selectionStartClientRect(sel_obj) {
   range.selectNode(char);
   const box = range.getBoundingClientRect();
   // Restore text node as it was
-  parent.normalize();
+  if (parent) parent.normalize();
 
   return box;
 }
@@ -45,6 +56,10 @@ function selectionStartClientRect(sel_obj) {
 // TODO: handle saving multiple selections
 function saveSelection() {
   const sel_obj = window.getSelection();
+  if (!sel_obj) {
+    console.info("No selection to save");
+    return;
+  }
   const len = sel_obj.toString().length;
   if (len <= MIN_SELECTION_LEN || sel_obj.anchorNode === null) return;
   highlightSelectedText(sel_obj);
@@ -63,18 +78,18 @@ function saveSelection() {
 const mark_elem = document.createElement("mark");
 mark_elem.classList.add("hle-mark");
 
-function isNodeWhiteSpaceOnly(node) {
-  if (/^\s*$/.test(node.textContent)) {
+function containsNonWhiteSpace(node: Node): number {
+  if (node.textContent && /^\s*$/.test(node.textContent)) {
     return NodeFilter.FILTER_REJECT;
   }
   return NodeFilter.FILTER_ACCEPT
 }
 
-function highlightSelectedText(sel_obj) {
+function highlightSelectedText(sel_obj: Selection) {
   const r = sel_obj.getRangeAt(0);
 
-  let start_container = r.startContainer;
-  let end_container = r.endContainer;
+  let start_container: Node | null = r.startContainer;
+  let end_container: Node | null = r.endContainer;
 
   if (end_container == start_container) {
     r.surroundContents(mark_elem.cloneNode(true))
@@ -99,8 +114,8 @@ function highlightSelectedText(sel_obj) {
   let valid_nodes = [];
   {
     // Add valid text nodes in start parent node
-    const start_node = r.startContainer.splitText(r.startOffset);
-    const iter = document.createNodeIterator(start_container, NodeFilter.SHOW_TEXT,  isNodeWhiteSpaceOnly)
+    const start_node = (r.startContainer as Text).splitText(r.startOffset);
+    const iter = document.createNodeIterator(start_container, NodeFilter.SHOW_TEXT,  containsNonWhiteSpace)
     let currentNode;
     // Find start text node
     while (currentNode = iter.nextNode()) {
@@ -115,8 +130,8 @@ function highlightSelectedText(sel_obj) {
   {
     // Add all valid text nodes, don't have to worry about start node or end node
     let nextNode = start_container.nextSibling;
-    while (nextNode !== end_container) {
-      const iter = document.createNodeIterator(nextNode, NodeFilter.SHOW_TEXT,  isNodeWhiteSpaceOnly)
+    while (nextNode && nextNode !== end_container) {
+      const iter = document.createNodeIterator(nextNode, NodeFilter.SHOW_TEXT,  containsNonWhiteSpace)
       let currentNode;
       while (currentNode = iter.nextNode()) {
         valid_nodes.push(currentNode);
@@ -127,8 +142,8 @@ function highlightSelectedText(sel_obj) {
 
   {
     // Add valid text nodes in end parent node
-    const end_node = r.endContainer.splitText(r.endOffset);
-    const iter = document.createNodeIterator(end_container, NodeFilter.SHOW_TEXT,  isNodeWhiteSpaceOnly)
+    const end_node = (r.endContainer as Text).splitText(r.endOffset);
+    const iter = document.createNodeIterator(end_container, NodeFilter.SHOW_TEXT,  containsNonWhiteSpace)
     let currentNode;
     while (currentNode = iter.nextNode()) {
       if (currentNode === end_node) { break; }
@@ -143,19 +158,21 @@ function highlightSelectedText(sel_obj) {
   }
 }
 
-function handleMouseUp(e) {
+function handleMouseUp(e: MouseEvent | TouchEvent) {
   console.log("Event: ", e.type)
   const sel_obj = window.getSelection();
+  if (!sel_obj) { return; }
   const len = sel_obj.toString().length;
   if (len <= MIN_SELECTION_LEN || sel_obj.anchorNode === null) return;
-  const action_bar_rect = g.action_bar_elem.getBoundingClientRect();
+  const action_bar = initActionBar();
+  const action_bar_rect = action_bar.getBoundingClientRect();
   const new_pos = selectionNewPosition(sel_obj, action_bar_rect);
-  g.action_bar_elem.style.setProperty("top", `${new_pos.top}px`);
-  g.action_bar_elem.style.setProperty("left", `${new_pos.left}px`);
+  action_bar.style.setProperty("top", `${new_pos.top}px`);
+  action_bar.style.setProperty("left", `${new_pos.left}px`);
   document.addEventListener("selectionchange", debounceSelectionChange);
 }
 
-function selectionNewPosition(selection, action_bar_rect) {
+function selectionNewPosition(selection: Selection, action_bar_rect: DOMRect) {
   const box = selection.getRangeAt(0).getBoundingClientRect();
   const top = box.top + window.pageYOffset - action_bar_rect.height;
   const left = box.left + window.pageXOffset + (box.width / 2) - (action_bar_rect.width / 2);
@@ -167,25 +184,31 @@ function selectionNewPosition(selection, action_bar_rect) {
 // - keyboard (ctrl [+ shift] + arrow_keys)
 // - mouse (ctrl/shift + mouse_click). 
 //   'ctrl' starts another selection. 'shift' extends existing selection.
-function initSelectionChange(e) {
+function initSelectionChange(e: Event) {
   console.log("Event: ", e.type)
   const sel_obj = window.getSelection();
-  const action_bar_rect = g.action_bar_elem.getBoundingClientRect();
+  if (!sel_obj) {
+    console.info("No selection to save");
+    return;
+  }
+  const action_bar = initActionBar();
+  const action_bar_rect = action_bar.getBoundingClientRect();
   const new_pos = selectionNewPosition(sel_obj, action_bar_rect);
   console.log(new_pos.top, action_bar_rect.top)
   if (new_pos.top != action_bar_rect.top) {
-    g.action_bar_elem.style.setProperty("top", `${new_pos.top}px`);
-    g.action_bar_elem.style.setProperty("left", `${new_pos.left}px`);
+    action_bar.style.setProperty("top", `${new_pos.top}px`);
+    action_bar.style.setProperty("left", `${new_pos.left}px`);
   }
 }
 
-function debounce(f, delay) {
-  let timeout;
+function debounce(f: any, delay: number) {
+  let timeout: number | undefined;
   return function() {
     if (timeout === undefined) {
       timeout = setTimeout(() => {
-        timeout = clearTimeout(timeout)
+        clearTimeout(timeout)
         f.apply(null, Array.from(arguments))
+        timeout = undefined;
       }, delay);
     }
   }
@@ -199,7 +222,6 @@ function deinitSelectionChange() {
 
 function initSelectionCode() {
   console.log("Event(init): selectstart")
-  g.action_bar_elem = initActionBar();
   document.removeEventListener("selectstart", initSelectionCode);
   document.addEventListener("mouseup", handleMouseUp)
   document.addEventListener("touchend", handleMouseUp)

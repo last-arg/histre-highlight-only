@@ -10,9 +10,9 @@ function initActionBar() {
   container.style.setProperty("position", "absolute");
   container.style.setProperty("top", "0");
   container.style.setProperty("left", "0");
-  container.style.visibility = "hidden";
   const button = document.createElement("button");
   button.type = "button";
+  button.addEventListener("click", saveSelection);
   const button_text = document.createTextNode("Save selection");
   button.appendChild(button_text);
   container.appendChild(button);
@@ -21,7 +21,7 @@ function initActionBar() {
 }
 
 // NOTE: Not used at the moment. Use it if you need.
-// This gets excat coordinates of selection start. Use this if you want
+// This gets exact coordinates of selection start. Use this if you want
 // exact location of 'left'.
 function selectionStartClientRect(sel_obj) {
   // TODO: there is Range.insertNode which enters Node at the start of the range
@@ -42,39 +42,109 @@ function selectionStartClientRect(sel_obj) {
 }
 
 // TODO: implement saving selection
-function saveSelection(e) {
-  console.log("Event: ", e.type)
-
+// TODO: handle saving multiple selections
+function saveSelection() {
   const sel_obj = window.getSelection();
-  const len = Math.abs(sel_obj.anchorOffset - sel_obj.focusOffset);
+  const len = sel_obj.toString().length;
   if (len <= MIN_SELECTION_LEN || sel_obj.anchorNode === null) return;
-  const r = sel_obj.getRangeAt(0);
-  // console.log(sel_obj.anchorNode);
-  // console.log(sel_obj.focusNode);
-  console.log(r.cloneContents())
-  // {
-  // const t = document.createElement("span");
-  // t.style.background = "red";
-  // r.surroundContents(t);
-  // }
-  sel_obj.removeAllRanges();
+  highlightSelectedText(sel_obj);
+  sel_obj.collapseToStart();
 
+  // TODO: implement highlighting for multiselect text?
   // for (let i = 0; i < sel_obj.rangeCount; i++) {
   //   console.log(sel_obj.getRangeAt(i));
   //   console.log(sel_obj.getRangeAt(i).toString());
   // }
 }
 
+// Wrapping selected text with <mark>.
+// Selection doesn't start or end at edges of nodes.
+// Selection can contain children elements.
+const mark_elem = document.createElement("mark");
+mark_elem.classList.add("hle-mark");
+
+function isNodeWhiteSpaceOnly(node) {
+  if (/^\s*$/.test(node.textContent)) {
+    return NodeFilter.FILTER_REJECT;
+  }
+  return NodeFilter.FILTER_ACCEPT
+}
+
+function highlightSelectedText(sel_obj) {
+  const r = sel_obj.getRangeAt(0);
+
+  // Find start and end node parent siblings
+  let start_container = r.startContainer;
+  while (start_container = start_container.parentNode) {
+    if (start_container.parentNode === r.commonAncestorContainer) { break; }
+  }
+  let end_container = r.endContainer;
+  while (end_container = end_container.parentNode) {
+    if (end_container.parentNode === r.commonAncestorContainer) { break; }
+  }
+
+  if (!start_container || !end_container)  {
+    console.error("Failed to find common parent sibling for start and end node")
+    return;
+  }
+
+  let valid_nodes = [];
+  {
+    // Add valid text nodes in start parent node
+    const start_node = r.startContainer.splitText(r.startOffset);
+    const iter = document.createNodeIterator(start_container, NodeFilter.SHOW_TEXT,  isNodeWhiteSpaceOnly)
+    let currentNode;
+    // Find start text node
+    while (currentNode = iter.nextNode()) {
+      if (currentNode === start_node) { break; }
+    }
+    valid_nodes.push(currentNode);
+    while (currentNode = iter.nextNode()) {
+      valid_nodes.push(currentNode);
+    }
+  }
+
+  {
+    // Add all valid text nodes, don't have to worry about start node or end node
+    let nextNode = start_container.nextSibling;
+    while (nextNode !== end_container) {
+      const iter = document.createNodeIterator(nextNode, NodeFilter.SHOW_TEXT,  isNodeWhiteSpaceOnly)
+      let currentNode;
+      while (currentNode = iter.nextNode()) {
+        valid_nodes.push(currentNode);
+      }
+      nextNode = nextNode.nextSibling;
+    }
+  }
+
+  {
+    // Add valid text nodes in end parent node
+    const end_node = r.endContainer.splitText(r.endOffset);
+    const iter = document.createNodeIterator(end_container, NodeFilter.SHOW_TEXT,  isNodeWhiteSpaceOnly)
+    let currentNode;
+    while (currentNode = iter.nextNode()) {
+      if (currentNode === end_node) { break; }
+      valid_nodes.push(currentNode);
+    }
+  }
+
+  let tmp_range = document.createRange();
+  for (let node of valid_nodes) {
+    tmp_range.selectNode(node);
+    tmp_range.surroundContents(mark_elem.cloneNode(true))
+  }
+}
+
 function handleMouseUp(e) {
   console.log("Event: ", e.type)
   const sel_obj = window.getSelection();
-  const len = Math.abs(sel_obj.anchorOffset - sel_obj.focusOffset);
+  const len = sel_obj.toString().length;
   if (len <= MIN_SELECTION_LEN || sel_obj.anchorNode === null) return;
   const action_bar_rect = g.action_bar_elem.getBoundingClientRect();
   const new_pos = selectionNewPosition(sel_obj, action_bar_rect);
   g.action_bar_elem.style.setProperty("top", `${new_pos.top}px`);
   g.action_bar_elem.style.setProperty("left", `${new_pos.left}px`);
-  g.action_bar_elem.style.visibility = "visible";
+
   document.addEventListener("selectionchange", debounceSelectionChange);
 }
 
@@ -116,7 +186,6 @@ function debounce(f, delay) {
 
 const debounceSelectionChange = debounce(initSelectionChange, 100);
 function deinitSelectionChange() {
-  g.action_bar_elem.style.visibility = "hidden";
   document.removeEventListener("selectionchange", debounceSelectionChange);
 }
 
@@ -125,7 +194,6 @@ function initSelectionCode() {
   console.log("Event(init): selectstart")
   g.action_bar_elem = initActionBar();
   document.removeEventListener("selectstart", initSelectionCode);
-  g.action_bar_elem.addEventListener("click", saveSelection);
   document.addEventListener("mouseup", handleMouseUp)
   document.addEventListener("touchend", handleMouseUp)
   document.addEventListener("mousedown", deinitSelectionChange)

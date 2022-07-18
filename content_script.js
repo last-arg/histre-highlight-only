@@ -73,14 +73,22 @@ function isNodeWhiteSpaceOnly(node) {
 function highlightSelectedText(sel_obj) {
   const r = sel_obj.getRangeAt(0);
 
-  // Find start and end node parent siblings
   let start_container = r.startContainer;
-  while (start_container = start_container.parentNode) {
-    if (start_container.parentNode === r.commonAncestorContainer) { break; }
-  }
   let end_container = r.endContainer;
-  while (end_container = end_container.parentNode) {
+
+  if (end_container == start_container) {
+    r.surroundContents(mark_elem.cloneNode(true))
+    return;
+  }
+
+  // Find start and end node parent siblings
+  while (start_container) {
+    if (start_container.parentNode === r.commonAncestorContainer) { break; }
+    start_container = start_container.parentNode
+  }
+  while (end_container) {
     if (end_container.parentNode === r.commonAncestorContainer) { break; }
+    end_container = end_container.parentNode
   }
 
   if (!start_container || !end_container)  {
@@ -98,7 +106,7 @@ function highlightSelectedText(sel_obj) {
     while (currentNode = iter.nextNode()) {
       if (currentNode === start_node) { break; }
     }
-    valid_nodes.push(currentNode);
+    if (currentNode !== null) valid_nodes.push(currentNode);
     while (currentNode = iter.nextNode()) {
       valid_nodes.push(currentNode);
     }
@@ -144,7 +152,6 @@ function handleMouseUp(e) {
   const new_pos = selectionNewPosition(sel_obj, action_bar_rect);
   g.action_bar_elem.style.setProperty("top", `${new_pos.top}px`);
   g.action_bar_elem.style.setProperty("left", `${new_pos.left}px`);
-
   document.addEventListener("selectionchange", debounceSelectionChange);
 }
 

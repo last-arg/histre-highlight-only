@@ -202,7 +202,7 @@ function initSelectionChange(e: Event) {
 }
 
 function debounce(f: any, delay: number) {
-  let timeout: number | undefined;
+  let timeout: NodeJS.Timeout | undefined;
   return function() {
     if (timeout === undefined) {
       timeout = setTimeout(() => {
@@ -218,7 +218,6 @@ const debounceSelectionChange = debounce(initSelectionChange, 100);
 function deinitSelectionChange() {
   document.removeEventListener("selectionchange", debounceSelectionChange);
 }
-
 
 function initSelectionCode() {
   console.log("Event(init): selectstart")

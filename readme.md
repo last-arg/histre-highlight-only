@@ -10,6 +10,8 @@ far I can go with Selection API events.
 
 Do mouse events work on touch screen? Have to invetigate.
 
+A lot of the build setup and config is based on [antfu/vitesse-webext](https://github.com/antfu/vitesse-webext/)
+
 ## Resources:
 [1] https://developer.mozilla.org/en-US/docs/Web/API/Selection
 [2] https://developer.mozilla.org/en-US/docs/Web/HTML/Element/mark

@@ -22,15 +22,15 @@ export async function getManifest() {
     browser_action: {
       // TODO: icon-512
       default_icon: './assets/icon-48.png',
-      default_popup: './dist/popup/index.html',
+      default_popup: './dist/popup.html',
     },
     options_ui: {
-      page: './dist/options/index.html',
+      page: './dist/options.html',
       open_in_tab: true,
       chrome_style: false,
     },
     background: {
-      page: './dist/background/index.html',
+      page: './dist/background.html',
       persistent: false,
     },
     icons: {

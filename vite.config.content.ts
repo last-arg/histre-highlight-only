@@ -7,9 +7,9 @@ import packageJson from './package.json'
 export default defineConfig({
   ...sharedConfig,
   build: {
-    watch: isDev
-      ? {}
-      : undefined,
+    reportCompressedSize: !isDev,
+    minify: !isDev,
+    watch: isDev ? {} : undefined,
     outDir: r('extension/dist/assets/'),
     cssCodeSplit: false,
     emptyOutDir: false,

@@ -54,6 +54,7 @@ export default defineConfig(({ command }) => ({
   build: {
     reportCompressedSize: !isDev,
     minify: !isDev,
+    cssCodeSplit: false,
     watch: isDev ? {} : undefined,
     outDir: r('extension/dist'),
     emptyOutDir: false,

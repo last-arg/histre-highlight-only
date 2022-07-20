@@ -1,7 +1,4 @@
 import { storage } from 'webextension-polyfill'
-// TODO: move into json file instead?
-import {username, password} from "../tmp/.secret.dev";
-
 console.log("==== LOAD ./dist/background.js ====")
 
 let host = 'https://histre.com';
@@ -102,10 +99,14 @@ async function setLocalUser(user: UserData): Promise<void> {
 }
 
 async function init() {
-  // @debug
-  // await setLocalUser({username, password})
+  if (__DEV__) {; 
+    // Add test user data
+    const user = await import("../tmp/.secret.dev");
+    await setLocalUser(user.user)
+  }
 
   let auth_data = await getLocalAuthData()
+  console.log("current auth data", auth_data)
   let err_msg: string | undefined = undefined;
   if (auth_data) {
     const now = new Date();
@@ -117,7 +118,7 @@ async function init() {
 
     if (now > access_date) {
       if (now < refresh_date) {
-        console.log("Use refresh toke", auth_data)
+        console.log("Refresh token", auth_data)
         const resp = await refreshAuthToken(auth_data.token.refresh);
         if (resp.error) {
           err_msg = "Failed to refresh access token."
@@ -127,7 +128,6 @@ async function init() {
             err_msg += ` Error(${resp.errcode}): ${resp.errmsg}`;
           }
         } else if (resp.data) {
-          console.log(resp.data)
           auth_data = await setLocalAuthData(resp.data)
         }
       } else {
@@ -173,7 +173,7 @@ async function init() {
   }
 
   if (auth_data) {
-    console.log("valid token", auth_data)
+    console.log("new auth data", auth_data)
   } else if (err_msg) {
     console.error(err_msg)
   } else {

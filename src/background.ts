@@ -81,7 +81,6 @@ async function getLocalAuthData(): Promise<AuthDataTime | undefined> {
 
 async function setLocalAuthData(token: AuthData): Promise<AuthDataTime> {
   const result = {token: token, created_at: Date.now()};
-  console.log(result)
   await storage.local.set(result);
   return result;
 }
@@ -98,19 +97,19 @@ async function setLocalUser(user: UserData): Promise<void> {
   await storage.local.set(user);
 }
 
-async function init() {
+async function requestNewToken(curr_auth_data: AuthDataTime | undefined): Promise<AuthData | undefined> {
   if (__DEV__) {; 
     // Add test user data
     const user = await import("../tmp/.secret.dev");
     await setLocalUser(user.user)
   }
 
-  let auth_data = await getLocalAuthData()
-  console.log("current auth data", auth_data)
+  let auth_data = curr_auth_data?.token;
   let err_msg: string | undefined = undefined;
   if (auth_data) {
     const now = new Date();
-    const created_date = new Date(auth_data.created_at);
+    // NOTE: If we auth_data is valid then curr_auth_data is valid.
+    const created_date = new Date(curr_auth_data!.created_at);
     const access_date = new Date(created_date);
     access_date.setMinutes(access_date.getMinutes() + 15);
     const refresh_date = new Date(created_date);
@@ -119,7 +118,7 @@ async function init() {
     if (now > access_date) {
       if (now < refresh_date) {
         console.log("Refresh token", auth_data)
-        const resp = await refreshAuthToken(auth_data.token.refresh);
+        const resp = await refreshAuthToken(auth_data.refresh);
         if (resp.error) {
           err_msg = "Failed to refresh access token."
           if (resp.details) {
@@ -128,7 +127,7 @@ async function init() {
             err_msg += ` Error(${resp.errcode}): ${resp.errmsg}`;
           }
         } else if (resp.data) {
-          auth_data = await setLocalAuthData(resp.data)
+          auth_data = resp.data
         }
       } else {
         console.log("Tokens are invalid");
@@ -165,20 +164,41 @@ async function init() {
           }
         }
       } else if (resp.data) {
-        auth_data = await setLocalAuthData(resp.data)
+        auth_data = resp.data
       }
     } else {
       err_msg = "Need to provide username and password"
     }
   }
 
-  if (auth_data) {
-    console.log("new auth data", auth_data)
-  } else if (err_msg) {
+  if (err_msg) {
     console.error(err_msg)
-  } else {
+  } else if (auth_data === undefined) {
     console.error(`Have exhausted all options to authenticate you. Only advice would be to make sure that account credentials are right and keep trying from time to time.`);
   }
+  return auth_data;
+}
+
+function isAccessTokenValid(auth_data: AuthDataTime) {
+    const now = new Date();
+    const created_date = new Date(auth_data.created_at);
+    const access_date = new Date(created_date);
+    access_date.setMinutes(access_date.getMinutes() + 15);
+    return now < access_date;
+}
+
+async function init() {
+  let auth_data = await getLocalAuthData();
+  // let auth_data;
+
+  if (auth_data === undefined || !isAccessTokenValid(auth_data)) {
+    let new_token = await requestNewToken(auth_data);
+    if (new_token) {
+      // save new auth_data
+      auth_data = await setLocalAuthData(new_token);
+    }
+  }
+  console.log("init", auth_data)
 
 }
 init()

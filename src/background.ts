@@ -220,28 +220,29 @@ const histre = (function createHistre() {
     return hl_resp.data;
   }
 
-  // async function removeHighlight(id: string, access: string): boolean {
-  //   const headers_auth = Object.assign({"Authorization": `Bearer ${access}`}, headers);
-  //   const body = JSON.stringify({highlight_id: id});
-  //   const resp = await fetch(highlightUrl, { headers: headers_auth, method: "DELETE", body: body });
-  //   const hl_resp = (await resp.json()) as HighlightResp;
-  //   if (hl_resp.error) {
-  //     let err_msg = "Failed to remove highlight.";
-  //     if (hl_resp.details) {
-  //       err_msg += ` Error: ${hl_resp.details.detail}`;
-  //     } else if (hl_resp.errmsg) {
-  //       err_msg += ` Error(${hl_resp.errcode}): ${hl_resp.errmsg}`;
-  //     }
-  //     console.error(err_msg);
-  //     return true;
-  //   }
-  //   return false;
-  // }
+  async function removeHighlight(id: string, access: string): Promise<boolean> {
+    const headers_auth = Object.assign({"Authorization": `Bearer ${access}`}, headers);
+    const body = JSON.stringify({highlight_id: id});
+    const resp = await fetch(highlightUrl, { headers: headers_auth, method: "DELETE", body: body });
+    const hl_resp = (await resp.json()) as HighlightResp;
+    if (hl_resp.error) {
+      let err_msg = "Failed to remove highlight.";
+      if (hl_resp.details) {
+        err_msg += ` Error: ${hl_resp.details.detail}`;
+      } else if (hl_resp.errmsg) {
+        err_msg += ` Error(${hl_resp.errcode}): ${hl_resp.errmsg}`;
+      }
+      console.error(err_msg);
+      return false;
+    }
+    return true;
+  }
 
   return {
     newToken: newToken,
     isAccessTokenValid: isAccessTokenValid,
     addHighlight: addHighlight,
+    removeHighlight: removeHighlight,
   };
 })();
 
@@ -262,16 +263,17 @@ async function init() {
     return;
   }
 
-  const hl = {
-    url: "test_url",
-    title: "test_title",
-    text: "test_text",
-    color: "yellow",
-  };
-  const r = await histre.addHighlight(hl, new_auth_data.token.access)
-  console.log("add", r)
+  // const hl = {
+  //   url: "test_url",
+  //   title: "test_title",
+  //   text: "test_text",
+  //   color: "yellow",
+  // };
+  // const add = await histre.addHighlight(hl, new_auth_data.token.access)
+  // console.log("add", add)
 
-  // const rm  await histre.removeHighlight(r.)
+  const rm = await histre.removeHighlight("dlsakj", new_auth_data.token.access)
+  console.log("remove", rm)
 }
 
 init();

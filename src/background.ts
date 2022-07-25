@@ -5,6 +5,12 @@ let host = 'https://histre.com';
 let api_v1 = `${host}/api/v1`;
 const authUrl = `${api_v1}/auth_token/`;
 const refreshAuthUrl = `${api_v1}/auth_token_refresh/`;
+const highlightUrl = `${api_v1}/highlight/`;
+const headers = { 
+  "Host": host,
+  "Content-Type": "application/json" 
+};
+
 
 interface HistreResp<T> {
   data?: T,
@@ -18,18 +24,27 @@ interface HistreResp<T> {
 
 // access is valid for 15 minutes
 // refresh is valid for 30 days
-type AuthResp = HistreResp<Required<AuthData>>
-interface UserData {
-  username: string,
-  password: string,
-}
-
 interface AuthData {
   access: string,
   refresh: string,
 }
-
+type AuthResp = HistreResp<Required<AuthData>>;
 type AuthDataTime = { token: AuthData, created_at: number};
+
+interface HighlightAdd {
+  url: string,
+  title: string,
+  text: string,
+  color?: string
+  // tweet (Boolean): optional
+  // extra (Object): optional
+}
+type HighlightResp = HistreResp<HighlightAdd>;
+
+interface UserData {
+  username: string,
+  password: string,
+}
 
 async function getLocalAuthData(): Promise<AuthDataTime | undefined> {
   const data = await storage.local.get(
@@ -59,10 +74,6 @@ async function setLocalUser(user: UserData): Promise<void> {
 const histre = (function createHistre() {
   async function authUser(user: UserData): Promise<AuthResp> {
     const body = JSON.stringify(user);
-    const headers = { 
-      "Host": host,
-      "Content-Type": "application/json" 
-    };
     const r = await fetch(authUrl, {
       headers: headers,
       method: 'POST',
@@ -79,10 +90,6 @@ const histre = (function createHistre() {
   // Most endpoints return 403 (Forbidden) for auth errors.
   // Aquire and refresh endpoints return 401 for auth errors.
   async function refreshAuthToken(refresh: string): Promise<AuthResp> {
-    const headers = { 
-      "Host": host,
-      "Content-Type": "application/json" 
-    };
     const r = await fetch(refreshAuthUrl, {
       headers: headers,
       method: 'POST',
@@ -195,9 +202,28 @@ const histre = (function createHistre() {
       return now < access_date;
   }
 
+  async function addHighlight(hl: HighlightAdd, access: string) {
+    const headers_auth = Object.assign({"Authorization": `Bearer ${access}`}, headers);
+    const body = JSON.stringify(hl);
+    const resp = await fetch(highlightUrl, { headers: headers_auth, method: "POST", body: body });
+    const hl_resp = (await resp.json()) as HighlightResp;
+    if (hl_resp.error) {
+      let err_msg = "Failed to add highlight.";
+      if (hl_resp.details) {
+        err_msg += ` Error: ${hl_resp.details.detail}`;
+      } else if (hl_resp.errmsg) {
+        err_msg += ` Error(${hl_resp.errcode}): ${hl_resp.errmsg}`;
+      }
+      console.error(err_msg);
+      return undefined;
+    }
+    return hl_resp.data;
+  }
+
   return {
     newToken: newToken,
     isAccessTokenValid: isAccessTokenValid,
+    addHighlight: addHighlight,
   };
 })();
 
@@ -218,7 +244,14 @@ async function init() {
     return;
   }
 
-  console.log(new_auth_data);
+  const hl = {
+    url: "test_url",
+    title: "test_title",
+    text: "test_text",
+    color: "yellow",
+  };
+  const r = await histre.addHighlight(hl, new_auth_data.token.access)
+  console.log("add", r)
 }
 
 init();

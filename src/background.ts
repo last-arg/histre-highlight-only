@@ -39,7 +39,8 @@ interface HighlightAdd {
   // tweet (Boolean): optional
   // extra (Object): optional
 }
-type HighlightResp = HistreResp<HighlightAdd>;
+type HighlightData = {highlight_id: string, highlight_link: string};
+type HighlightResp = HistreResp<HighlightData>;
 
 interface UserData {
   username: string,
@@ -151,7 +152,6 @@ const histre = (function createHistre() {
     if (!auth_data) {
       console.log("Authenticate with username and password")
       const user = await getLocalUser();
-      console.log("user", user)
       if (user) {
         const resp = await authUser(user);
         if (resp.error) {
@@ -202,7 +202,7 @@ const histre = (function createHistre() {
       return now < access_date;
   }
 
-  async function addHighlight(hl: HighlightAdd, access: string) {
+  async function addHighlight(hl: HighlightAdd, access: string): Promise<HighlightData | undefined> {
     const headers_auth = Object.assign({"Authorization": `Bearer ${access}`}, headers);
     const body = JSON.stringify(hl);
     const resp = await fetch(highlightUrl, { headers: headers_auth, method: "POST", body: body });
@@ -219,6 +219,24 @@ const histre = (function createHistre() {
     }
     return hl_resp.data;
   }
+
+  // async function removeHighlight(id: string, access: string): boolean {
+  //   const headers_auth = Object.assign({"Authorization": `Bearer ${access}`}, headers);
+  //   const body = JSON.stringify({highlight_id: id});
+  //   const resp = await fetch(highlightUrl, { headers: headers_auth, method: "DELETE", body: body });
+  //   const hl_resp = (await resp.json()) as HighlightResp;
+  //   if (hl_resp.error) {
+  //     let err_msg = "Failed to remove highlight.";
+  //     if (hl_resp.details) {
+  //       err_msg += ` Error: ${hl_resp.details.detail}`;
+  //     } else if (hl_resp.errmsg) {
+  //       err_msg += ` Error(${hl_resp.errcode}): ${hl_resp.errmsg}`;
+  //     }
+  //     console.error(err_msg);
+  //     return true;
+  //   }
+  //   return false;
+  // }
 
   return {
     newToken: newToken,
@@ -252,6 +270,8 @@ async function init() {
   };
   const r = await histre.addHighlight(hl, new_auth_data.token.access)
   console.log("add", r)
+
+  // const rm  await histre.removeHighlight(r.)
 }
 
 init();

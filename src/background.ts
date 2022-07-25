@@ -1,16 +1,6 @@
 import { storage } from 'webextension-polyfill'
 console.log("==== LOAD ./dist/background.js ====")
 
-let host = 'https://histre.com';
-let api_v1 = `${host}/api/v1`;
-const authUrl = `${api_v1}/auth_token/`;
-const refreshAuthUrl = `${api_v1}/auth_token_refresh/`;
-const highlightUrl = `${api_v1}/highlight/`;
-const headers = { 
-  "Host": host,
-  "Content-Type": "application/json" 
-};
-
 
 interface HistreResp<T> {
   data?: T,
@@ -73,6 +63,22 @@ async function setLocalUser(user: UserData): Promise<void> {
 }
 
 const histre = (function createHistre() {
+  const host = 'https://histre.com';
+  const api_v1 = `${host}/api/v1`;
+  const authUrl = `${api_v1}/auth_token/`;
+  const refreshAuthUrl = `${api_v1}/auth_token_refresh/`;
+  const highlightUrl = `${api_v1}/highlight/`;
+  let headers: any = { 
+    "Host": host,
+    "Content-Type": "application/json" 
+  };
+
+  function setHeaderAuthToken(access: string) {
+    headers["Authorization"] = `Bearer ${access}`;
+  }
+
+  function removeHeaderAuthToken() { delete headers["Authorization"]; }
+
   async function authUser(user: UserData): Promise<AuthResp> {
     const body = JSON.stringify(user);
     const r = await fetch(authUrl, {
@@ -194,7 +200,7 @@ const histre = (function createHistre() {
     return auth_data;
   }
 
-  function isAccessTokenValid(created_at: number) {
+  function hasValidAccessToken(created_at: number) {
       const now = new Date();
       const created_date = new Date(created_at);
       const access_date = new Date(created_date);
@@ -202,10 +208,9 @@ const histre = (function createHistre() {
       return now < access_date;
   }
 
-  async function addHighlight(hl: HighlightAdd, access: string): Promise<HighlightData | undefined> {
-    const headers_auth = Object.assign({"Authorization": `Bearer ${access}`}, headers);
+  async function addHighlight(hl: HighlightAdd): Promise<HighlightData | undefined> {
     const body = JSON.stringify(hl);
-    const resp = await fetch(highlightUrl, { headers: headers_auth, method: "POST", body: body });
+    const resp = await fetch(highlightUrl, { headers: headers, method: "POST", body: body });
     const hl_resp = (await resp.json()) as HighlightResp;
     if (hl_resp.error) {
       let err_msg = "Failed to add highlight.";
@@ -220,10 +225,9 @@ const histre = (function createHistre() {
     return hl_resp.data;
   }
 
-  async function removeHighlight(id: string, access: string): Promise<boolean> {
-    const headers_auth = Object.assign({"Authorization": `Bearer ${access}`}, headers);
+  async function removeHighlight(id: string): Promise<boolean> {
     const body = JSON.stringify({highlight_id: id});
-    const resp = await fetch(highlightUrl, { headers: headers_auth, method: "DELETE", body: body });
+    const resp = await fetch(highlightUrl, { headers: headers, method: "DELETE", body: body });
     const hl_resp = (await resp.json()) as HighlightResp;
     if (hl_resp.error) {
       let err_msg = "Failed to remove highlight.";
@@ -240,16 +244,28 @@ const histre = (function createHistre() {
 
   return {
     newToken: newToken,
-    isAccessTokenValid: isAccessTokenValid,
+    hasValidAccessToken: hasValidAccessToken,
     addHighlight: addHighlight,
     removeHighlight: removeHighlight,
+    setHeaderAuthToken: setHeaderAuthToken,
+    removeHeaderAuthToken: removeHeaderAuthToken,
   };
 })();
 
+// Histre colors
+// yellow
+// orange
+// green
+// blue
+// purple
+// red
+
+
 async function init() {
+  // storage.local.clear();
   let curr_auth_data = await getLocalAuthData();
   let new_auth_data = curr_auth_data;
-  if (curr_auth_data === undefined || !histre.isAccessTokenValid(curr_auth_data.created_at)) {
+  if (curr_auth_data === undefined || !histre.hasValidAccessToken(curr_auth_data.created_at)) {
     // Get new token
     const auth_data = await histre.newToken(curr_auth_data);
     if (auth_data) {
@@ -259,21 +275,25 @@ async function init() {
   }
 
   if (new_auth_data === undefined) {
+    histre.removeHeaderAuthToken()
     console.error("Failed to get valid Histre user token");
     return;
   }
+  histre.setHeaderAuthToken(new_auth_data.token.access);
 
-  // const hl = {
-  //   url: "test_url",
-  //   title: "test_title",
-  //   text: "test_text",
-  //   color: "yellow",
-  // };
-  // const add = await histre.addHighlight(hl, new_auth_data.token.access)
-  // console.log("add", add)
+  // {
+  //   const hl = {
+  //     url: "test_url",
+  //     title: "test_title",
+  //     text: "test_text",
+  //     color: "yellow",
+  //   };
+  //   const add = await histre.addHighlight(hl)
+  //   console.log("add", add)
 
-  const rm = await histre.removeHighlight("dlsakj", new_auth_data.token.access)
-  console.log("remove", rm)
+  //   const rm = await histre.removeHighlight(add!.highlight_id)
+  //   console.log("remove", rm)
+  // }
 }
 
 init();

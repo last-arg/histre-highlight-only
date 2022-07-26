@@ -1,5 +1,8 @@
 console.log("==== LOAD 'content_script.js' TD ====")
 
+// TODO: How to handle selection action bar (context menu) position with 
+// mobile native context menu?
+
 type ActionBar = HTMLDivElement;
 interface Window {
   g: {
@@ -12,12 +15,12 @@ window.g = {
 
 const MIN_SELECTION_LEN = 3;
 
-function initActionBar(): ActionBar {
+function getActionBar(): ActionBar {
   if (!window.g?.action_bar_elem) {
     const container = document.createElement("div");
-    container.style.setProperty("position", "absolute");
-    container.style.setProperty("top", "0");
-    container.style.setProperty("left", "0");
+    container.style.position = "absolute";
+    container.style.top = "0";
+    container.style.left = "0";
     const button = document.createElement("button");
     button.type = "button";
     button.addEventListener("click", saveSelection);
@@ -54,7 +57,9 @@ function selectionStartClientRect(sel_obj: Selection) {
 
 // TODO: implement saving selection
 // TODO: handle saving multiple selections
-function saveSelection() {
+function saveSelection(e: Event) {
+  e.stopPropagation();
+  document.removeEventListener("selectionchange", debounceSelectionChange);
   const sel_obj = window.getSelection();
   if (!sel_obj) {
     console.info("No selection to save");
@@ -63,7 +68,9 @@ function saveSelection() {
   const len = sel_obj.toString().length;
   if (len <= MIN_SELECTION_LEN || sel_obj.anchorNode === null) return;
   highlightSelectedText(sel_obj);
-  sel_obj.collapseToStart();
+  sel_obj.removeAllRanges();
+  getActionBar().style.display = "none";
+
 
   // TODO: implement highlighting for multiselect text?
   // for (let i = 0; i < sel_obj.rangeCount; i++) {
@@ -164,11 +171,12 @@ function handleMouseUp(e: MouseEvent | TouchEvent) {
   if (!sel_obj) { return; }
   const len = sel_obj.toString().length;
   if (len <= MIN_SELECTION_LEN || sel_obj.anchorNode === null) return;
-  const action_bar = initActionBar();
+  const action_bar = getActionBar();
   const action_bar_rect = action_bar.getBoundingClientRect();
   const new_pos = selectionNewPosition(sel_obj, action_bar_rect);
-  action_bar.style.setProperty("top", `${new_pos.top}px`);
-  action_bar.style.setProperty("left", `${new_pos.left}px`);
+  action_bar.style.display = "block";
+  action_bar.style.top = `${new_pos.top}px`;
+  action_bar.style.left = `${new_pos.left}px`;
   document.addEventListener("selectionchange", debounceSelectionChange);
 }
 
@@ -191,13 +199,12 @@ function initSelectionChange(e: Event) {
     console.info("No selection to save");
     return;
   }
-  const action_bar = initActionBar();
+  const action_bar = getActionBar();
   const action_bar_rect = action_bar.getBoundingClientRect();
   const new_pos = selectionNewPosition(sel_obj, action_bar_rect);
-  console.log(new_pos.top, action_bar_rect.top)
   if (new_pos.top != action_bar_rect.top) {
-    action_bar.style.setProperty("top", `${new_pos.top}px`);
-    action_bar.style.setProperty("left", `${new_pos.left}px`);
+    action_bar.style.top = `${new_pos.top}px`;
+    action_bar.style.left = `${new_pos.left}px`;
   }
 }
 
@@ -215,16 +222,18 @@ function debounce(f: any, delay: number) {
 }
 
 const debounceSelectionChange = debounce(initSelectionChange, 100);
-function deinitSelectionChange() {
+function deinitSelectionChange(e: PointerEvent) {
   document.removeEventListener("selectionchange", debounceSelectionChange);
+  e.stopPropagation();
+  const action_bar = getActionBar();
+  if (e.target !== action_bar.querySelector("button")) action_bar.style.display = "none";
 }
 
 function initSelectionCode() {
   console.log("Event(init): selectstart")
-  document.removeEventListener("selectstart", initSelectionCode);
-  document.addEventListener("mouseup", handleMouseUp)
-  document.addEventListener("touchend", handleMouseUp)
-  document.addEventListener("mousedown", deinitSelectionChange)
-  document.addEventListener("touchstart", deinitSelectionChange)
+  // pointerup = mouseup + touchend
+  document.addEventListener("pointerup", handleMouseUp)
+  // pointerdown = mousedown + touchstart
+  document.addEventListener("pointerdown", deinitSelectionChange)
 }
-document.addEventListener("selectstart", initSelectionCode)
+document.addEventListener("selectstart", initSelectionCode, {once: true})

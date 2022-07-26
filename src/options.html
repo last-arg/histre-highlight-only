@@ -1,12 +1,51 @@
 <!DOCTYPE html>
-<html lang="en">
-  <head>
-      <meta charset="UTF-8">
-      <title>Background page</title>
-  </head>
-  <body>
-    <p>
-      Options page
-    </p>
-  </body>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <title>Test text selection</title>
+</head>
+<body>
+  <style>
+    .selection {
+      max-width: 400px;
+      margin: 0 auto;
+      margin-top: 40px;
+    }
+
+    .selection > div {
+      margin-top: 20px;
+      padding: 1em;
+      background: #eee;
+    }
+  </style>
+  <div class="selection">
+    <div>
+      <p>
+        Level 1. Longer <span>lines</span> for easier selection
+      </p>
+      <div>
+        <p>Level 2. Longer <span>lines</span> for easier selection</p>
+      </div>
+      <div>
+        <div>
+          <p>Level 3. Longer lines for easier selection</p>
+        </div>
+      </div>
+    </div>
+    <div>
+      <p>Level 1. Longer lines for easier selection</p>
+      <div>
+        <p>Level 2. Longer lines for easier selection</p>
+        <div>
+          <p>Level 3. Longer lines for easier selection</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script type="module" src="./content_script.ts"></script>
+</body>
 </html>
+
+

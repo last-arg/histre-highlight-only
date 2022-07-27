@@ -1,7 +1,10 @@
+import {Action} from './common';
 console.log("==== LOAD 'content_script.js' TD ====")
 
 // TODO: How to handle selection action bar (context menu) position with 
 // mobile native context menu?
+
+const prefix_local_id = "hle-local-";
 
 type ActionBar = HTMLDivElement;
 interface Window {
@@ -67,9 +70,17 @@ function saveSelection(e: Event) {
   }
   const len = sel_obj.toString().length;
   if (len <= MIN_SELECTION_LEN || sel_obj.anchorNode === null) return;
-  highlightSelectedText(sel_obj);
+  const local_id = Math.random().toString(36).substring(2,10)
+  const local_class_id = `${prefix_local_id}-${local_id}`;
+  highlightSelectedText(sel_obj, local_class_id);
   sel_obj.removeAllRanges();
   getActionBar().style.display = "none";
+
+  // TODO: Send selection to background
+  // const hl = await browser.runtime.sendMessage()
+  // will be added either to histre or local (if request failed)
+  // figure out how to display success and failure
+  // success: replace local ids with histre ids
 
 
   // TODO: implement highlighting for multiselect text?
@@ -92,7 +103,7 @@ function containsNonWhiteSpace(node: Node): number {
   return NodeFilter.FILTER_ACCEPT
 }
 
-function highlightSelectedText(sel_obj: Selection) {
+function highlightSelectedText(sel_obj: Selection, local_id: string) {
   const r = sel_obj.getRangeAt(0);
 
   let start_container: Node | null = r.startContainer;
@@ -161,7 +172,9 @@ function highlightSelectedText(sel_obj: Selection) {
   let tmp_range = document.createRange();
   for (let node of valid_nodes) {
     tmp_range.selectNode(node);
-    tmp_range.surroundContents(mark_elem.cloneNode(true))
+    const new_mark = mark_elem.cloneNode(true);
+    (new_mark as Element).classList.add(local_id);
+    tmp_range.surroundContents(new_mark);
   }
 }
 

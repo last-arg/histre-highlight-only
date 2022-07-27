@@ -3,6 +3,7 @@ import type { Manifest } from 'webextension-polyfill'
 import type PkgType from '../package.json'
 import { isDev, port, r } from '../scripts/utils'
 
+// Base on 'https://github.com/antfu/vitesse-webext/'
 export async function getManifest() {
   const raw_json = await fs.promises.readFile(r('package.json'));
   let buf = raw_json; 
@@ -62,8 +63,8 @@ export async function getManifest() {
     // for content script, as browsers will cache them for each reload,
     // we use a background script to always inject the latest version
     // see src/background/contentScriptHMR.ts
-    delete manifest.content_scripts
-    manifest.permissions?.push('webNavigation')
+    // delete manifest.content_scripts
+    // manifest.permissions?.push('webNavigation')
 
     // this is required on dev for Vite script to load
     manifest.content_security_policy = `script-src \'self\' http://localhost:${port}; object-src \'self\'`

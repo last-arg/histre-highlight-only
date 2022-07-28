@@ -7,10 +7,12 @@ console.log("==== LOAD 'content_script.js' TD ====")
 const prefix_local_id = "hle-local-";
 
 type ActionBar = HTMLDivElement;
-interface Window {
-  g: {
-    action_bar_elem?: HTMLDivElement
-  };
+declare global {
+  interface Window {
+    g: {
+      action_bar_elem?: HTMLDivElement
+    };
+  }
 }
 window.g = {
   action_bar_elem: undefined

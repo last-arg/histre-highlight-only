@@ -23,6 +23,7 @@ export default defineConfig({
       output: {
         entryFileNames: 'content_script.js',
         extend: true,
+        assetFileNames: "hho.[name].css",
       },
     },
   },

@@ -250,5 +250,16 @@ function initSelectionCode() {
   document.addEventListener("pointerup", handleMouseUp)
   // pointerdown = mousedown + touchstart
   document.addEventListener("pointerdown", deinitSelectionChange)
+
 }
 document.addEventListener("selectstart", initSelectionCode, {once: true})
+
+async function init() {
+  const r = await browser.runtime.sendMessage(
+    "addon@histre-highlight-only.com", 
+    {action: Action.Save},
+  )
+  console.log("r", r);
+}
+init();
+

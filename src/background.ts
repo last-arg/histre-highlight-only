@@ -1,4 +1,7 @@
 import { storage } from 'webextension-polyfill'
+import type { Runtime } from 'webextension-polyfill'
+import { Message, Action } from './common';
+
 console.log("==== LOAD ./dist/background.js ====")
 
 
@@ -225,6 +228,8 @@ const histre = (function createHistre() {
     return hl_resp.data;
   }
 
+  // Body response when invalid id is provided:
+  // Object { data: null, error: true, errcode: 400, errmsg: null, status: 200 }
   async function removeHighlight(id: string): Promise<boolean> {
     const body = JSON.stringify({highlight_id: id});
     const resp = await fetch(highlightUrl, { headers: headers, method: "DELETE", body: body });
@@ -260,7 +265,15 @@ const histre = (function createHistre() {
 // purple
 // red
 
+// TODO: on request (update, add, remove) failure store data locally
 
+// TODO: Remove highlight 
+// TODO: Update highlight 
+
+// TODO: Save highlight 
+// 1) Request to save new highlight
+// 2) Is valid token? Get new token
+// 3) Make request
 async function init() {
   // storage.local.clear();
   let curr_auth_data = await getLocalAuthData();
@@ -280,6 +293,7 @@ async function init() {
     return;
   }
   histre.setHeaderAuthToken(new_auth_data.token.access);
+  console.log("new_auth", new_auth_data)
 
   // {
   //   const hl = {
@@ -291,12 +305,48 @@ async function init() {
   //   const add = await histre.addHighlight(hl)
   //   console.log("add", add)
 
-  //   const rm = await histre.removeHighlight(add!.highlight_id)
+  //   // const rm = await histre.removeHighlight(add!.highlight_id)
+  //   const rm = await histre.removeHighlight("ddajk")
   //   console.log("remove", rm)
   // }
 }
 
 init();
+
+type SaveMessage = {id: string};
+type MessageReturn = SaveMessage | boolean
+
+browser.runtime.onMessage.addListener((msg: Message, sender: Runtime.MessageSender): undefined | Promise<MessageReturn> => {
+  let result: SaveMessage | boolean = false;
+  console.log(msg, sender);
+  console.log(Action.Update);
+  const url = sender.url;
+  switch (msg.action) {
+    case Action.Save: {
+      console.log("save")
+      // on success
+      result = {"id": "id_value"};
+      break;
+    }
+    case Action.Update: {
+      console.log("update")
+      break;
+    }
+    case Action.Delete: {
+      console.log("delete")
+      // on success
+      result = true;
+      break;
+    }
+    default: {
+      console.error(`Received unknown message '${msg}'`)
+      return;
+    }
+  }
+  return Promise.resolve(result);
+});
+
+
 
 // browser.runtime.openOptionsPage()
 // const bg_href = (await browser.runtime.getBackgroundPage()).location.href;

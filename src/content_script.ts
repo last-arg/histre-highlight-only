@@ -1,10 +1,16 @@
 import {Action} from './common';
+import './hho.css';
 console.log("==== LOAD 'content_script.js' TD ====")
+
+const isDev = true;
 
 // TODO: How to handle selection action bar (context menu) position with 
 // mobile native context menu?
 
-const prefix_local_id = "hle-local-";
+// TODO: fix clicking on context menu
+// TODO: fix context menu position
+
+const prefix_local_id = "hho-local-";
 
 type ActionBar = HTMLDivElement;
 declare global {
@@ -20,23 +26,89 @@ window.g = {
 
 const MIN_SELECTION_LEN = 3;
 
+// Histre colors
+enum Color { yellow, orange, green, blue, purple, red };
+
 function getActionBar(): ActionBar {
   if (!window.g?.action_bar_elem) {
+    document.querySelector(".hho-context-menu")?.remove();
     const container = document.createElement("div");
-    container.style.position = "absolute";
+    container.classList.add("hho-context-menu");
+    container.setAttribute("aria-hidden", "false");
     container.style.top = "0";
     container.style.left = "0";
-    const button = document.createElement("button");
-    button.type = "button";
-    button.addEventListener("click", saveSelection);
-    const button_text = document.createTextNode("Save selection");
-    button.appendChild(button_text);
-    container.appendChild(button);
+
+    const style = document.createElement("link");
+    style.rel = "stylesheet";
+    style.type = "text/css";
+    // Cache busting for dev mode
+    const css_version = isDev ? Date.now().toString() : "";
+    style.href = browser.runtime.getURL("./dist/assets/hho.style.css?v=" + css_version);
+    container.appendChild(style)
+
+    const base_button = document.createElement("button");
+    base_button.type = "button";
+    base_button.classList.add("hho-btn-color");
+
+    const base_button_text = document.createElement("span");
+    base_button_text.classList.add("sr-only");
+
+    let colors = Object.values(Color).filter((v) => isNaN(Number(v)));
+    for (let color of colors) {
+      const new_button = base_button.cloneNode(true) as HTMLButtonElement;
+      new_button.setAttribute("data-hho-color", color as string);
+      const text_elem = base_button_text.cloneNode(true);
+      text_elem.textContent = `Save highlight with ${color} color`;
+      new_button.appendChild(text_elem);
+      container.appendChild(new_button);
+    }
+
+    container.addEventListener("click", contextMenuClick);
     document.body.appendChild(container)
     window.g.action_bar_elem = container;
   }
 
   return window.g.action_bar_elem;
+}
+
+function contextMenuClick(e: Event) {
+  e.stopPropagation();
+  const elem = e.target as Element;
+  if (elem.classList.contains("hho-btn-color")) {
+    document.removeEventListener("selectionchange", debounceSelectionChange);
+    const sel_obj = window.getSelection();
+    if (!sel_obj) {
+      console.info("No selection to save");
+      return;
+    }
+    const len = sel_obj.toString().length;
+    if (len <= MIN_SELECTION_LEN || sel_obj.anchorNode === null) return;
+    const local_id = Math.random().toString(36).substring(2,10)
+    const local_class_id = `${prefix_local_id}-${local_id}`;
+    highlightSelectedText(sel_obj, local_class_id);
+    sel_obj.removeAllRanges();
+    getActionBar().setAttribute("aria-hidden", "true");
+
+    const color = elem.getAttribute("data-hho-color");
+    console.log("button click color: ", color)
+
+    // TODO: implement saving selection
+    // TODO: handle saving multiple selections
+
+    // TODO: Send selection to background
+    // const hl = await browser.runtime.sendMessage()
+    // will be added either to histre or local (if request failed)
+    // figure out how to display success and failure
+    // success: replace local ids with histre ids
+
+
+    // TODO: implement highlighting for multiselect text?
+    // for (let i = 0; i < sel_obj.rangeCount; i++) {
+    //   console.log(sel_obj.getRangeAt(i));
+    //   console.log(sel_obj.getRangeAt(i).toString());
+    // }
+
+  }
 }
 
 // NOTE: Not used at the moment. Use it if you need.
@@ -60,43 +132,11 @@ function selectionStartClientRect(sel_obj: Selection) {
   return box;
 }
 
-// TODO: implement saving selection
-// TODO: handle saving multiple selections
-function saveSelection(e: Event) {
-  e.stopPropagation();
-  document.removeEventListener("selectionchange", debounceSelectionChange);
-  const sel_obj = window.getSelection();
-  if (!sel_obj) {
-    console.info("No selection to save");
-    return;
-  }
-  const len = sel_obj.toString().length;
-  if (len <= MIN_SELECTION_LEN || sel_obj.anchorNode === null) return;
-  const local_id = Math.random().toString(36).substring(2,10)
-  const local_class_id = `${prefix_local_id}-${local_id}`;
-  highlightSelectedText(sel_obj, local_class_id);
-  sel_obj.removeAllRanges();
-  getActionBar().style.display = "none";
-
-  // TODO: Send selection to background
-  // const hl = await browser.runtime.sendMessage()
-  // will be added either to histre or local (if request failed)
-  // figure out how to display success and failure
-  // success: replace local ids with histre ids
-
-
-  // TODO: implement highlighting for multiselect text?
-  // for (let i = 0; i < sel_obj.rangeCount; i++) {
-  //   console.log(sel_obj.getRangeAt(i));
-  //   console.log(sel_obj.getRangeAt(i).toString());
-  // }
-}
-
 // Wrapping selected text with <mark>.
 // Selection doesn't start or end at edges of nodes.
 // Selection can contain children elements.
 const mark_elem = document.createElement("mark");
-mark_elem.classList.add("hle-mark");
+mark_elem.classList.add("hho-mark");
 
 function containsNonWhiteSpace(node: Node): number {
   if (node.textContent && /^\s*$/.test(node.textContent)) {
@@ -189,7 +229,7 @@ function handleMouseUp(e: MouseEvent | TouchEvent) {
   const action_bar = getActionBar();
   const action_bar_rect = action_bar.getBoundingClientRect();
   const new_pos = selectionNewPosition(sel_obj, action_bar_rect);
-  action_bar.style.display = "block";
+  action_bar.setAttribute("aria-hidden", "false");
   action_bar.style.top = `${new_pos.top}px`;
   action_bar.style.left = `${new_pos.left}px`;
   document.addEventListener("selectionchange", debounceSelectionChange);
@@ -241,7 +281,7 @@ function deinitSelectionChange(e: PointerEvent) {
   document.removeEventListener("selectionchange", debounceSelectionChange);
   e.stopPropagation();
   const action_bar = getActionBar();
-  if (e.target !== action_bar.querySelector("button")) action_bar.style.display = "none";
+  if (e.target !== action_bar.querySelector("button")) action_bar.setAttribute("aria-hidden", "true");
 }
 
 function initSelectionCode() {

@@ -50,7 +50,8 @@ export async function getManifest() {
       js: ['./dist/assets/content_script.js'],
     }],
     web_accessible_resources: [
-      './dist/assets/content_script.js'
+      './dist/assets/content_script.js',
+      './dist/assets/hho.style.css'
     ],
     browser_specific_settings: {
       gecko: {

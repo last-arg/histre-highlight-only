@@ -1,0 +1,54 @@
+.hho-context-menu {
+  position: absolute;
+  display: none;
+  padding: 10px;
+  border: 1px solid black;
+  background: white;
+  z-index: 999;
+}
+
+.hho-context-menu[aria-hidden="false"] {
+  display: flex;
+  gap: 10px;
+}
+
+.hho-btn-color {
+  width: 20px;
+  height: 20px;
+  display: block;
+}
+
+.hho-btn-color[data-hho-color="yellow"]{
+  background-color: #ffffba;
+}
+.hho-btn-color[data-hho-color="orange"]{
+  background-color: #ffdfba;
+
+}
+.hho-btn-color[data-hho-color="green"]{
+  background-color: #baffc9;
+
+}
+.hho-btn-color[data-hho-color="blue"]{
+  background-color: #bae1ff;
+
+}
+.hho-btn-color[data-hho-color="red"]{
+  background-color: #ffb3ba;
+
+}
+.hho-btn-color[data-hho-color="purple"]{
+  background-color: #e6cfff;
+}
+
+.sr-only {
+	position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}

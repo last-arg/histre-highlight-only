@@ -34,7 +34,6 @@ function getActionBar(): ActionBar {
     document.querySelector(".hho-context-menu")?.remove();
     const container = document.createElement("div");
     container.classList.add("hho-context-menu");
-    container.setAttribute("aria-hidden", "true");
     container.style.top = "0";
     container.style.left = "0";
 
@@ -72,10 +71,8 @@ function getActionBar(): ActionBar {
 }
 
 function contextMenuClick(e: Event) {
-  // e.stopPropagation();
   const elem = e.target as Element;
   if (elem.classList.contains("hho-btn-color")) {
-    console.log("save selection")
     const sel_obj = window.getSelection();
     if (!sel_obj || sel_obj.toString().length === 0) {
       console.info("No selection to save");
@@ -220,11 +217,7 @@ function highlightSelectedText(sel_obj: Selection, local_id: string) {
 }
 
 function selectionNewPosition(selection: Selection, action_bar_rect: DOMRect) {
-  console.log("rect", action_bar_rect)
-  console.log("selection", selection);
-  console.log("range", selection.getRangeAt(0));
   const box = selection.getRangeAt(0).getBoundingClientRect();
-  console.log("box", box)
   const top = box.top + window.pageYOffset - action_bar_rect.height;
   const left = box.left + window.pageXOffset + (box.width / 2) - (action_bar_rect.width / 2);
   return { top: top, left: left };
@@ -244,7 +237,6 @@ function debounce(f: any, delay: number) {
 }
 
 function selectionChange() {
-  console.log("selectionchange")
   const sel_obj = window.getSelection();
   if (!sel_obj || sel_obj?.toString().length === 0) {
     document.removeEventListener("selectionchange", selectionChangeListener);
@@ -255,10 +247,9 @@ function selectionChange() {
   const action_bar = getActionBar();
   const action_bar_rect = action_bar.getBoundingClientRect();
   const new_pos = selectionNewPosition(sel_obj, action_bar_rect);
-  console.log("new_pos", new_pos)
-  action_bar.setAttribute("aria-hidden", "false");
   action_bar.style.top = `${new_pos.top}px`;
   action_bar.style.left = `${new_pos.left}px`;
+  action_bar.setAttribute("aria-hidden", "false");
 }
 
 const selectionChangeListener = debounce(selectionChange, 100);

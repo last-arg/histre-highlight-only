@@ -220,7 +220,7 @@ function highlightSelectedText(sel_obj: Selection, local_id: string) {
   }
 }
 
-function handlePointerUp(e: MouseEvent | TouchEvent) {
+function handlePointerUp(e: PointerEvent) {
   console.log("Event: ", e.type)
   const sel_obj = window.getSelection();
   if (!sel_obj) { return; }

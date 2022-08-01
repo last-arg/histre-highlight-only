@@ -34,7 +34,7 @@ function getActionBar(): ActionBar {
     document.querySelector(".hho-context-menu")?.remove();
     const container = document.createElement("div");
     container.classList.add("hho-context-menu");
-    container.setAttribute("aria-hidden", "false");
+    container.setAttribute("aria-hidden", "true");
     container.style.top = "0";
     container.style.left = "0";
 
@@ -72,12 +72,12 @@ function getActionBar(): ActionBar {
 }
 
 function contextMenuClick(e: Event) {
-  e.stopPropagation();
+  // e.stopPropagation();
   const elem = e.target as Element;
   if (elem.classList.contains("hho-btn-color")) {
-    document.removeEventListener("selectionchange", debounceSelectionChange);
+    console.log("save selection")
     const sel_obj = window.getSelection();
-    if (!sel_obj) {
+    if (!sel_obj || sel_obj.toString().length === 0) {
       console.info("No selection to save");
       return;
     }
@@ -86,8 +86,7 @@ function contextMenuClick(e: Event) {
     const local_id = Math.random().toString(36).substring(2,10)
     const local_class_id = `${prefix_local_id}-${local_id}`;
     highlightSelectedText(sel_obj, local_class_id);
-    sel_obj.removeAllRanges();
-    getActionBar().setAttribute("aria-hidden", "true");
+    sel_obj.removeAllRanges(); // This fires 'selectionchange' event
 
     const color = elem.getAttribute("data-hho-color");
     console.log("button click color: ", color)
@@ -220,47 +219,15 @@ function highlightSelectedText(sel_obj: Selection, local_id: string) {
   }
 }
 
-function handlePointerUp(e: PointerEvent) {
-  console.log("Event: ", e.type)
-  const sel_obj = window.getSelection();
-  if (!sel_obj) { return; }
-  const len = sel_obj.toString().length;
-  if (len <= MIN_SELECTION_LEN || sel_obj.anchorNode === null) return;
-  const action_bar = getActionBar();
-  const action_bar_rect = action_bar.getBoundingClientRect();
-  const new_pos = selectionNewPosition(sel_obj, action_bar_rect);
-  action_bar.setAttribute("aria-hidden", "false");
-  action_bar.style.top = `${new_pos.top}px`;
-  action_bar.style.left = `${new_pos.left}px`;
-  document.addEventListener("selectionchange", debounceSelectionChange);
-}
-
 function selectionNewPosition(selection: Selection, action_bar_rect: DOMRect) {
+  console.log("rect", action_bar_rect)
+  console.log("selection", selection);
+  console.log("range", selection.getRangeAt(0));
   const box = selection.getRangeAt(0).getBoundingClientRect();
+  console.log("box", box)
   const top = box.top + window.pageYOffset - action_bar_rect.height;
   const left = box.left + window.pageXOffset + (box.width / 2) - (action_bar_rect.width / 2);
   return { top: top, left: left };
-}
-
-// Can change selection size with:
-// - touch device (most obvious)
-// - keyboard (ctrl [+ shift] + arrow_keys)
-// - mouse (ctrl/shift + mouse_click). 
-//   'ctrl' starts another selection. 'shift' extends existing selection.
-function initSelectionChange(e: Event) {
-  console.log("Event: ", e.type)
-  const sel_obj = window.getSelection();
-  if (!sel_obj) {
-    console.info("No selection to save");
-    return;
-  }
-  const action_bar = getActionBar();
-  const action_bar_rect = action_bar.getBoundingClientRect();
-  const new_pos = selectionNewPosition(sel_obj, action_bar_rect);
-  if (new_pos.top != action_bar_rect.top) {
-    action_bar.style.top = `${new_pos.top}px`;
-    action_bar.style.left = `${new_pos.left}px`;
-  }
 }
 
 function debounce(f: any, delay: number) {
@@ -276,31 +243,64 @@ function debounce(f: any, delay: number) {
   }
 }
 
-const debounceSelectionChange = debounce(initSelectionChange, 100);
-function deinitSelectionChange(e: PointerEvent) {
-  document.removeEventListener("selectionchange", debounceSelectionChange);
-  e.stopPropagation();
+function selectionChange() {
+  console.log("selectionchange")
+  const sel_obj = window.getSelection();
+  if (!sel_obj || sel_obj?.toString().length === 0) {
+    document.removeEventListener("selectionchange", selectionChangeListener);
+    getActionBar().setAttribute("aria-hidden", "true");
+    return;
+  }
+  if (sel_obj.toString().length <= MIN_SELECTION_LEN || sel_obj.anchorNode === null) return;
   const action_bar = getActionBar();
-  if (e.target !== action_bar.querySelector("button")) action_bar.setAttribute("aria-hidden", "true");
+  const action_bar_rect = action_bar.getBoundingClientRect();
+  const new_pos = selectionNewPosition(sel_obj, action_bar_rect);
+  console.log("new_pos", new_pos)
+  action_bar.setAttribute("aria-hidden", "false");
+  action_bar.style.top = `${new_pos.top}px`;
+  action_bar.style.left = `${new_pos.left}px`;
 }
 
-function initSelectionCode() {
+const selectionChangeListener = debounce(selectionChange, 100);
+
+// Experiment(s):
+// Tried to start listening 'selectionchange' event after 'pointerup' event, 
+// but keyboard might be used to fire 'selectstart' event.
+//
+// Can change selection size with:
+// - touch device (most obvious)
+// - keyboard (ctrl [+ shift] + arrow_keys)
+// - mouse (ctrl/shift + mouse_click). 
+//   'ctrl' starts another selection. 'shift' extends existing selection.
+function startSelection(e: any) {
   console.log("Event(init): selectstart")
-  getActionBar();
-  // pointerup = mouseup + touchend
-  document.addEventListener("pointerup", handlePointerUp)
-  // pointerdown = mousedown + touchstart
-  document.addEventListener("pointerdown", deinitSelectionChange)
 
-}
-document.addEventListener("selectstart", initSelectionCode, {once: true})
+  let hasSelectionChangeListener = false;
+  document.addEventListener("pointerup", () => {
+    selectionChange();
+    document.addEventListener("selectionchange", selectionChangeListener)
+    hasSelectionChangeListener = true;
+  }, {once: true});
 
-async function init() {
-  const r = await browser.runtime.sendMessage(
-    "addon@histre-highlight-only.com", 
-    {action: Action.Save},
-  )
-  console.log("r", r);
+  // If keyboard is used to start selection
+  document.addEventListener("keyup", (e: KeyboardEvent) => {
+    if (hasSelectionChangeListener) return;
+    if (e.shiftKey && [37, 38, 39, 40].some((val) => val === e.which)) {
+      selectionChange();
+      document.addEventListener("selectionchange", selectionChangeListener)
+    }
+  }, {once: true})
 }
-init();
+
+getActionBar();
+document.addEventListener("selectstart", startSelection)
+
+// async function init() {
+//   const r = await browser.runtime.sendMessage(
+//     "addon@histre-highlight-only.com", 
+//     {action: Action.Save},
+//   )
+//   console.log("r", r);
+// }
+// init();
 

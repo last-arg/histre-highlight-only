@@ -1,14 +1,16 @@
 .hho-context-menu {
   position: absolute;
-  display: none;
+  display: flex;
+  visibility: hidden;
   padding: 10px;
-  border: 1px solid black;
   background: white;
   z-index: 999;
+  box-shadow: 0px 0px 8px hsla(0, 0%, 0%, 40%);
+  border-radius: 3px;
 }
 
 .hho-context-menu[aria-hidden="false"] {
-  display: flex;
+  visibility: visible;
   gap: 10px;
 }
 

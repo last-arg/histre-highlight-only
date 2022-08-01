@@ -16,7 +16,7 @@ type ActionBar = HTMLDivElement;
 declare global {
   interface Window {
     g: {
-      action_bar_elem?: HTMLDivElement
+      action_bar_elem?: ActionBar
     };
   }
 }
@@ -65,7 +65,7 @@ function getActionBar(): ActionBar {
 
     container.addEventListener("click", contextMenuClick);
     document.body.appendChild(container)
-    window.g.action_bar_elem = container;
+    window.g.action_bar_elem = document.querySelector(".hho-context-menu") as HTMLDivElement;
   }
 
   return window.g.action_bar_elem;
@@ -220,7 +220,7 @@ function highlightSelectedText(sel_obj: Selection, local_id: string) {
   }
 }
 
-function handleMouseUp(e: MouseEvent | TouchEvent) {
+function handlePointerUp(e: MouseEvent | TouchEvent) {
   console.log("Event: ", e.type)
   const sel_obj = window.getSelection();
   if (!sel_obj) { return; }
@@ -286,8 +286,9 @@ function deinitSelectionChange(e: PointerEvent) {
 
 function initSelectionCode() {
   console.log("Event(init): selectstart")
+  getActionBar();
   // pointerup = mouseup + touchend
-  document.addEventListener("pointerup", handleMouseUp)
+  document.addEventListener("pointerup", handlePointerUp)
   // pointerdown = mousedown + touchstart
   document.addEventListener("pointerdown", deinitSelectionChange)
 

@@ -10,7 +10,7 @@ const isDev = true;
 // TODO: fix clicking on context menu
 // TODO: fix context menu position
 
-const prefix_local_id = "hho-local-";
+const prefix_local_id = "hho-local";
 
 type ActionBar = HTMLDivElement;
 declare global {
@@ -71,6 +71,7 @@ function getActionBar(): ActionBar {
 }
 
 function contextMenuClick(e: Event) {
+  console.log("save")
   const elem = e.target as Element;
   if (elem.classList.contains("hho-btn-color")) {
     const sel_obj = window.getSelection();
@@ -82,11 +83,11 @@ function contextMenuClick(e: Event) {
     if (len <= MIN_SELECTION_LEN || sel_obj.anchorNode === null) return;
     const local_id = Math.random().toString(36).substring(2,10)
     const local_class_id = `${prefix_local_id}-${local_id}`;
-    highlightSelectedText(sel_obj, local_class_id);
+    const color = elem.getAttribute("data-hho-color") || "yellow";
+    console.log("button click color: ", color)
+    highlightSelectedText(sel_obj, color, local_class_id);
     sel_obj.removeAllRanges(); // This fires 'selectionchange' event
 
-    const color = elem.getAttribute("data-hho-color");
-    console.log("button click color: ", color)
 
     // TODO: implement saving selection
     // TODO: handle saving multiple selections
@@ -141,7 +142,7 @@ function containsNonWhiteSpace(node: Node): number {
   return NodeFilter.FILTER_ACCEPT
 }
 
-function highlightSelectedText(sel_obj: Selection, local_id: string) {
+function highlightSelectedText(sel_obj: Selection, color: string, local_id: string) {
   const r = sel_obj.getRangeAt(0);
 
   let start_container: Node | null = r.startContainer;
@@ -210,8 +211,9 @@ function highlightSelectedText(sel_obj: Selection, local_id: string) {
   let tmp_range = document.createRange();
   for (let node of valid_nodes) {
     tmp_range.selectNode(node);
-    const new_mark = mark_elem.cloneNode(true);
-    (new_mark as Element).classList.add(local_id);
+    const new_mark = mark_elem.cloneNode(true) as Element;
+    new_mark.classList.add(local_id);
+    new_mark.setAttribute("data-hho-color", color);
     tmp_range.surroundContents(new_mark);
   }
 }

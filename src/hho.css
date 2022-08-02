@@ -22,26 +22,32 @@
   height: 20px;
 }
 
-.hho-btn-color[data-hho-color="yellow"]{
+.hho-mark[data-hho-color="yellow"],
+.hho-btn-color[data-hho-color="yellow"] {
   background-color: #ffffba;
 }
-.hho-btn-color[data-hho-color="orange"]{
+.hho-mark[data-hho-color="orange"],
+.hho-btn-color[data-hho-color="orange"] {
   background-color: #ffdfba;
 
 }
-.hho-btn-color[data-hho-color="green"]{
+.hho-mark[data-hho-color="green"],
+.hho-btn-color[data-hho-color="green"] {
   background-color: #baffc9;
 
 }
-.hho-btn-color[data-hho-color="blue"]{
+.hho-mark[data-hho-color="blue"],
+.hho-btn-color[data-hho-color="blue"] {
   background-color: #bae1ff;
 
 }
-.hho-btn-color[data-hho-color="red"]{
+.hho-mark[data-hho-color="red"],
+.hho-btn-color[data-hho-color="red"] {
   background-color: #ffb3ba;
 
 }
-.hho-btn-color[data-hho-color="purple"]{
+.hho-mark[data-hho-color="purple"],
+.hho-btn-color[data-hho-color="purple"] {
   background-color: #e6cfff;
 }
 

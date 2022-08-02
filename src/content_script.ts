@@ -67,23 +67,34 @@ function getContextMenu(): ContextMenu {
   return window.g.context_menu_elem;
 }
 
-function contextMenuClick(e: Event) {
+async function contextMenuClick(e: Event) {
   console.log("save")
   const elem = e.target as Element;
   if (elem.classList.contains("hho-btn-color")) {
     const sel_obj = window.getSelection();
-    if (!sel_obj || sel_obj.toString().length === 0) {
+    const sel_string = sel_obj?.toString() || "";
+    if (!sel_obj || sel_string.length === 0) {
       console.info("No selection to save");
       return;
     }
-    const len = sel_obj.toString().length;
-    if (len <= MIN_SELECTION_LEN || sel_obj.anchorNode === null) return;
+    if (sel_string.length <= MIN_SELECTION_LEN || sel_obj.anchorNode === null) return;
     const local_id = Math.random().toString(36).substring(2,10)
     const local_class_id = `${prefix_local_id}-${local_id}`;
     const color = elem.getAttribute("data-hho-color") || "yellow";
     console.log("button click color: ", color)
     highlightSelectedText(sel_obj, color, local_class_id);
+    const data = { text: sel_string, color: color, local_id: local_class_id };
     sel_obj.removeAllRanges(); // This fires 'selectionchange' event
+    const result = await browser.runtime.sendMessage(
+      "addon@histre-highlight-only.com", 
+      { action: Action.Save , data: data },
+    )
+    if (!result) {
+      console.error("Failed to save highlight to Histre or local storage");
+      return;
+    }
+    console.log("r", result);
+
 
 
     // TODO: implement saving selection

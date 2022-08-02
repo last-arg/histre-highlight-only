@@ -7,21 +7,18 @@ const isDev = true;
 // TODO: How to handle selection action bar (context menu) position with 
 // mobile native context menu?
 
-// TODO: fix clicking on context menu
-// TODO: fix context menu position
-
 const prefix_local_id = "hho-local";
 
-type ActionBar = HTMLDivElement;
+type ContextMenu = HTMLDivElement;
 declare global {
   interface Window {
     g: {
-      action_bar_elem?: ActionBar
+      context_menu_elem?: ContextMenu
     };
   }
 }
 window.g = {
-  action_bar_elem: undefined
+  context_menu_elem: undefined
 };
 
 const MIN_SELECTION_LEN = 3;
@@ -29,8 +26,8 @@ const MIN_SELECTION_LEN = 3;
 // Histre colors
 enum Color { yellow, orange, green, blue, purple, red };
 
-function getActionBar(): ActionBar {
-  if (!window.g?.action_bar_elem) {
+function getContextMenu(): ContextMenu {
+  if (!window.g?.context_menu_elem) {
     document.querySelector(".hho-context-menu")?.remove();
     const container = document.createElement("div");
     container.classList.add("hho-context-menu");
@@ -64,10 +61,10 @@ function getActionBar(): ActionBar {
 
     container.addEventListener("click", contextMenuClick);
     document.body.appendChild(container)
-    window.g.action_bar_elem = document.querySelector(".hho-context-menu") as HTMLDivElement;
+    window.g.context_menu_elem = document.querySelector(".hho-context-menu") as HTMLDivElement;
   }
 
-  return window.g.action_bar_elem;
+  return window.g.context_menu_elem;
 }
 
 function contextMenuClick(e: Event) {
@@ -218,10 +215,10 @@ function highlightSelectedText(sel_obj: Selection, color: string, local_id: stri
   }
 }
 
-function selectionNewPosition(selection: Selection, action_bar_rect: DOMRect) {
+function selectionNewPosition(selection: Selection, context_menu_rect: DOMRect) {
   const box = selection.getRangeAt(0).getBoundingClientRect();
-  const top = box.top + window.pageYOffset - action_bar_rect.height;
-  const left = box.left + window.pageXOffset + (box.width / 2) - (action_bar_rect.width / 2);
+  const top = box.top + window.pageYOffset - context_menu_rect.height;
+  const left = box.left + window.pageXOffset + (box.width / 2) - (context_menu_rect.width / 2);
   return { top: top, left: left };
 }
 
@@ -242,16 +239,16 @@ function selectionChange() {
   const sel_obj = window.getSelection();
   if (!sel_obj || sel_obj?.toString().length === 0) {
     document.removeEventListener("selectionchange", selectionChangeListener);
-    getActionBar().setAttribute("aria-hidden", "true");
+    getContextMenu().setAttribute("aria-hidden", "true");
     return;
   }
   if (sel_obj.toString().length <= MIN_SELECTION_LEN || sel_obj.anchorNode === null) return;
-  const action_bar = getActionBar();
-  const action_bar_rect = action_bar.getBoundingClientRect();
-  const new_pos = selectionNewPosition(sel_obj, action_bar_rect);
-  action_bar.style.top = `${new_pos.top}px`;
-  action_bar.style.left = `${new_pos.left}px`;
-  action_bar.setAttribute("aria-hidden", "false");
+  const context_menu = getContextMenu();
+  const context_menu_rect = context_menu.getBoundingClientRect();
+  const new_pos = selectionNewPosition(sel_obj, context_menu_rect);
+  context_menu.style.top = `${new_pos.top}px`;
+  context_menu.style.left = `${new_pos.left}px`;
+  context_menu.setAttribute("aria-hidden", "false");
 }
 
 const selectionChangeListener = debounce(selectionChange, 100);
@@ -285,7 +282,7 @@ function startSelection(e: any) {
   }, {once: true})
 }
 
-getActionBar();
+getContextMenu();
 document.addEventListener("selectstart", startSelection)
 
 // async function init() {

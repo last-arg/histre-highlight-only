@@ -257,14 +257,6 @@ const histre = (function createHistre() {
   };
 })();
 
-// Histre colors
-// yellow
-// orange
-// green
-// blue
-// purple
-// red
-
 // TODO: on request (update, add, remove) failure store data locally
 
 // TODO: Remove highlight 
@@ -311,42 +303,73 @@ async function init() {
   // }
 }
 
-init();
+// init();
 
 type SaveMessage = {id: string};
-type MessageReturn = SaveMessage | boolean
+type MessageReturn = SaveMessage | boolean | undefined;
 
+// Highlights in local storage use cases: 
+// 1. Save highlights to Histre
+// 2. Highlight page text
+// 3. Delete highlight
+//    If local id remove it from 'highlight.save'
+// 4. Update highlight color. 
+//    If local id change object in 'highlight.save.<local_id>.color'
+// {
+//   highlights_add: {
+//       <local_id>: HighlighAdd
+//   },
+//   highlights_update: {
+//     <id>: color
+//   },
+//   highlights_remove: [<id>],
+// }
 browser.runtime.onMessage.addListener((msg: Message, sender: Runtime.MessageSender): undefined | Promise<MessageReturn> => {
-  let result: SaveMessage | boolean = false;
   console.log(msg, sender);
-  console.log(Action.Update);
-  const url = sender.url;
+  // TODO: do histre requests, if fails save to storage local
   switch (msg.action) {
     case Action.Save: {
-      console.log("save")
-      // on success
-      result = {"id": "id_value"};
-      break;
+      console.log("save", msg.data.local_id)
+      return new Promise(async (resolve) => {
+        const hl_add: HighlightAdd = {
+          title: sender.tab?.title || "",
+          url: sender.tab?.url || "",
+          text: msg.data.text,
+          color: msg.data.color,
+        };
+        let local = await storage.local.get({highlights_add: {}});
+        local.highlights_add[msg.data.local_id] = hl_add;
+        await storage.local.set(local);
+        resolve(true);
+      });
     }
     case Action.Update: {
       console.log("update")
-      break;
+      return new Promise(async (resolve) => {
+        let local = await storage.local.get({highlights_update: {}});
+        local.highlights_update[msg.data.local_id] = msg.data.color;
+        await storage.local.set(local);
+        resolve(true);
+      });
     }
-    case Action.Delete: {
+    case Action.Remove: {
       console.log("delete")
-      // on success
-      result = true;
-      break;
+      return new Promise(async (resolve) => {
+        let local = await storage.local.get({highlights_remove: []});
+        local.highlights_remove.push(msg.data.id);
+        await storage.local.set(local);
+        resolve(true);
+      });
     }
     default: {
       console.error(`Received unknown message '${msg}'`)
       return;
     }
   }
-  return Promise.resolve(result);
+  return undefined;
 });
 
-
+// console.log(browser.runtime.getURL("/"))
 
 // browser.runtime.openOptionsPage()
 // const bg_href = (await browser.runtime.getBackgroundPage()).location.href;

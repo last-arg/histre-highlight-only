@@ -285,12 +285,35 @@ function startSelection(e: any) {
 getContextMenu();
 document.addEventListener("selectstart", startSelection)
 
-// async function init() {
-//   const r = await browser.runtime.sendMessage(
-//     "addon@histre-highlight-only.com", 
-//     {action: Action.Save},
-//   )
-//   console.log("r", r);
-// }
-// init();
+async function init() {
+  const result = await browser.runtime.sendMessage(
+    "addon@histre-highlight-only.com", 
+    { action: Action.Save
+    , data: { text: "my highlight text", color: "yellow", local_id: `${prefix_local_id}-s8a9asd`}
+    },
+  )
+  if (result) {
+    console.error("Failed to save highlight to Histre or local storage");
+  }
+  console.log("r", result);
+
+  const update = await browser.runtime.sendMessage(
+    "addon@histre-highlight-only.com", 
+    { action: Action.Update
+    , data: { color: "blue", local_id: `${prefix_local_id}-s8a9asd`}
+    },
+  )
+  console.log("update", update);
+
+  const remove = await browser.runtime.sendMessage(
+    "addon@histre-highlight-only.com", 
+    { action: Action.Remove
+    , data: { id: `${prefix_local_id}-remove`}
+    },
+  )
+  console.log("remove", remove);
+
+
+}
+init();
 

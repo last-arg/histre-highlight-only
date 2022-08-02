@@ -146,7 +146,9 @@ function highlightSelectedText(sel_obj: Selection, color: string, local_id: stri
   let end_container: Node | null = r.endContainer;
 
   if (end_container == start_container) {
-    r.surroundContents(mark_elem.cloneNode(true))
+    const new_mark = mark_elem.cloneNode(true) as Element;
+    new_mark.setAttribute("data-hho-color", color);
+    r.surroundContents(new_mark);
     return;
   }
 

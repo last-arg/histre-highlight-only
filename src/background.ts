@@ -1,6 +1,6 @@
 import { storage } from 'webextension-polyfill'
 import type { Runtime } from 'webextension-polyfill'
-import { Message, Action } from './common';
+import { Message, Action, HighlightAdd } from './common';
 
 console.log("==== LOAD ./dist/background.js ====")
 
@@ -24,14 +24,6 @@ interface AuthData {
 type AuthResp = HistreResp<Required<AuthData>>;
 type AuthDataTime = { token: AuthData, created_at: number};
 
-interface HighlightAdd {
-  url: string,
-  title: string,
-  text: string,
-  color?: string
-  // tweet (Boolean): optional
-  // extra (Object): optional
-}
 type HighlightData = {highlight_id: string, highlight_link: string};
 type HighlightResp = HistreResp<HighlightData>;
 

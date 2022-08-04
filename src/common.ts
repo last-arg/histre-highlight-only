@@ -11,4 +11,12 @@ export interface Message {
   data: any,
 }
 
+export interface HighlightAdd {
+  url: string,
+  title: string,
+  text: string,
+  color?: string
+  // tweet (Boolean): optional
+  // extra (Object): optional
+}
 

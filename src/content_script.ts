@@ -360,11 +360,20 @@ function checkNodesForMatch(iter: any, start_node: Node | null, value_text: stri
   return result;
 }
 
+const ignore_node_names = ["SCRIPT", "STYLE"];
+function nodeIteratorFilter(node: Node) {
+  if (node.parentNode && ignore_node_names.includes(node.parentNode.nodeName)) {
+    return NodeFilter.FILTER_REJECT;
+  }
+  return NodeFilter.FILTER_ACCEPT
+
+}
+
 function testIterHighlight(current_highlights: [string, HighlightAdd][]) {
   const in_nodes = new Map<HighlightId, InNode>();
   const start_end_nodes = new Map<HighlightId, HighlightStartEnd>();
   const whole_nodes: HighlightWholeNode = new Map();
-  const iter = document.createNodeIterator(document.body, NodeFilter.SHOW_TEXT, null)
+  const iter = document.createNodeIterator(document.body, NodeFilter.SHOW_TEXT, nodeIteratorFilter)
   let currentNode: Node | null = null;
   let debug_count = 0;
   while (currentNode = iter.nextNode()) {

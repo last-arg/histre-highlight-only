@@ -307,20 +307,21 @@ async function renderLocalHighlights(current_url: string) {
     .filter(([_, value]) => value.url === current_url);
   if (current_highlights.length === 0) { return; }
 
-  {
-    const iter_time_start = performance.now();
-    const result = testIterHighlight(current_highlights);
-    const iter_time_end = performance.now();
-    console.log(result);
-    console.log(`time (outer iter): ${iter_time_end - iter_time_start}ms`)
-  }
-
   // {
   //   const iter_time_start = performance.now();
-  //   testHighlightIter(current_highlights);
+  //   const result = testIterHighlight(current_highlights);
   //   const iter_time_end = performance.now();
-  //   console.log(`time (inner iter): ${iter_time_end - iter_time_start}ms`)
-  // } 
+  //   console.log(result);
+  //   console.log(`time (outer iter): ${iter_time_end - iter_time_start}ms`)
+  // }
+
+  {
+    const iter_time_start = performance.now();
+    const result = testHighlightIter(current_highlights);
+    const iter_time_end = performance.now();
+    console.log(result);
+    console.log(`time (inner iter): ${iter_time_end - iter_time_start}ms`)
+  } 
 }
 
 type HighlightId = string;
@@ -487,7 +488,122 @@ function addWholeNodes(key: string, nodes: Node[], whole_nodes: any) {
 }
 
 function testHighlightIter(current_highlights: [string, HighlightAdd][]) {
-  //
+  const in_nodes = new Map<HighlightId, InNode>();
+  const start_end_nodes = new Map<HighlightId, HighlightStartEnd>();
+  const whole_nodes: HighlightWholeNode = new Map();
+  for (const hl of current_highlights) {
+    const key = hl[0];
+    const value = hl[1];
+
+    const iter = document.createNodeIterator(document.body, NodeFilter.SHOW_TEXT, null)
+    let currentNode: Node | null = null;
+    let debug_count = 0;
+    while (currentNode = iter.nextNode()) {
+      let current_text = currentNode.textContent;
+      if (!current_text) { continue; }
+      {
+        if (debug_count === 1000) {
+          console.error("exceeded debug count")
+          break;
+        }
+        debug_count += 1;
+      }
+
+
+      if (current_text.length >= value.text.length) {
+        // Simple case when highlighted text is inside one text node
+        let found_highlights = false;
+        let splits = [];
+        let value_index = current_text.indexOf(value.text, 0);
+        while (value_index !== -1) {
+          splits.push(value_index);
+          found_highlights = true;
+          const position = value_index + value.text.length;
+          // console.log(current_text.slice(value_index, position))
+          value_index = current_text.indexOf(value.text, position);
+        }
+
+        if (found_highlights) {
+          in_nodes.set(key, 
+            { node: currentNode, indices: splits, length: value.text.length, color: value.color! })
+        }
+      }
+
+      // Highlighted text encompasses several text nodes.
+      if (current_text.length > value.text.length) {
+        // Check if current_text ends with any value.text start substr
+        let position = current_text.length - value.text.length + 1;
+        let value_index = current_text.indexOf(value.text[0], position)
+        // console.log("NEW")
+        while (value_index !== -1) {
+          position = value_index + 1;
+          const end_index = current_text.length - position + 1;
+          const possible_end = value.text.slice(1, end_index);
+          if (current_text.endsWith(possible_end)) {
+            const anchor_node = iter.nextNode();
+            const match = checkNodesForMatch(iter, anchor_node, value.text, possible_end.length + 1);
+
+            if (match.end_node) {
+              const start_end: HighlightStartEnd = {
+                start: { index: current_text.length - match.index + 1, node: currentNode },
+                end: match.end_node,
+                color: value.color || "yellow",
+              }
+              start_end_nodes.set(key, start_end)
+              console.assert(
+                value.text == 
+                (start_end.start.node.textContent!.slice(start_end.start.index) +
+                 match.hls.reduce((prev, curr) => prev + curr.textContent, "") +
+                 start_end.end.node.textContent!.slice(0, start_end.end.index)),
+                "Found highlight content doesn't match"
+              );
+              addWholeNodes(key, match.hls, whole_nodes);
+            } else {
+              // console.log("restore anchor node")
+              while (anchor_node !== iter.previousNode()) {}
+            }
+
+          }
+          value_index = current_text.indexOf(value.text[0], position)
+        }
+        // "node text longer" > "noger"
+      } else {
+        let value_index = current_text.indexOf(value.text[0], 0)
+        while (value_index !== -1) {
+          const end_index = Math.min(value.text.length, current_text.length - value_index);
+          const possible_end = value.text.slice(1, end_index);
+
+          if (current_text.endsWith(possible_end)) {
+            const anchor_node = iter.nextNode();
+            const match = checkNodesForMatch(iter, anchor_node, value.text, possible_end.length + 1);
+
+            if (match.end_node) {
+              const start_end: HighlightStartEnd = {
+                start: { index: current_text.length - end_index, node: currentNode },
+                end: match.end_node,
+                color: value.color || "yellow"
+              };
+              start_end_nodes.set(key, start_end)
+              console.assert(
+                value.text == 
+                (start_end.start.node.textContent!.slice(start_end.start.index) +
+                 match.hls.reduce((prev, curr) => prev + curr.textContent, "") +
+                 start_end.end.node.textContent!.slice(0, start_end.end.index)),
+                "Found highlight content doesn't match"
+              );
+              addWholeNodes(key, match.hls, whole_nodes);
+            } else {
+              while (anchor_node !== iter.previousNode()) {}
+            }
+          }
+          value_index = current_text.indexOf(value.text[0], value_index + 1)
+        }
+      }
+    }
+  }
+
+  return { in_nodes, start_end_nodes, whole_nodes };
+
 }
 
 renderLocalHighlights("https://en.wikipedia.org/wiki/Program");

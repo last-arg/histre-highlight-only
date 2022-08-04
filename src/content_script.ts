@@ -307,13 +307,13 @@ async function renderLocalHighlights(current_url: string) {
     .filter(([_, value]) => value.url === current_url);
   if (current_highlights.length === 0) { return; }
 
-  // {
-  //   const iter_time_start = performance.now();
-  //   const result = testIterHighlight(current_highlights);
-  //   const iter_time_end = performance.now();
-  //   console.log(result);
-  //   console.log(`time (outer iter): ${iter_time_end - iter_time_start}ms`)
-  // }
+  {
+    const iter_time_start = performance.now();
+    const result = testIterHighlight(current_highlights);
+    const iter_time_end = performance.now();
+    console.log(result);
+    console.log(`time (outer iter): ${iter_time_end - iter_time_start}ms`)
+  }
 
   {
     const iter_time_start = performance.now();
@@ -333,9 +333,9 @@ type StartOrEndNode = { index: number, node: Node };
 type HighlightStartEnd = {start: StartOrEndNode, end: StartOrEndNode, color: HighlightColor};
 type HighlightWholeNode = Map<HighlightId, Node[]>;
 
-function checkNodesForMatch(iter: any, start_node: Node | null, value_text: string, value_start_index: number) {
+function checkNodesForMatch(iter: any, start_node: Node, value_text: string, value_start_index: number) {
   let result: { end_node: StartOrEndNode | undefined, hls: Node[], index: number } = { end_node: undefined, hls: [], index: value_start_index };
-  let next_node = start_node;
+  let next_node: Node | null = start_node;
   while (next_node) {
     if (!next_node.textContent) { 
       next_node = iter.nextNode();
@@ -386,6 +386,12 @@ function testIterHighlight(current_highlights: [string, HighlightAdd][]) {
       }
       debug_count += 1;
     }
+    if (current_text.trim().length === 0) continue
+    // TODO: skip empty nodes?
+    // console.log(current_text);
+    // if (current_text === "Edit preview settings") {
+    //   console.log("last", iter.nextNode())
+    // }
 
     for (const hl of current_highlights) {
       const key = hl[0];
@@ -412,6 +418,7 @@ function testIterHighlight(current_highlights: [string, HighlightAdd][]) {
 
       // Highlighted text encompasses several text nodes.
       if (current_text.length > value.text.length) {
+        // TODO: this code causes infinite loop in NodeIterator
         // Check if current_text ends with any value.text start substr
         let position = current_text.length - value.text.length + 1;
         let value_index = current_text.indexOf(value.text[0], position)
@@ -422,6 +429,7 @@ function testIterHighlight(current_highlights: [string, HighlightAdd][]) {
           const possible_end = value.text.slice(1, end_index);
           if (current_text.endsWith(possible_end)) {
             const anchor_node = iter.nextNode();
+            if (!anchor_node) break;
             const match = checkNodesForMatch(iter, anchor_node, value.text, possible_end.length + 1);
 
             if (match.end_node) {
@@ -440,7 +448,6 @@ function testIterHighlight(current_highlights: [string, HighlightAdd][]) {
               );
               addWholeNodes(key, match.hls, whole_nodes);
             } else {
-              // console.log("restore anchor node")
               while (anchor_node !== iter.previousNode()) {}
             }
 
@@ -456,6 +463,7 @@ function testIterHighlight(current_highlights: [string, HighlightAdd][]) {
 
           if (current_text.endsWith(possible_end)) {
             const anchor_node = iter.nextNode();
+            if (!anchor_node) break;
             const match = checkNodesForMatch(iter, anchor_node, value.text, possible_end.length + 1);
 
             if (match.end_node) {
@@ -511,7 +519,7 @@ function testHighlightIter(current_highlights: [string, HighlightAdd][]) {
       let current_text = currentNode.textContent;
       if (!current_text) { continue; }
       {
-        if (debug_count === 1000) {
+        if (debug_count === 2000) {
           console.error("exceeded debug count")
           break;
         }
@@ -550,6 +558,7 @@ function testHighlightIter(current_highlights: [string, HighlightAdd][]) {
           const possible_end = value.text.slice(1, end_index);
           if (current_text.endsWith(possible_end)) {
             const anchor_node = iter.nextNode();
+            if (!anchor_node) break;
             const match = checkNodesForMatch(iter, anchor_node, value.text, possible_end.length + 1);
 
             if (match.end_node) {
@@ -584,6 +593,7 @@ function testHighlightIter(current_highlights: [string, HighlightAdd][]) {
 
           if (current_text.endsWith(possible_end)) {
             const anchor_node = iter.nextNode();
+            if (!anchor_node) break;
             const match = checkNodesForMatch(iter, anchor_node, value.text, possible_end.length + 1);
 
             if (match.end_node) {

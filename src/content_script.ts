@@ -84,6 +84,7 @@ async function contextMenuClick(e: Event) {
     const color = elem.getAttribute("data-hho-color") || "yellow";
     console.log("button click color: ", color)
     highlightSelectedText(sel_obj, color, local_class_id);
+    // TODO: trim sel_string? Here or before MIN_SELECTION_LEN check?
     const data = { text: sel_string, color: color, local_id: local_class_id };
     sel_obj.removeAllRanges(); // This fires 'selectionchange' event
     const result = await browser.runtime.sendMessage(
@@ -299,30 +300,6 @@ function startSelection(e: any) {
 getContextMenu();
 document.addEventListener("selectstart", startSelection)
 
-async function renderLocalHighlights(current_url: string) {
-  console.log("==== renderLocalHighlights() ====")
-  const local = await storage.local.get({highlights_add: undefined});
-  if (!local.highlights_add) { return; }
-  const current_highlights = Object.entries<HighlightAdd>(local.highlights_add)
-    .filter(([_, value]) => value.url === current_url);
-  if (current_highlights.length === 0) { return; }
-
-  {
-    const iter_time_start = performance.now();
-    const result = testIterHighlight(current_highlights);
-    const iter_time_end = performance.now();
-    console.log(result);
-    console.log(`time (outer iter): ${iter_time_end - iter_time_start}ms`)
-  }
-
-  {
-    const iter_time_start = performance.now();
-    const result = testHighlightIter(current_highlights);
-    const iter_time_end = performance.now();
-    console.log(result);
-    console.log(`time (inner iter): ${iter_time_end - iter_time_start}ms`)
-  } 
-}
 
 type HighlightId = string;
 type HighlightColor = string;
@@ -361,7 +338,7 @@ function checkNodesForMatch(iter: any, start_node: Node, value_text: string, val
 }
 
 const ignore_node_names = ["SCRIPT", "STYLE"];
-function nodeIteratorFilter(node: Node) {
+function isNonVisibleTag(node: Node) {
   if (node.parentNode && ignore_node_names.includes(node.parentNode.nodeName)) {
     return NodeFilter.FILTER_REJECT;
   }
@@ -373,7 +350,7 @@ function testIterHighlight(current_highlights: [string, HighlightAdd][]) {
   const in_nodes = new Map<HighlightId, InNode>();
   const start_end_nodes = new Map<HighlightId, HighlightStartEnd>();
   const whole_nodes: HighlightWholeNode = new Map();
-  const iter = document.createNodeIterator(document.body, NodeFilter.SHOW_TEXT, nodeIteratorFilter)
+  const iter = document.createNodeIterator(document.body, NodeFilter.SHOW_TEXT, isNonVisibleTag)
   let currentNode: Node | null = null;
   let debug_count = 0;
   while (currentNode = iter.nextNode()) {
@@ -386,12 +363,10 @@ function testIterHighlight(current_highlights: [string, HighlightAdd][]) {
       }
       debug_count += 1;
     }
+    // Can't filter them because need whitespace character symbols in text comparison  
+    // Although highlight text might start with whitespace character. Could trim 
+    // whitespace from highlight text when adding or checking (here) highlight.
     if (current_text.trim().length === 0) continue
-    // TODO: skip empty nodes?
-    // console.log(current_text);
-    // if (current_text === "Edit preview settings") {
-    //   console.log("last", iter.nextNode())
-    // }
 
     for (const hl of current_highlights) {
       const key = hl[0];
@@ -512,7 +487,7 @@ function testHighlightIter(current_highlights: [string, HighlightAdd][]) {
     const key = hl[0];
     const value = hl[1];
 
-    const iter = document.createNodeIterator(document.body, NodeFilter.SHOW_TEXT, null)
+    const iter = document.createNodeIterator(document.body, NodeFilter.SHOW_TEXT, isNonVisibleTag)
     let currentNode: Node | null = null;
     let debug_count = 0;
     while (currentNode = iter.nextNode()) {
@@ -525,7 +500,7 @@ function testHighlightIter(current_highlights: [string, HighlightAdd][]) {
         }
         debug_count += 1;
       }
-
+      if (current_text.trim().length === 0) continue
 
       if (current_text.length >= value.text.length) {
         // Simple case when highlighted text is inside one text node
@@ -625,26 +600,112 @@ function testHighlightIter(current_highlights: [string, HighlightAdd][]) {
 
 }
 
-renderLocalHighlights("https://en.wikipedia.org/wiki/Program");
-// renderLocalHighlights("wrong_url");
-
-
 // TODO: find search term index in body.textContent.
 // Use NodeIterator to find text node position
-function testBodyTextContentSearch() {
+
+
+function highlightLocations(locations: HighlightLocation[]) {
+  if (locations.length === 0) return;
+  // Can't filter, would throw off location indices.
   const iter = document.createNodeIterator(document.body, NodeFilter.SHOW_TEXT, null)
   let currentNode: Node | null = null;
-  let iter_len = 0; 
+  let end_index = 0;
+  let location_index = 0;
+  console.log(NodeFilter.FILTER_ACCEPT)
+  console.log(NodeFilter.FILTER_REJECT)
   while (currentNode = iter.nextNode()) {
-    if (currentNode.textContent) {
-      iter_len += currentNode.textContent.length;
+    const node_len = currentNode.textContent?.length || 0;
+    if (node_len === 0) { continue; }
+    const start_index = end_index;
+    end_index += node_len;
+    if (currentNode.textContent!.trim().length === 0) { continue; }
+    if (isNonVisibleTag(currentNode) === NodeFilter.FILTER_REJECT) { continue; }
+
+    let location = locations[location_index];
+    while (location.index < end_index) {
+      // console.log("highlight start", location_index, location)
+
+      // TODO: highlight text
+      const hl_end = location.index + location.length;
+      // if (hl_end <= end_index) {
+      //   // console.log("simple")
+      //   console.log("expect: ", document.body.textContent.slice(location.index, location.index + location.length))
+      //   // console.log("node text: ", currentNode.textContent)
+      //   const hl_start = location.index - start_index;
+      //   const hl_end = hl_start + location.length;
+      //   // console.log("start: ", hl_start)
+      //   console.log("got: ", currentNode.textContent.slice(hl_start, hl_end))
+      //   if (hl_start > 0) {
+      //     const rest_node = (currentNode as Text).splitText(hl_start);
+      //     iter.nextNode();
+      //   console.log("start", rest_node)
+      //   }
+
+      //   if (hl_start > 0) {
+      //     const rest_node = (currentNode as Text).splitText(hl_start);
+      //     iter.nextNode();
+      //     console.log("end", rest_node)
+      //   }
+
+
+
+
+
+      //   // highlight is inside this node
+      // } else {
+      //   // highlight goes beyond this node
+      // }
+
+      location_index += 1;
+      if (location_index >= locations.length) {  break;  }
+      location = locations[location_index];
+
+      // highlight starts in this node 
     }
+    if (location_index >= locations.length) {  break;  }
+
   }
-  console.log("iter_len", iter_len)
-  console.log("body_len", document.body.textContent.length)
 }
 
 
+
+async function renderLocalHighlights(current_url: string) {
+  console.log("==== renderLocalHighlights() ====")
+  const local = await storage.local.get({highlights_add: undefined});
+  if (!local.highlights_add) { return; }
+  const current_highlights = Object.entries<HighlightAdd>(local.highlights_add)
+    .filter(([_, value]) => value.url === current_url);
+  if (current_highlights.length === 0) { return; }
+
+  {
+    // for debug
+    document.body.textContent?.normalize()
+    const body_text = document.body.textContent;
+    console.time("Indices")
+    const result = testBodyTextContentSearch(body_text, current_highlights);
+    console.timeEnd("Indices")
+    // highlightLocations(result);
+  }
+
+  // {
+  //   const iter_time_start = performance.now();
+  //   const result = testIterHighlight(current_highlights);
+  //   const iter_time_end = performance.now();
+  //   console.log(result);
+  //   console.log(`time (outer iter): ${iter_time_end - iter_time_start}ms`)
+  // }
+
+  // {
+  //   const iter_time_start = performance.now();
+  //   const result = testHighlightIter(current_highlights);
+  //   const iter_time_end = performance.now();
+  //   console.log(result);
+  //   console.log(`time (inner iter): ${iter_time_end - iter_time_start}ms`)
+  // } 
+}
+
+// renderLocalHighlights("https://en.wikipedia.org/wiki/Program");
+// renderLocalHighlights("wrong_url");
 
 
 async function test() {

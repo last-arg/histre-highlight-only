@@ -11,6 +11,8 @@ export interface Message {
   data: any,
 }
 
+export type HighlightId = string;
+
 export interface HighlightAdd {
   url: string,
   title: string,

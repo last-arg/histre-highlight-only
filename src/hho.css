@@ -11,6 +11,7 @@
   border: 1px solid black;
   top: 0;
   left: 0;
+  contain: unset; /* In case some site has this set */
 }
 
 .hho-context-menu[aria-hidden="false"] {

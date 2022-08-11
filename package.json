@@ -13,7 +13,9 @@
     "webextension-polyfill": "^0.9.0"
   },
   "devDependencies": {
-    "bun-types": "^0.1.0"
+    "@types/jsdom": "^20.0.0",
+    "bun-types": "^0.1.0",
+    "jsdom": "^20.0.0"
   },
   "scripts": {
     "dev": "run-p dev:*",
@@ -23,5 +25,4 @@
     "start:firefox": "web-ext run --source-dir ./extension --target=firefox-desktop -u 'about:devtools-toolbox?id=addon%40histre-highlight-only.com&type=extension'",
     "watch:test": "watchexec -w src/highlight.ts -w src/tests/highlight.test.ts 'bun wiptest'"
   }
-
 }

@@ -127,18 +127,18 @@ function removeHighlightOverlapsImpl(locations: HighlightLocation[]): HighlightL
     // NOTE: inner_positions length is larger than 1
     for (let i = 1; i < inner_positions.length; i += 1) {
       const curr = inner_positions[i];
-      if (curr.start < max_end) {
+      if (curr.start <= max_end) {
         max_end = Math.max(max_end, curr.end);
         count += 1;
         continue;
       }
       splices.push(count);
-      count = 0;
+      max_end = curr.end;
+      count = 1;
     }
 
     for (const s of splices) {
       const partial_locations = removeHighlightOverlapsImpl(inner_positions.splice(0, s));
-      // console.log("splices first: ", )
       const new_start = partial_locations[partial_locations.length - 1].end;
       const new_end = inner_positions.length > 0 ? inner_positions[0].start : loc.end;
       split_locations.push(...partial_locations, {

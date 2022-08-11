@@ -3,24 +3,109 @@ import { readFileSync } from "fs";
 import { HighlightAdd } from "../common";
 import { findHighlightIndices, removeHighlightOverlaps } from "../highlight";
 
-// Consider [jsdom](https://www.npmjs.com/package/jsdom) for testing DOM with node/bun
+// TODO: Consider [jsdom](https://www.npmjs.com/package/jsdom) for testing DOM with node/bun
+// jsdom not working with bun: https://github.com/oven-sh/bun/issues/198
 
 it("highlight indices and removing overlaps", () => {
+  // https://seirdy.one/posts/2020/11/23/website-best-practices/
+  // Currently using document.body.textContent from site.
+  // When jsdom starts working with bun will switch to html
   const body_text = readFileSync("./src/tests/test.html", "utf-8");
-  const current_highlights: [string, HighlightAdd][] = [["hho-local-02biitif",{"title":"Program - Wikipedia","url":"https://en.wikipedia.org/wiki/Program","text":"nerating music electron","color":"purple"}],["hho-local-gyghlmhh",{"title":"Program - Wikipedia","url":"https://en.wikipedia.org/wiki/Program","text":"type of art music that attempts to render musically an extra","color":"yellow"}],["hho-local-izeay27j",{"title":"Program - Wikipedia","url":"https://en.wikipedia.org/wiki/Program","text":"of art music","color":"orange"}],["hho-local-ot6dv0nk",{"title":"Program - Wikipedia","url":"https://en.wikipedia.org/wiki/Program","text":"art m","color":"green"}],["hho-local-5ezswlnw",{"title":"Program - Wikipedia","url":"https://en.wikipedia.org/wiki/Program","text":"sic that","color":"blue"}],["hho-local-biu028d5",{"title":"Program - Wikipedia","url":"https://en.wikipedia.org/wiki/Program","text":"an extra-musical","color":"red"}],["hho-local-jwn8cxgf",{"title":"Program - Wikipedia","url":"https://en.wikipedia.org/wiki/Program","text":"er musically ","color":"purple"}],["hho-local-ng702dlp",{"title":"Program - Wikipedia","url":"https://en.wikipedia.org/wiki/Program","text":"empts t","color":"green"}]];
+  const current_highlights: [string, HighlightAdd][] = [
+  [ "hho-local-6nazstnm",
+    { "title": "Best practices for inclusive textual websites - Seirdy",
+      "url": "http://localhost:8080/test.html",
+      "text": "t does not apply to websites that have a lot of non-textual content. It also does not apply to websites that focus more on generating revenue or pleasing investors than",
+      "color": "yellow" } ],
+  [ "hho-local-bjcczyzj",
+    { "title": "Best practices for inclusive textual websites - Seirdy",
+      "url": "http://localhost:8080/test.html",
+      "text": "not apply to websites that",
+      "color": "orange" } ],
+  [ "hho-local-4twzo1f2",
+    { "title": "Best practices for inclusive textual websites - Seirdy",
+      "url": "http://localhost:8080/test.html",
+      "text": "apply to websites",
+      "color": "green" } ],
+  [ "hho-local-7292ap92",
+    { "title": "Best practices for inclusive textual websites - Seirdy",
+      "url": "http://localhost:8080/test.html",
+      "text": "ply to",
+      "color": "blue" } ],
+  [ "hho-local-cvlm97wh",
+    { "title": "Best practices for inclusive textual websites - Seirdy",
+      "url": "http://localhost:8080/test.html",
+      "text": "hat have a lot",
+      "color": "purple" } ],
+  [ "hho-local-wq4elqm4",
+    { "title": "Best practices for inclusive textual websites - Seirdy",
+      "url": "http://localhost:8080/test.html",
+      "text": "investors than being incl",
+      "color": "red" } ],
+  [ "hho-local-jeuib9on",
+    { "title": "Best practices for inclusive textual websites - Seirdy",
+      "url": "http://localhost:8080/test.html",
+      "text": "revenue or pleasing ",
+      "color": "green" } ],
+  [ "hho-local-zvsaa2zb",
+    { "title": "Best practices for inclusive textual websites - Seirdy",
+      "url": "http://localhost:8080/test.html",
+      "text": "does not apply to",
+      "color": "blue" } ],
+  [ "hho-local-ipm5qe3c",
+    { "title": "Best practices for inclusive textual websites - Seirdy",
+      "url": "http://localhost:8080/test.html",
+      "text": "that focus more",
+      "color": "green" } ],
+  [ "hho-local-adj8wtbd",
+    { "title": "Best practices for inclusive textual websites - Seirdy",
+      "url": "http://localhost:8080/test.html",
+      "text": "entire page at a glance with a screenreader - you have to listen to the structure of it carefully and remember all that, or read through the entire",
+      "color": "yellow" } ],
+  [ "hho-local-8x21bbro",
+    { "title": "Best practices for inclusive textual websites - Seirdy",
+      "url": "http://localhost:8080/test.html",
+      "text": "xceptions, there are only two times I feel comfortable overriding default st",
+      "color": "green" } ],
+  [ "hho-local-fgbsq2nx",
+    { "title": "Best practices for inclusive textual websites - Seirdy",
+      "url": "http://localhost:8080/test.html",
+      "text": "     doing this when the defaults are truly inaccessible, or clash with another accessibility enhancement I made.\n\nMy previous advice regarding line spacing and maximum line length fell in the fir",
+      "color": "purple" } ],
+  [ "hho-local-81adxnn2",
+    { "title": "Best practices for inclusive textual websites - Seirdy",
+      "url": "http://localhost:8080/test.html",
+      "text": "what ",
+      "color": "red" } ],
+  [ "hho-local-o4hizrvw",
+    { "title": "Best practices for inclusive textual websites - Seirdy",
+      "url": "http://localhost:8080/test.html",
+      "text": "poor",
+      "color": "green" } ],
+  [ "hho-local-rm3gmbmw",
+    { "title": "Best practices for inclusive textual websites - Seirdy",
+      "url": "http://localhost:8080/test.html",
+      "text": "more harmful to screen readers than “no ARIA”. Only use ARIA to fill in gaps left by POSH.\n\nAgain: avoid catering to",
+      "color": "orange" } ],
+  [ "hho-local-lkodvlal",
+    { "title": "Best practices for inclusive textual websites - Seirdy",
+      "url": "http://localhost:8080/test.html",
+      "text": "Finding this range is difficult. The best way to resolve such difficult and subjective",
+      "color": "purple" } ]
+]
 
   console.time("indices")
   const locations = findHighlightIndices(body_text, current_highlights);
   console.timeEnd("indices")
-  expect(locations.length).toBe(7);
+  expect(locations.length).toBe(57);
 
   console.time("highlight overlap")
   const split_locations = removeHighlightOverlaps(locations);
-  const expected_split_string = [ "type ", "of ", "art m", "u", "sic that", " att", "empts t", "o rend", "er musically ", "an extra-musical" ];
   console.timeEnd("highlight overlap")
 
-  expect(expected_split_string.length).toBe(split_locations.length);
-  for (const [i, loc] of split_locations.entries()) {
-    expect(expected_split_string[i]).toBe(body_text.slice(loc.start, loc.end));
-  }
+  // const expected_split_string = [ "type ", "of ", "art m", "u", "sic that", " att", "empts t", "o rend", "er musically ", "an extra-musical" ];
+  // expect(expected_split_string.length).toBe(split_locations.length);
+  // for (const [i, loc] of split_locations.entries()) {
+  //   expect(expected_split_string[i]).toBe(body_text.slice(loc.start, loc.end));
+  // }
 });

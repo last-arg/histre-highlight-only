@@ -25,6 +25,7 @@ export default defineConfig({
         extend: true,
         assetFileNames: "hho.[name].css",
       },
+      external: "webextension-polyfill",
     },
   },
   plugins: [

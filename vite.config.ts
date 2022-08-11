@@ -74,7 +74,8 @@ export default defineConfig(({ command }) => ({
         entryFileNames: `assets/[name].js`,
         chunkFileNames: `assets/[name].js`,
         assetFileNames: `assets/[name].[ext]`
-      }
+      },
+      external: "webextension-polyfill",
     },
   },
   plugins: [

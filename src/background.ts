@@ -1,5 +1,5 @@
-import { storage } from 'webextension-polyfill'
-import type { Runtime } from 'webextension-polyfill'
+import { storage } from 'webextension-polyfill';
+import type { Runtime } from 'webextension-polyfill';
 import { Message, Action, HighlightAdd } from './common';
 
 console.log("==== LOAD ./dist/background.js ====")
@@ -323,14 +323,16 @@ browser.runtime.onMessage.addListener((msg: Message, sender: Runtime.MessageSend
     case Action.Save: {
       console.log("save", msg.data.local_id)
       return new Promise(async (resolve) => {
-        const hl_add: HighlightAdd = {
-          title: sender.tab?.title || "",
-          url: sender.tab?.url || "",
-          text: msg.data.text,
-          color: msg.data.color,
-        };
-        let local = await storage.local.get({highlights_add: {}});
-        local.highlights_add[msg.data.local_id] = hl_add;
+        if (sender.tab?.url === undefined) { 
+          resolve(false); 
+          return;
+        }
+        const url = sender.tab.url;
+        let local = await storage.local.get({highlights_add: {[url]: { highlights: {} }}});
+        console.log("store", local)
+        local.highlights_add[url].title = sender.tab?.title || "";
+        const local_id = msg.data.local_id;
+        local.highlights_add[url].highlights[local_id] = { text: msg.data.text, color: msg.data.color };
         await storage.local.set(local);
         resolve(true);
       });
@@ -353,12 +355,7 @@ browser.runtime.onMessage.addListener((msg: Message, sender: Runtime.MessageSend
         resolve(true);
       });
     }
-    default: {
-      console.error(`Received unknown message '${msg}'`)
-      return;
-    }
   }
-  return undefined;
 });
 
 // console.log(browser.runtime.getURL("/"))

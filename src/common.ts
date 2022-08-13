@@ -13,6 +13,20 @@ export interface Message {
 
 export type HighlightId = string;
 
+export interface LocalHighlight {
+  text: string,
+  color?: string,
+}
+
+export interface LocalHighlightInfo {
+  [url: string] : {
+    title: string,
+    highlights: {
+      [id: string]: LocalHighlight,
+    }
+  }
+}
+
 export interface HighlightAdd {
   url: string,
   title: string,

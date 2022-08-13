@@ -1,5 +1,5 @@
-import { storage } from 'webextension-polyfill'
-import {Action, HighlightAdd} from './common';
+import { storage } from 'webextension-polyfill';
+import { Action, HighlightAdd } from './common';
 import './hho.css';
 console.log("==== LOAD 'content_script.js' TD ====")
 
@@ -602,8 +602,6 @@ function testHighlightIter(current_highlights: [string, HighlightAdd][]) {
 
 // TODO: find search term index in body.textContent.
 // Use NodeIterator to find text node position
-
-
 function highlightLocations(locations: HighlightLocation[]) {
   if (locations.length === 0) return;
   // Can't filter, would throw off location indices.
@@ -626,7 +624,7 @@ function highlightLocations(locations: HighlightLocation[]) {
       // console.log("highlight start", location_index, location)
 
       // TODO: highlight text
-      const hl_end = location.index + location.length;
+      // const hl_end = location.index + location.length;
       // if (hl_end <= end_index) {
       //   // console.log("simple")
       //   console.log("expect: ", document.body.textContent.slice(location.index, location.index + location.length))
@@ -667,8 +665,6 @@ function highlightLocations(locations: HighlightLocation[]) {
   }
 }
 
-
-
 async function renderLocalHighlights(current_url: string) {
   console.log("==== renderLocalHighlights() ====")
   const local = await storage.local.get({highlights_add: undefined});
@@ -676,16 +672,17 @@ async function renderLocalHighlights(current_url: string) {
   const current_highlights = Object.entries<HighlightAdd>(local.highlights_add)
     .filter(([_, value]) => value.url === current_url);
   if (current_highlights.length === 0) { return; }
+  console.log(current_highlights)
 
-  {
-    // for debug
-    document.body.textContent?.normalize()
-    const body_text = document.body.textContent;
-    console.time("Indices")
-    const result = testBodyTextContentSearch(body_text, current_highlights);
-    console.timeEnd("Indices")
-    // highlightLocations(result);
-  }
+  // {
+  //   // for debug
+  //   document.body.textContent?.normalize()
+  //   const body_text = document.body.textContent;
+  //   console.time("Indices")
+  //   const result = testBodyTextContentSearch(body_text, current_highlights);
+  //   console.timeEnd("Indices")
+  //   // highlightLocations(result);
+  // }
 
   // {
   //   const iter_time_start = performance.now();

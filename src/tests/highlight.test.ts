@@ -3,14 +3,16 @@ import { readFileSync } from "fs";
 import { HighlightAdd } from "../common";
 import { findHighlightIndices, removeHighlightOverlaps } from "../highlight";
 
+// TODO: check out https://github.com/lusito/mockzilla-webextension
 // TODO: Consider [jsdom](https://www.npmjs.com/package/jsdom) for testing DOM with node/bun
 // jsdom not working with bun: https://github.com/oven-sh/bun/issues/198
 
 it("highlight indices and removing overlaps", () => {
-  // https://seirdy.one/posts/2020/11/23/website-best-practices/
+  // Test source: https://seirdy.one/posts/2020/11/23/website-best-practices/
   // Currently using document.body.textContent from site.
   // When jsdom starts working with bun will switch to html
-  const body_text = readFileSync("./src/tests/test.html", "utf-8");
+  // TODO: When jsdom start working with bun repalce text.txt with test.html
+  const body_text = readFileSync("./src/tests/test.txt", "utf-8");
   const current_highlights: [string, HighlightAdd][] = [
   [ "hho-local-6nazstnm",
     { "title": "Best practices for inclusive textual websites - Seirdy",

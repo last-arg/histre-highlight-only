@@ -1,6 +1,6 @@
-import type { UserConfig } from 'vite'
-import { defineConfig } from 'vite'
-import AutoImport from 'unplugin-auto-import/vite'
+import type { UserConfig } from 'vite';
+import { defineConfig } from 'vite';
+import AutoImport from 'unplugin-auto-import/vite';
 import {isDev, r, port} from './scripts/utils';
 
 export const sharedConfig: UserConfig = {

@@ -1,5 +1,6 @@
+/// <reference lib="dom" />
 import { storage } from 'webextension-polyfill';
-import { Action, HighlightAdd } from './common';
+import { Action, HighlightAdd, HighlightId } from './common';
 import './hho.css';
 console.log("==== LOAD 'content_script.js' TD ====")
 
@@ -301,7 +302,6 @@ getContextMenu();
 document.addEventListener("selectstart", startSelection)
 
 
-type HighlightId = string;
 type HighlightColor = string;
 type InNode = { node: Node, indices: number[], length: number, color: HighlightColor };
 // TODO: rename to EdgeNode

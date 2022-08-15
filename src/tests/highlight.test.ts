@@ -1,4 +1,3 @@
-/// <reference types="bun-types" />
 import { it, expect } from "bun:test";
 import { readFileSync } from "fs";
 import { HighlightAdd } from "../common";

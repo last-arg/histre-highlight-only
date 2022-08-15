@@ -128,7 +128,7 @@ function selectionStartClientRect(sel_obj: Selection) {
   const parent = node.parentNode;
   const char = node.splitText(sel_obj.anchorOffset);
   // This makes an one character text node out of 'char'
-  const _rest = char.splitText(1);
+  char.splitText(1);
 
   const range = document.createRange();
   range.selectNode(char);

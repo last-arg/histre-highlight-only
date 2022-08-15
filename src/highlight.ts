@@ -1,10 +1,4 @@
-import type {HighlightAdd, HighlightId} from "./common";
-
-type HighlightLocation = {
-  start: number,
-  end: number,
-  index: number,
-}
+import type { HighlightAdd, HighlightId, HighlightLocation} from "./common";
 
 // TODO?: try, consider
 // Could try to use Uint32Array to get more performance [start, end, index_to, ...]

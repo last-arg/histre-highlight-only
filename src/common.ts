@@ -18,6 +18,12 @@ export interface LocalHighlight {
   color?: string,
 }
 
+export type HighlightLocation = {
+  start: number,
+  end: number,
+  index: number,
+}
+
 export interface LocalHighlightInfo {
   [url: string] : {
     title: string,

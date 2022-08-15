@@ -13,23 +13,23 @@ export interface Message {
 
 export type HighlightId = string;
 
-export interface LocalHighlight {
-  text: string,
-  color?: string,
-}
-
 export type HighlightLocation = {
   start: number,
   end: number,
   index: number,
 }
 
+export interface LocalHighlight {
+  text: string,
+  color?: string,
+}
+
+export interface LocalHighlightsObject { [id: HighlightId]: LocalHighlight, }
+
 export interface LocalHighlightInfo {
   [url: string] : {
     title: string,
-    highlights: {
-      [id: string]: LocalHighlight,
-    }
+    highlights: LocalHighlightsObject
   }
 }
 

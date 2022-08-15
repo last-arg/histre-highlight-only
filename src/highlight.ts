@@ -1,15 +1,15 @@
-import type { HighlightAdd, HighlightId, HighlightLocation} from "./common";
+import type { HighlightLocation, LocalHighlightsObject} from "./common";
 
 // TODO?: try, consider
 // Could try to use Uint32Array to get more performance [start, end, index_to, ...]
 // {start, end, index_to_id_color}[]
 // {id, color}[]
 
-export function findHighlightIndices(body_text: string, current_highlights: [HighlightId, HighlightAdd][]): HighlightLocation[] {
+export function findHighlightIndices(body_text: string, current_highlights: LocalHighlightsObject): HighlightLocation[] {
   let locations: HighlightLocation[] = [];
   if (body_text === null || body_text.length === 0) locations;
   // Find highlights
-  for (const [i, [_, value]] of current_highlights.entries()) {
+  for (const [i, value] of Object.values(current_highlights).entries()) {
     let current_index = body_text?.indexOf(value.text, 0);
     while (current_index !== -1) {
       const end = current_index + value.text.length;

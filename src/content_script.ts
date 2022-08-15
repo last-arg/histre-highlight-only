@@ -85,7 +85,6 @@ async function contextMenuClick(e: Event) {
     const color = elem.getAttribute("data-hho-color") || "yellow";
     console.log("button click color: ", color)
     highlightSelectedText(sel_obj, color, local_class_id);
-    // TODO: trim sel_string? Here or before MIN_SELECTION_LEN check?
     const data = { text: sel_string, color: color, local_id: local_class_id };
     sel_obj.removeAllRanges(); // This fires 'selectionchange' event
     const result = await browser.runtime.sendMessage(
@@ -101,7 +100,7 @@ async function contextMenuClick(e: Event) {
 
 
     // TODO: implement saving selection
-    // TODO: handle saving multiple selections
+    // TODO?: handle saving multiple selections?
 
     // TODO: Send selection to background
     // const hl = await browser.runtime.sendMessage()
@@ -110,7 +109,7 @@ async function contextMenuClick(e: Event) {
     // success: replace local ids with histre ids
 
 
-    // TODO: implement highlighting for multiselect text?
+    // TODO?: implement highlighting for multiselect text?
     // for (let i = 0; i < sel_obj.rangeCount; i++) {
     //   console.log(sel_obj.getRangeAt(i));
     //   console.log(sel_obj.getRangeAt(i).toString());

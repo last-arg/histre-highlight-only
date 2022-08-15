@@ -12,7 +12,7 @@ it("highlight indices and removing overlaps", () => {
   // Test source: https://seirdy.one/posts/2020/11/23/website-best-practices/
   // Currently using document.body.textContent from site.
   // When jsdom starts working with bun will switch to html
-  // TODO: When jsdom start working with bun repalce text.txt with test.html
+  // TODO: When jsdom start working with bun replace text.txt with test.html
   const body_text = readFileSync("./src/tests/test.txt", "utf-8");
   const current_highlights: [string, HighlightAdd][] = [
   [ "hho-local-6nazstnm",

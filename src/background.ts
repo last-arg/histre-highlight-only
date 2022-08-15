@@ -318,7 +318,7 @@ type MessageReturn = SaveMessage | boolean | undefined;
 // }
 browser.runtime.onMessage.addListener((msg: Message, sender: Runtime.MessageSender): undefined | Promise<MessageReturn> => {
   console.log(msg, sender);
-  // TODO: do histre requests, if fails save to storage local
+  // TODO: do histre requests, if fails save to storage locally
   switch (msg.action) {
     case Action.Save: {
       console.log("save", msg.data.local_id)

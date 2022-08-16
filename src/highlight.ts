@@ -154,3 +154,369 @@ function removeHighlightOverlapsImpl(locations: HighlightLocation[]): HighlightL
 
   return split_locations;
 }
+
+
+
+
+// TODO: these 2 solutions for finding highlights still works
+type HighlightColor = string;
+type InNode = { node: Node, indices: number[], length: number, color: HighlightColor };
+// TODO: rename to EdgeNode
+type StartOrEndNode = { index: number, node: Node };
+// TODO: might have several matches on page
+type HighlightStartEnd = {start: StartOrEndNode, end: StartOrEndNode, color: HighlightColor};
+type HighlightWholeNode = Map<HighlightId, Node[]>;
+
+function checkNodesForMatch(iter: any, start_node: Node, value_text: string, value_start_index: number) {
+  let result: { end_node: StartOrEndNode | undefined, hls: Node[], index: number } = { end_node: undefined, hls: [], index: value_start_index };
+  let next_node: Node | null = start_node;
+  while (next_node) {
+    if (!next_node.textContent) { 
+      next_node = iter.nextNode();
+      continue; 
+    }
+    const value_tail = value_text.slice(result.index);
+    if (value_tail.length > next_node.textContent.length) {
+      if (value_tail.startsWith(next_node.textContent)) {
+        result.index += next_node.textContent.length;
+        result.hls.push(next_node)
+        next_node = iter.nextNode();
+        continue;
+      }
+    }
+
+    // End of highlight
+    if (next_node.textContent.startsWith(value_tail)) {
+      result.end_node = { index: value_tail.length, node: next_node };
+    }
+    break;
+  }
+  return result;
+}
+
+const ignore_node_names = ["SCRIPT", "STYLE"];
+function isNonVisibleTag(node: Node) {
+  if (node.parentNode && ignore_node_names.includes(node.parentNode.nodeName)) {
+    return NodeFilter.FILTER_REJECT;
+  }
+  return NodeFilter.FILTER_ACCEPT
+
+}
+
+function testIterHighlight(current_highlights: [string, HighlightAdd][]) {
+  const in_nodes = new Map<HighlightId, InNode>();
+  const start_end_nodes = new Map<HighlightId, HighlightStartEnd>();
+  const whole_nodes: HighlightWholeNode = new Map();
+  const iter = document.createNodeIterator(document.body, NodeFilter.SHOW_TEXT, isNonVisibleTag)
+  let currentNode: Node | null = null;
+  let debug_count = 0;
+  while (currentNode = iter.nextNode()) {
+    let current_text = currentNode.textContent;
+    if (!current_text) { continue; }
+    {
+      if (debug_count === 1000) {
+        console.error("exceeded debug count")
+        break;
+      }
+      debug_count += 1;
+    }
+    // Can't filter them because need whitespace character symbols in text comparison  
+    // Although highlight text might start with whitespace character. Could trim 
+    // whitespace from highlight text when adding or checking (here) highlight.
+    if (current_text.trim().length === 0) continue
+
+    for (const hl of current_highlights) {
+      const key = hl[0];
+      const value = hl[1];
+
+      if (current_text.length >= value.text.length) {
+        // Simple case when highlighted text is inside one text node
+        let found_highlights = false;
+        let splits = [];
+        let value_index = current_text.indexOf(value.text, 0);
+        while (value_index !== -1) {
+          splits.push(value_index);
+          found_highlights = true;
+          const position = value_index + value.text.length;
+          // console.log(current_text.slice(value_index, position))
+          value_index = current_text.indexOf(value.text, position);
+        }
+
+        if (found_highlights) {
+          in_nodes.set(key, 
+            { node: currentNode, indices: splits, length: value.text.length, color: value.color! })
+        }
+      }
+
+      // Highlighted text encompasses several text nodes.
+      if (current_text.length > value.text.length) {
+        // TODO: this code causes infinite loop in NodeIterator
+        // Check if current_text ends with any value.text start substr
+        let position = current_text.length - value.text.length + 1;
+        let value_index = current_text.indexOf(value.text[0], position)
+        // console.log("NEW")
+        while (value_index !== -1) {
+          position = value_index + 1;
+          const end_index = current_text.length - position + 1;
+          const possible_end = value.text.slice(1, end_index);
+          if (current_text.endsWith(possible_end)) {
+            const anchor_node = iter.nextNode();
+            if (!anchor_node) break;
+            const match = checkNodesForMatch(iter, anchor_node, value.text, possible_end.length + 1);
+
+            if (match.end_node) {
+              const start_end: HighlightStartEnd = {
+                start: { index: current_text.length - match.index + 1, node: currentNode },
+                end: match.end_node,
+                color: value.color || "yellow",
+              }
+              start_end_nodes.set(key, start_end)
+              console.assert(
+                value.text == 
+                (start_end.start.node.textContent!.slice(start_end.start.index) +
+                 match.hls.reduce((prev, curr) => prev + curr.textContent, "") +
+                 start_end.end.node.textContent!.slice(0, start_end.end.index)),
+                "Found highlight content doesn't match"
+              );
+              addWholeNodes(key, match.hls, whole_nodes);
+            } else {
+              while (anchor_node !== iter.previousNode()) {}
+            }
+
+          }
+          value_index = current_text.indexOf(value.text[0], position)
+        }
+        // "node text longer" > "noger"
+      } else {
+        let value_index = current_text.indexOf(value.text[0], 0)
+        while (value_index !== -1) {
+          const end_index = Math.min(value.text.length, current_text.length - value_index);
+          const possible_end = value.text.slice(1, end_index);
+
+          if (current_text.endsWith(possible_end)) {
+            const anchor_node = iter.nextNode();
+            if (!anchor_node) break;
+            const match = checkNodesForMatch(iter, anchor_node, value.text, possible_end.length + 1);
+
+            if (match.end_node) {
+              const start_end: HighlightStartEnd = {
+                start: { index: current_text.length - end_index, node: currentNode },
+                end: match.end_node,
+                color: value.color || "yellow"
+              };
+              start_end_nodes.set(key, start_end)
+              console.assert(
+                value.text == 
+                (start_end.start.node.textContent!.slice(start_end.start.index) +
+                 match.hls.reduce((prev, curr) => prev + curr.textContent, "") +
+                 start_end.end.node.textContent!.slice(0, start_end.end.index)),
+                "Found highlight content doesn't match"
+              );
+              addWholeNodes(key, match.hls, whole_nodes);
+            } else {
+              while (anchor_node !== iter.previousNode()) {}
+            }
+          }
+          value_index = current_text.indexOf(value.text[0], value_index + 1)
+        }
+      }
+    }
+  }
+
+  return { in_nodes, start_end_nodes, whole_nodes };
+}
+
+function addWholeNodes(key: string, nodes: Node[], whole_nodes: any) {
+  // TODO: remove '\n' nodes?
+  if (nodes.length > 0) {
+    const whole_key = key;
+    const curr_nodes = whole_nodes.get(whole_key) || []
+    curr_nodes.push(...nodes)
+    whole_nodes.set(whole_key, curr_nodes);
+  }
+}
+
+function testHighlightIter(current_highlights: [string, HighlightAdd][]) {
+  const in_nodes = new Map<HighlightId, InNode>();
+  const start_end_nodes = new Map<HighlightId, HighlightStartEnd>();
+  const whole_nodes: HighlightWholeNode = new Map();
+  for (const hl of current_highlights) {
+    const key = hl[0];
+    const value = hl[1];
+
+    const iter = document.createNodeIterator(document.body, NodeFilter.SHOW_TEXT, isNonVisibleTag)
+    let currentNode: Node | null = null;
+    let debug_count = 0;
+    while (currentNode = iter.nextNode()) {
+      let current_text = currentNode.textContent;
+      if (!current_text) { continue; }
+      {
+        if (debug_count === 2000) {
+          console.error("exceeded debug count")
+          break;
+        }
+        debug_count += 1;
+      }
+      if (current_text.trim().length === 0) continue
+
+      if (current_text.length >= value.text.length) {
+        // Simple case when highlighted text is inside one text node
+        let found_highlights = false;
+        let splits = [];
+        let value_index = current_text.indexOf(value.text, 0);
+        while (value_index !== -1) {
+          splits.push(value_index);
+          found_highlights = true;
+          const position = value_index + value.text.length;
+          // console.log(current_text.slice(value_index, position))
+          value_index = current_text.indexOf(value.text, position);
+        }
+
+        if (found_highlights) {
+          in_nodes.set(key, 
+            { node: currentNode, indices: splits, length: value.text.length, color: value.color! })
+        }
+      }
+
+      // Highlighted text encompasses several text nodes.
+      if (current_text.length > value.text.length) {
+        // Check if current_text ends with any value.text start substr
+        let position = current_text.length - value.text.length + 1;
+        let value_index = current_text.indexOf(value.text[0], position)
+        // console.log("NEW")
+        while (value_index !== -1) {
+          position = value_index + 1;
+          const end_index = current_text.length - position + 1;
+          const possible_end = value.text.slice(1, end_index);
+          if (current_text.endsWith(possible_end)) {
+            const anchor_node = iter.nextNode();
+            if (!anchor_node) break;
+            const match = checkNodesForMatch(iter, anchor_node, value.text, possible_end.length + 1);
+
+            if (match.end_node) {
+              const start_end: HighlightStartEnd = {
+                start: { index: current_text.length - match.index + 1, node: currentNode },
+                end: match.end_node,
+                color: value.color || "yellow",
+              }
+              start_end_nodes.set(key, start_end)
+              console.assert(
+                value.text == 
+                (start_end.start.node.textContent!.slice(start_end.start.index) +
+                 match.hls.reduce((prev, curr) => prev + curr.textContent, "") +
+                 start_end.end.node.textContent!.slice(0, start_end.end.index)),
+                "Found highlight content doesn't match"
+              );
+              addWholeNodes(key, match.hls, whole_nodes);
+            } else {
+              // console.log("restore anchor node")
+              while (anchor_node !== iter.previousNode()) {}
+            }
+
+          }
+          value_index = current_text.indexOf(value.text[0], position)
+        }
+        // "node text longer" > "noger"
+      } else {
+        let value_index = current_text.indexOf(value.text[0], 0)
+        while (value_index !== -1) {
+          const end_index = Math.min(value.text.length, current_text.length - value_index);
+          const possible_end = value.text.slice(1, end_index);
+
+          if (current_text.endsWith(possible_end)) {
+            const anchor_node = iter.nextNode();
+            if (!anchor_node) break;
+            const match = checkNodesForMatch(iter, anchor_node, value.text, possible_end.length + 1);
+
+            if (match.end_node) {
+              const start_end: HighlightStartEnd = {
+                start: { index: current_text.length - end_index, node: currentNode },
+                end: match.end_node,
+                color: value.color || "yellow"
+              };
+              start_end_nodes.set(key, start_end)
+              console.assert(
+                value.text == 
+                (start_end.start.node.textContent!.slice(start_end.start.index) +
+                 match.hls.reduce((prev, curr) => prev + curr.textContent, "") +
+                 start_end.end.node.textContent!.slice(0, start_end.end.index)),
+                "Found highlight content doesn't match"
+              );
+              addWholeNodes(key, match.hls, whole_nodes);
+            } else {
+              while (anchor_node !== iter.previousNode()) {}
+            }
+          }
+          value_index = current_text.indexOf(value.text[0], value_index + 1)
+        }
+      }
+    }
+  }
+
+  return { in_nodes, start_end_nodes, whole_nodes };
+}
+
+// TODO: find search term index in body.textContent.
+// Use NodeIterator to find text node position
+function highlightLocations(locations: HighlightLocation[]) {
+  if (locations.length === 0) return;
+  // Can't filter, would throw off location indices.
+  const iter = document.createNodeIterator(document.body, NodeFilter.SHOW_TEXT, null)
+  let currentNode: Node | null = null;
+  let end_index = 0;
+  let location_index = 0;
+  console.log(NodeFilter.FILTER_ACCEPT)
+  console.log(NodeFilter.FILTER_REJECT)
+  while (currentNode = iter.nextNode()) {
+    const node_len = currentNode.textContent?.length || 0;
+    if (node_len === 0) { continue; }
+    const start_index = end_index;
+    end_index += node_len;
+    if (currentNode.textContent!.trim().length === 0) { continue; }
+    if (isNonVisibleTag(currentNode) === NodeFilter.FILTER_REJECT) { continue; }
+
+    let location = locations[location_index];
+    while (location.index < end_index) {
+      // console.log("highlight start", location_index, location)
+
+      // TODO: highlight text
+      // const hl_end = location.index + location.length;
+      // if (hl_end <= end_index) {
+      //   // console.log("simple")
+      //   console.log("expect: ", document.body.textContent.slice(location.index, location.index + location.length))
+      //   // console.log("node text: ", currentNode.textContent)
+      //   const hl_start = location.index - start_index;
+      //   const hl_end = hl_start + location.length;
+      //   // console.log("start: ", hl_start)
+      //   console.log("got: ", currentNode.textContent.slice(hl_start, hl_end))
+      //   if (hl_start > 0) {
+      //     const rest_node = (currentNode as Text).splitText(hl_start);
+      //     iter.nextNode();
+      //   console.log("start", rest_node)
+      //   }
+
+      //   if (hl_start > 0) {
+      //     const rest_node = (currentNode as Text).splitText(hl_start);
+      //     iter.nextNode();
+      //     console.log("end", rest_node)
+      //   }
+
+
+
+
+
+      //   // highlight is inside this node
+      // } else {
+      //   // highlight goes beyond this node
+      // }
+
+      location_index += 1;
+      if (location_index >= locations.length) {  break;  }
+      location = locations[location_index];
+
+      // highlight starts in this node 
+    }
+    if (location_index >= locations.length) {  break;  }
+
+  }
+}

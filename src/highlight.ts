@@ -194,20 +194,24 @@ function checkNodesForMatch(iter: any, start_node: Node, value_text: string, val
   return result;
 }
 
-const ignore_node_names = ["SCRIPT", "STYLE"];
-function isNonVisibleTag(node: Node) {
-  if (node.parentNode && ignore_node_names.includes(node.parentNode.nodeName)) {
+
+export function isNonVisibleTag(node: Node) {
+  const p = node.parentNode;
+  return p && ["SCRIPT", "STYLE"].includes(p.nodeName);
+}
+
+export function isNonVisibleTagFilter(node: Node) {
+  if (isNonVisibleTag(node)) {
     return NodeFilter.FILTER_REJECT;
   }
-  return NodeFilter.FILTER_ACCEPT
-
+  return NodeFilter.FILTER_ACCEPT;
 }
 
 function testIterHighlight(current_highlights: [string, HighlightAdd][]) {
   const in_nodes = new Map<HighlightId, InNode>();
   const start_end_nodes = new Map<HighlightId, HighlightStartEnd>();
   const whole_nodes: HighlightWholeNode = new Map();
-  const iter = document.createNodeIterator(document.body, NodeFilter.SHOW_TEXT, isNonVisibleTag)
+  const iter = document.createNodeIterator(document.body, NodeFilter.SHOW_TEXT, isNonVisibleTagFilter)
   let currentNode: Node | null = null;
   let debug_count = 0;
   while (currentNode = iter.nextNode()) {
@@ -344,7 +348,7 @@ function testHighlightIter(current_highlights: [string, HighlightAdd][]) {
     const key = hl[0];
     const value = hl[1];
 
-    const iter = document.createNodeIterator(document.body, NodeFilter.SHOW_TEXT, isNonVisibleTag)
+    const iter = document.createNodeIterator(document.body, NodeFilter.SHOW_TEXT, isNonVisibleTagFilter)
     let currentNode: Node | null = null;
     let debug_count = 0;
     while (currentNode = iter.nextNode()) {
@@ -473,7 +477,7 @@ function highlightLocations(locations: HighlightLocation[]) {
     const start_index = end_index;
     end_index += node_len;
     if (currentNode.textContent!.trim().length === 0) { continue; }
-    if (isNonVisibleTag(currentNode) === NodeFilter.FILTER_REJECT) { continue; }
+    if (isNonVisibleTag(currentNode)) { continue; }
 
     let location = locations[location_index];
     while (location.index < end_index) {

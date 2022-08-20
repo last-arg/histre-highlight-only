@@ -38,13 +38,13 @@ function removeHighlightOverlapsImpl(locations: HighlightLocation[]): HighlightL
     const loc = locations[index];
     let inner_index = index + 1; 
     if (inner_index >= locations.length) {
-      split_locations.push({start: loc.start, end: loc.end, index: index});
+      split_locations.push({start: loc.start, end: loc.end, index: loc.index});
       break;
     }
     let inner_loc = locations[inner_index];
     // This probably happens in most cases
     if (inner_loc.start >= loc.end) { 
-      split_locations.push({start: loc.start, end: loc.end, index: index});
+      split_locations.push({start: loc.start, end: loc.end, index: loc.index});
       continue; 
     }
 

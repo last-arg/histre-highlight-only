@@ -145,8 +145,9 @@ function removeHighlightOverlapsImpl(locations: HighlightLocation[]): HighlightL
     split_locations.push(...partial_locations);
 
     const last_split = split_locations[split_locations.length - 1];
+
     split_locations.push({
-      start: last_split.end,
+      start: Math.min(loc.end, last_split.end),
       end: loc.end,
       index: loc.index,
     });

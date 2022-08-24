@@ -25,12 +25,14 @@ it("highlight indices and removing overlaps", () => {
   const split_locations = removeHighlightOverlaps(locations);
   console.timeEnd("highlight overlap")
 
-  const prev = split_locations[0];
+  let prev = split_locations[0];
   expect(prev.start <= prev.end).toBe(true);
   for (let i = 1; i < split_locations.length; i++) {
     const loc = split_locations[i];
     expect(loc.start <= loc.end).toBe(true);
+    console.log(i, loc.start, prev.end);
     expect(loc.start >= prev.end).toBe(true);
+    prev = loc;
   }
 
   // const expected_split_string = [ "type ", "of ", "art m", "u", "sic that", " att", "empts t", "o rend", "er musically ", "an extra-musical" ];

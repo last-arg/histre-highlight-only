@@ -37,14 +37,19 @@ function removeHighlightOverlapsImpl(locations: HighlightLocation[]): HighlightL
   for (let index = 0; index < end; index += 1) {
     const loc = locations[index];
     let inner_index = index + 1; 
+
     if (inner_index >= locations.length) {
       split_locations.push({start: loc.start, end: loc.end, index: loc.index});
       break;
     }
     let inner_loc = locations[inner_index];
+
     // This probably happens in most cases
     if (inner_loc.start >= loc.end) { 
       split_locations.push({start: loc.start, end: loc.end, index: loc.index});
+      continue; 
+    } else if (inner_loc.start < loc.end && inner_loc.end >= loc.end) {
+      split_locations.push({start: loc.start, end: inner_loc.start, index: loc.index});
       continue; 
     }
 
@@ -55,10 +60,12 @@ function removeHighlightOverlapsImpl(locations: HighlightLocation[]): HighlightL
       if (tmp_inner.start >= loc.end) { break; }
       inner_positions.push(tmp_inner);
     }
+    console.log("inner_pos", inner_positions)
 
     // Exclude continuous inner_positions that overlap current highglight to
     // the end or beyond end.
-    let inner_pos_length = inner_positions.length;
+    let inner_pos_length = 0;
+    // TODO: might needs this to fix a bug
     let start_index = inner_loc.start;
     let end_index = inner_loc.end;
     for (let index = 1; index < inner_positions.length; index += 1) {
@@ -71,6 +78,10 @@ function removeHighlightOverlapsImpl(locations: HighlightLocation[]): HighlightL
         end_index = inner.end;
       }
     }
+    if (inner_pos_length === 0) {
+      continue;
+    }
+    console.log("inner len", inner_positions.length, inner_pos_length)
     inner_positions.length = inner_pos_length;
     // Change outer loop index to skip already added items
     index += inner_pos_length;
@@ -79,13 +90,15 @@ function removeHighlightOverlapsImpl(locations: HighlightLocation[]): HighlightL
     // Add <mark> where highlight should begin. Do this in case highlight on the
     // top is removed and need to highlight area underneath removed highlight.
     // Removed highlight area might have several highlight underneath it.
-    if (end_index >= loc.end) {
-      // New end because other highlights overlap current highlights end
-      loc.end = start_index;
-    }
+    // if (end_index >= loc.end) {
+    //   // New end because other highlights overlap current highlights end
+    //   loc.end = start_index;
+    // }
 
     // Rest of inner_positions are inside current highlight. Till inner_pos_length
 
+    // TODO: This has a bug. Will produce wrong result if inner_loc itself has 
+    // overlapping highlights. Have to fix probably where inner_positions are added
     if (inner_positions.length === 1) {
       // Need to always have start of highlight even if start and end are same.
       // This is needed if another highlight is removed and need to check if current
@@ -99,15 +112,18 @@ function removeHighlightOverlapsImpl(locations: HighlightLocation[]): HighlightL
       // Inner highlight goes beyond current highlight end. Start next 
       // outer loop with inner_loc.
       // if (inner_pos.end > loc.end) { continue; }
-      split_locations.push({start: inner_loc.start, end: inner_loc.end, index: loc.index + 1});
+      split_locations.push({start: inner_loc.start, end: inner_loc.end, index: inner_loc.index});
 
-      // We know this highlight is inside current highlight
-      split_locations.push({start: inner_loc.end, end: loc.end, index: loc.index});
+      // Make sure highlight end is 'visible'
+      if (loc.end > inner_loc.end) {
+        split_locations.push({start: inner_loc.end, end: loc.end, index: loc.index});
+      }
       // Make sure to skip this inner highlight on next outer loop
       continue;
     }
 
     // Have several inner higlights. These inner highlights might themselves overlap.
+
     split_locations.push({
       start: loc.start,
       end: inner_loc.start,
@@ -146,11 +162,13 @@ function removeHighlightOverlapsImpl(locations: HighlightLocation[]): HighlightL
 
     const last_split = split_locations[split_locations.length - 1];
 
-    split_locations.push({
-      start: Math.min(loc.end, last_split.end),
-      end: loc.end,
-      index: loc.index,
-    });
+    if (loc.end > last_split.end) {
+      split_locations.push({
+        start: loc.end,
+        end: loc.end,
+        index: loc.index,
+      });
+    }
   }
 
   return split_locations;

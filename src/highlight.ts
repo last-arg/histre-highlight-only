@@ -60,7 +60,6 @@ function removeHighlightOverlapsImpl(locations: HighlightLocation[]): HighlightL
       if (tmp_inner.start >= loc.end) { break; }
       inner_positions.push(tmp_inner);
     }
-    console.log("inner_pos", inner_positions)
 
     // Exclude continuous inner_positions that overlap current highglight to
     // the end or beyond end.
@@ -81,7 +80,6 @@ function removeHighlightOverlapsImpl(locations: HighlightLocation[]): HighlightL
     if (inner_pos_length === 0) {
       continue;
     }
-    console.log("inner len", inner_positions.length, inner_pos_length)
     inner_positions.length = inner_pos_length;
     // Change outer loop index to skip already added items
     index += inner_pos_length;
@@ -116,7 +114,7 @@ function removeHighlightOverlapsImpl(locations: HighlightLocation[]): HighlightL
 
       // Make sure highlight end is 'visible'
       if (loc.end > inner_loc.end) {
-        split_locations.push({start: inner_loc.end, end: loc.end, index: loc.index});
+        split_locations.push({start: inner_loc.end, end: Math.min(loc.end, start_index), index: loc.index});
       }
       // Make sure to skip this inner highlight on next outer loop
       continue;
@@ -164,8 +162,8 @@ function removeHighlightOverlapsImpl(locations: HighlightLocation[]): HighlightL
 
     if (loc.end > last_split.end) {
       split_locations.push({
-        start: loc.end,
-        end: loc.end,
+        start: last_split.end,
+        end: Math.min(loc.end, start_index),
         index: loc.index,
       });
     }

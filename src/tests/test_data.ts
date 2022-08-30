@@ -71,10 +71,17 @@ export const test_local = {
 };
 
 // Minimal case that fails test from test_local generated locations
-export const test_locations = [ 
+export const test_locations_single = [ 
   { start: 734, end: 902, index: 0 }, 
   { start: 838, end: 853, index: 8 },
   { start: 868, end: 888, index: 6 }, 
   { start: 888, end: 913, index: 5 }, 
 ];
 
+export const test_locations_multi = [ 
+  { start: 734, end: 902, index: 0 }, 
+  { start: 838, end: 853, index: 8 },
+  { start: 855, end: 860, index: 1 },
+  { start: 868, end: 888, index: 6 }, 
+  { start: 888, end: 913, index: 5 }, 
+];

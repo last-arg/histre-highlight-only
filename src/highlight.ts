@@ -6,11 +6,12 @@ import type { HighlightLocation, LocalHighlightsObject} from "./common";
 // {id, color}[]
 
 export function findHighlightIndices(body_text: string, current_highlights: LocalHighlightsObject): HighlightLocation[] {
+  console.assert(body_text !== null, "body_text can't be null");
+  console.assert(body_text.length !== 0, "body_text can't be empty");
   let locations: HighlightLocation[] = [];
-  if (body_text === null || body_text.length === 0) locations;
   // Find highlights
   for (const [i, value] of Object.values(current_highlights).entries()) {
-    let current_index = body_text?.indexOf(value.text, 0);
+    let current_index = body_text.indexOf(value.text, 0);
     while (current_index !== -1) {
       const end = current_index + value.text.length;
       locations.push({ 

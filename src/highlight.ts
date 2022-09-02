@@ -36,44 +36,51 @@ function removeHighlightOverlapsImpl(locations: HighlightLocation[]): HighlightL
   if (locations.length === 0) return split_locations;
   const end = locations.length;
   for (let index = 0; index < end; index += 1) {
-    const loc = locations[index];
-    let inner_index = index + 1; 
+    const curr = locations[index];
+    let next_index = index + 1; 
 
-    if (inner_index >= locations.length) {
-      split_locations.push({start: loc.start, end: loc.end, index: loc.index});
+    if (next_index >= locations.length) {
+      split_locations.push({start: curr.start, end: curr.end, index: curr.index});
       break;
     }
-    let inner_loc = locations[inner_index];
+    let next_range = locations[next_index];
 
     // This probably happens in most cases
-    if (inner_loc.start >= loc.end) { 
-      split_locations.push({start: loc.start, end: loc.end, index: loc.index});
-      continue; 
-    } else if (inner_loc.start < loc.end && inner_loc.end >= loc.end) {
-      split_locations.push({start: loc.start, end: inner_loc.start, index: loc.index});
+    if (next_range.start >= curr.end) { 
+      split_locations.push({start: curr.start, end: curr.end, index: curr.index});
       continue; 
     }
 
-    const inner_positions = [inner_loc];
-    inner_index += 1;
-    for (;inner_index < end; inner_index += 1) {
-      const tmp_inner = locations[inner_index];
-      if (tmp_inner.start >= loc.end) { break; }
+    // next_range.start is inside current range
+    split_locations.push({start: curr.start, end: next_range.start, index: curr.index});
+
+    if (next_range.end >= curr.end) {
+      continue;
+    }
+
+    // next_range ends inside current range
+
+    // See if more ranges start inside current range
+    const inner_positions = [next_range];
+    next_index += 1;
+    for (;next_index < end; next_index += 1) {
+      const tmp_inner = locations[next_index];
+      if (tmp_inner.start >= curr.end) { break; }
       inner_positions.push(tmp_inner);
     }
 
     // Exclude continuous inner_positions that overlap current highglight to
     // the end or beyond end.
-    let inner_pos_length = 0;
+    let inner_pos_length = inner_positions.length;
     // TODO: might needs this to fix a bug
-    let start_index = inner_loc.start;
-    let end_index = inner_loc.end;
+    let start_index = next_range.start;
+    let end_index = next_range.end;
     for (let index = 1; index < inner_positions.length; index += 1) {
       const inner = inner_positions[index];
       if (inner.start <= end_index) {
         end_index = inner.end;
       } else {
-        inner_pos_length = index;
+        inner_pos_length = index + 1;
         start_index = inner.start;
         end_index = inner.end;
       }
@@ -85,50 +92,23 @@ function removeHighlightOverlapsImpl(locations: HighlightLocation[]): HighlightL
     // Change outer loop index to skip already added items
     index += inner_pos_length;
 
-    // Don't remove highlight if it is totally overlapped (nothing to show). 
-    // Add <mark> where highlight should begin. Do this in case highlight on the
-    // top is removed and need to highlight area underneath removed highlight.
-    // Removed highlight area might have several highlight underneath it.
-    // if (end_index >= loc.end) {
-    //   // New end because other highlights overlap current highlights end
-    //   loc.end = start_index;
-    // }
-
-    // Rest of inner_positions are inside current highlight. Till inner_pos_length
-
     // TODO: This has a bug. Will produce wrong result if inner_loc itself has 
     // overlapping highlights. Have to fix probably where inner_positions are added
     if (inner_positions.length === 1) {
-      // Need to always have start of highlight even if start and end are same.
-      // This is needed if another highlight is removed and need to check if current
-      // highlight needs to highlight removed area. 
-      split_locations.push({
-        start: loc.start,
-        end: inner_loc.start,
-        index: loc.index,
-      });
-
       // Inner highlight goes beyond current highlight end. Start next 
       // outer loop with inner_loc.
       // if (inner_pos.end > loc.end) { continue; }
-      split_locations.push({start: inner_loc.start, end: inner_loc.end, index: inner_loc.index});
+      split_locations.push({start: next_range.start, end: next_range.end, index: next_range.index});
 
       // Make sure highlight end is 'visible'
-      if (loc.end > inner_loc.end) {
-        split_locations.push({start: inner_loc.end, end: Math.min(loc.end, start_index), index: loc.index});
+      if (curr.end > next_range.end) {
+        split_locations.push({start: next_range.end, end: curr.end, index: curr.index});
       }
       // Make sure to skip this inner highlight on next outer loop
       continue;
     }
 
     // Have several inner higlights. These inner highlights might themselves overlap.
-
-    split_locations.push({
-      start: loc.start,
-      end: inner_loc.start,
-      index: loc.index
-    });
-
 
     let splices = [];
     let count = 1;
@@ -145,15 +125,18 @@ function removeHighlightOverlapsImpl(locations: HighlightLocation[]): HighlightL
       max_end = curr.end;
       count = 1;
     }
+    if (splices.length === 0) {
+      splices.push(inner_positions.length)
+    }
 
     for (const s of splices) {
       const partial_locations = removeHighlightOverlapsImpl(inner_positions.splice(0, s));
       const new_start = partial_locations[partial_locations.length - 1].end;
-      const new_end = inner_positions.length > 0 ? inner_positions[0].start : loc.end;
+      const new_end = inner_positions.length > 0 ? inner_positions[0].start : curr.end;
       split_locations.push(...partial_locations, {
         start: new_start,
         end: new_end,
-        index: loc.index,
+        index: curr.index,
       })
     }
     const partial_locations = removeHighlightOverlapsImpl(inner_positions.splice(0));
@@ -161,11 +144,11 @@ function removeHighlightOverlapsImpl(locations: HighlightLocation[]): HighlightL
 
     const last_split = split_locations[split_locations.length - 1];
 
-    if (loc.end > last_split.end) {
+    if (curr.end > last_split.end) {
       split_locations.push({
         start: last_split.end,
-        end: Math.min(loc.end, start_index),
-        index: loc.index,
+        end: end_index >= curr.end ? start_index : curr.end,
+        index: curr.index,
       });
     }
   }

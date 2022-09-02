@@ -70,18 +70,50 @@ export const test_local = {
   }
 };
 
-// Minimal case that fails test from test_local generated locations
-export const test_locations_single = [ 
-  { start: 734, end: 902, index: 0 }, 
-  { start: 838, end: 853, index: 8 },
-  { start: 868, end: 888, index: 6 }, 
-  { start: 888, end: 913, index: 5 }, 
+export const test_data = [
+  { input: [
+      { start: 0, end: 10, index: 0 },
+      { start: 2, end: 6, index: 1 },
+    ],
+    expect: [
+      { start: 0, end: 2, index: 0 },
+      { start: 2, end: 6, index: 1 },
+      { start: 6, end: 10, index: 0 },
+    ]
+  },
+  { input: [
+      { start: 0, end: 10, index: 0 },
+      { start: 2, end: 6, index: 1 },
+      { start: 5, end: 8, index: 2 },
+    ],
+    expect: [
+      { start: 0, end: 2, index: 0 },
+      { start: 2, end: 5, index: 1 },
+      { start: 5, end: 8, index: 2 },
+      { start: 8, end: 10, index: 0 },
+    ]
+  },
+  { input: [
+      { start: 0, end: 10, index: 0 },
+      { start: 2, end: 4, index: 1 },
+      { start: 6, end: 8, index: 2 },
+    ],
+    expect: [
+      { start: 0, end: 2, index: 0 },
+      { start: 2, end: 4, index: 1 },
+      { start: 4, end: 6, index: 0 },
+      { start: 6, end: 8, index: 2 },
+      { start: 8, end: 10, index: 0 },
+    ]
+  },
+  { input: [
+      { start: 1, end: 10, index: 0 },
+      { start: 1, end: 10, index: 1 },
+    ],
+    expect: [
+      { start: 1, end: 1, index: 0 },
+      { start: 1, end: 10, index: 1 },
+    ]
+  },
 ];
 
-export const test_locations_multi = [ 
-  { start: 734, end: 902, index: 0 }, 
-  { start: 838, end: 853, index: 8 },
-  { start: 855, end: 860, index: 1 },
-  { start: 868, end: 888, index: 6 }, 
-  { start: 888, end: 913, index: 5 }, 
-];

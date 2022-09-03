@@ -2,6 +2,9 @@ import { storage } from 'webextension-polyfill';
 import type { Runtime } from 'webextension-polyfill';
 import { Message, Action, HighlightAdd } from './common';
 
+// Test import
+import { test_local } from "./tests/test_data";
+
 console.log("==== LOAD ./dist/background.js ====")
 
 
@@ -318,7 +321,6 @@ type MessageReturn = SaveMessage | boolean | undefined;
 // }
 browser.runtime.onMessage.addListener((msg: Message, sender: Runtime.MessageSender): undefined | Promise<MessageReturn> => {
   console.log(msg, sender);
-  // TODO: do histre requests, if fails save to storage locally
   switch (msg.action) {
     case Action.Save: {
       console.log("save", msg.data.local_id)
@@ -357,6 +359,12 @@ browser.runtime.onMessage.addListener((msg: Message, sender: Runtime.MessageSend
     }
   }
 });
+
+if (__DEV__) {; 
+  // Add test user data
+  storage.local.set({highlights_add: test_local});
+}
+
 
 // console.log(browser.runtime.getURL("/"))
 

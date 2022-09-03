@@ -1,7 +1,7 @@
 /// <reference lib="dom" />
 import { storage } from 'webextension-polyfill';
-import { Action, HighlightLocation, LocalHighlight, LocalHighlightsObject } from './common';
-import { findHighlightIndices, removeHighlightOverlaps, isNonVisibleTag } from './highlight';
+import { Action, LocalHighlightsObject } from './common';
+import { findHighlightIndices, removeHighlightOverlaps } from './highlight';
 import './hho.css';
 console.log("==== LOAD 'content_script.js' TD ====")
 
@@ -99,8 +99,6 @@ async function contextMenuClick(e: Event) {
     }
     console.log("r", result);
 
-
-
     // TODO: implement saving selection
     // TODO?: handle saving multiple selections?
 
@@ -118,27 +116,6 @@ async function contextMenuClick(e: Event) {
     // }
 
   }
-}
-
-// NOTE: Not used at the moment. Use it if you need.
-// This gets exact coordinates of selection start. Use this if you want
-// exact location of 'left'.
-function selectionStartClientRect(sel_obj: Selection) {
-  // TODO: there is Range.insertNode which enters Node at the start of the range
-  // https://developer.mozilla.org/en-US/docs/Web/API/Range/insertNode
-  const node = sel_obj.anchorNode as Text;
-  const parent = node.parentNode;
-  const char = node.splitText(sel_obj.anchorOffset);
-  // This makes an one character text node out of 'char'
-  char.splitText(1);
-
-  const range = document.createRange();
-  range.selectNode(char);
-  const box = range.getBoundingClientRect();
-  // Restore text node as it was
-  if (parent) parent.normalize();
-
-  return box;
 }
 
 // Wrapping selected text with <mark>.
@@ -285,7 +262,7 @@ const selectionChangeListener = debounce(selectionChange, 100);
 // - keyboard (ctrl [+ shift] + arrow_keys)
 // - mouse (ctrl/shift + mouse_click). 
 //   'ctrl' starts another selection. 'shift' extends existing selection.
-function startSelection(e: any) {
+function startSelection() {
   console.log("Event(init): selectstart")
 
   let hasSelectionChangeListener = false;
@@ -312,152 +289,9 @@ function isEmptyObject(object: Object) {
   return true;
 }
 
-
-// Has two solution how to split text nodes and wrap them in HTML element.
-// https://stackoverflow.com/questions/31275446/how-to-wrap-part-of-a-text-in-a-node-with-javascript
-async function renderLocalHighlights1(current_url: string) {
-  console.log("==== renderLocalHighlights() ====")
-  if (isDev) document.body.normalize();
-  const body_text = document.body.textContent
-  if (body_text === null) { return; }
-
-  const local = await storage.local.get({highlights_add: {[current_url]: undefined}});
-  if (local.highlights_add[current_url] === undefined) { return; }
-  const current_highlights = local.highlights_add[current_url].highlights as LocalHighlightsObject;
-  if (isEmptyObject(current_highlights)) { return; }
-  const current_entries = Object.entries(current_highlights);
-  // console.log("highlights", current_entries)
-
-  console.time("Indices")
-  const overlapping_indices = findHighlightIndices(body_text, current_highlights);
-  const indices = removeHighlightOverlaps(overlapping_indices);
-  console.timeEnd("Indices")
-  console.log(indices)
-
-
-  console.time("Higlight DOM")
-  const iter = document.createNodeIterator(document.body, NodeFilter.SHOW_TEXT, null);
-  let currentNode: Node | null = null;
-
-  let hl_loc_index = 0;
-  let node_end = 0;
-  let current_hl_loc: HighlightLocation | null = null;
-  while (currentNode = iter.nextNode()) {
-    const len = currentNode.textContent?.length || 0;
-    let node_start = node_end;
-    node_end += len;
-    // console.log(node_end)
-
-    if (isNonVisibleTag(currentNode)) { continue; }
-
-    let active_node = currentNode;
-
-    // Haven't finished current highlight
-    if (current_hl_loc) {
-      const color = current_entries[current_hl_loc.index][1].color;
-      if (current_hl_loc.end <= node_end) {
-        active_node = (active_node as Text).splitText(len);
-        iter.nextNode();
-        const range = document.createRange();
-        range.selectNode(currentNode);
-        range.surroundContents(createMarkElement(color));
-        iter.nextNode();
-        node_start += active_node.textContent?.length || 0;
-        current_hl_loc = null;
-      } else {
-        const range = document.createRange();
-        range.selectNode(currentNode);
-        range.surroundContents(createMarkElement(color));
-        iter.nextNode();
-        continue;
-      }
-    }
-
-    while (hl_loc_index < indices.length) {
-      const hl_loc = indices[hl_loc_index];
-      // console.log(hl_loc, node_start, node_end)
-      if (hl_loc.start >= node_start && hl_loc.end <= node_end) {
-        // Highlight is inside currentNode
-        // console.log("text", current_entries[hl_loc.index][1])
-        console.log(hl_loc, node_start)
-        const tmp_node = active_node;
-        const start_index = hl_loc.start - node_start;
-        const hl_node = (active_node as Text).splitText(start_index);
-        const len = hl_loc.end - hl_loc.start;
-        node_start += len;
-        // console.log("idnex", start_index, len)
-        active_node = (hl_node as Text).splitText(len);
-        iter.nextNode();
-        iter.nextNode();
-
-        console.log(hl_node)
-        const range = document.createRange();
-        range.selectNode(hl_node);
-        range.surroundContents(createMarkElement(current_entries[hl_loc.index][1].color));
-        iter.nextNode();
-        // return;
-
-        node_start += tmp_node.textContent?.length || 0;
-        hl_loc_index += 1;
-        continue;
-        // console.log("rest", hl_node);
-      } else if (hl_loc.start < node_end) {
-        // Highlight starts inside this node. Ends in another node.
-
-        // Make new node
-        const start_index = hl_loc.start - node_start;
-        console.log(hl_loc.start, node_start)
-        active_node = (active_node as Text).splitText(start_index);
-        const range = document.createRange();
-        range.selectNode(currentNode);
-        range.surroundContents(createMarkElement(current_entries[hl_loc.index][1].color));
-        iter.nextNode();
-        iter.nextNode();
-
-        current_hl_loc = hl_loc;
-        hl_loc_index += 1;
-      }
-
-      break;
-    }
-
-    if (hl_loc_index >= indices.length) {
-      break;
-    }
-  }
-  console.timeEnd("Higlight DOM")
-
-
-
-  // {
-  //   // for debug
-  //   document.body.textContent?.normalize()
-  //   const body_text = document.body.textContent;
-  //   console.time("Indices")
-  //   const result = testBodyTextContentSearch(body_text, current_highlights);
-  //   console.timeEnd("Indices")
-  //   // highlightLocations(result);
-  // }
-
-  // {
-  //   const iter_time_start = performance.now();
-  //   const result = testIterHighlight(current_highlights);
-  //   const iter_time_end = performance.now();
-  //   console.log(result);
-  //   console.log(`time (outer iter): ${iter_time_end - iter_time_start}ms`)
-  // }
-
-  // {
-  //   const iter_time_start = performance.now();
-  //   const result = testHighlightIter(current_highlights);
-  //   const iter_time_end = performance.now();
-  //   console.log(result);
-  //   console.log(`time (inner iter): ${iter_time_end - iter_time_start}ms`)
-  // } 
-}
-
 function removeHighlights() {
   const marks = document.querySelectorAll(".hho-mark");
+  // @ts-ignore
   for (const m of marks) {
     const text = m.textContent;
     m.replaceWith(text)
@@ -561,7 +395,6 @@ function init() {
   }  
   getContextMenu();
   document.addEventListener("selectstart", startSelection);
-  // renderLocalHighlights("wrong_url");
 }
 init();
 

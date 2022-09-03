@@ -1,6 +1,6 @@
 /// <reference lib="dom" />
 import { storage } from 'webextension-polyfill';
-import { Action, LocalHighlightsObject } from './common';
+import { Action, LocalHighlightsObject, HighlightLocation } from './common';
 import { findHighlightIndices, removeHighlightOverlaps } from './highlight';
 import './hho.css';
 console.log("==== LOAD 'content_script.js' TD ====")
@@ -299,32 +299,8 @@ function removeHighlights() {
   document.body.normalize();
 }
 
-async function renderLocalHighlights(current_url: string) {
-  console.log("==== renderLocalHighlights() ====")
-  if (isDev) {
-    removeHighlights();
-  }
-  const body_text = document.body.textContent
-  if (body_text === null) { return; }
-
-  const local = await storage.local.get({highlights_add: {[current_url]: undefined}});
-  if (local.highlights_add[current_url] === undefined) { 
-    console.info(`No highlights for ${current_url}`);
-    return; 
-  }
-  const current_highlights = local.highlights_add[current_url].highlights as LocalHighlightsObject;
-  if (isEmptyObject(current_highlights)) { 
-    console.info(`Found url ${current_url} doesn't contain any highlights`);
-    // TODO?: remove url from webext 'storage.local'?
-    return; 
-  }
-  const current_entries = Object.entries(current_highlights);
-
-  console.time("Indices")
-  const overlapping_indices = findHighlightIndices(body_text, current_highlights);
-  const indices = removeHighlightOverlaps(overlapping_indices);
-  console.timeEnd("Indices")
-
+function highlightDOM(ranges: HighlightLocation[], current_entries: any) {
+  const indices = ranges;
   const iter = document.createNodeIterator(document.body, NodeFilter.SHOW_TEXT, null);
   let current_node;
   let total_start = 0;
@@ -384,6 +360,37 @@ async function renderLocalHighlights(current_url: string) {
 
     console.assert(total_start <= total_end, "Start index is large than end index");
   }
+}
+
+async function renderLocalHighlights(current_url: string) {
+  console.log("==== renderLocalHighlights() ====")
+  if (isDev) {
+    removeHighlights();
+  }
+  const body_text = document.body.textContent
+  if (body_text === null) { return; }
+
+  const local = await storage.local.get({highlights_add: {[current_url]: undefined}});
+  if (local.highlights_add[current_url] === undefined) { 
+    console.info(`No highlights for ${current_url}`);
+    return; 
+  }
+  const current_highlights = local.highlights_add[current_url].highlights as LocalHighlightsObject;
+  if (isEmptyObject(current_highlights)) { 
+    console.info(`Found url ${current_url} doesn't contain any highlights`);
+    // TODO?: remove url from webext 'storage.local'?
+    return; 
+  }
+  const current_entries = Object.entries(current_highlights);
+
+  console.time("Generate ranges")
+  const overlapping_indices = findHighlightIndices(body_text, current_highlights);
+  const indices = removeHighlightOverlaps(overlapping_indices);
+  console.timeEnd("Generate ranges")
+
+  console.time("Highlight DOM")
+  highlightDOM(indices, current_entries)
+  console.timeEnd("Highlight DOM")
 }
 
 function init() {

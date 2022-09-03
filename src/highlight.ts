@@ -88,7 +88,8 @@ function removeHighlightOverlapsImpl(locations: HighlightLocation[]): HighlightL
     if (inner_pos_length === 0) {
       continue;
     }
-    inner_positions.length = inner_pos_length;
+    const ignore_pos = inner_positions.splice(inner_pos_length)
+    // inner_positions.length = inner_pos_length;
     // Change outer loop index to skip already added items
     index += inner_pos_length;
 
@@ -145,11 +146,17 @@ function removeHighlightOverlapsImpl(locations: HighlightLocation[]): HighlightL
     const last_split = split_locations[split_locations.length - 1];
 
     if (curr.end > last_split.end) {
-      split_locations.push({
+      const end_range = {
         start: last_split.end,
-        end: end_index >= curr.end ? start_index : curr.end,
+        end: curr.end,
         index: curr.index,
-      });
+      }
+      if (ignore_pos.length === 0) {
+        split_locations.push(end_range);
+      } else if (ignore_pos[0].start > last_split.end) {
+        end_range.end = ignore_pos[0].start,
+        split_locations.push(end_range);
+      }
     }
   }
 

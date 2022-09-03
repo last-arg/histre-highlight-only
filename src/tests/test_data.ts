@@ -115,5 +115,18 @@ export const test_data = [
       { start: 1, end: 10, index: 1 },
     ]
   },
+  { input: [
+      { start: 0, end: 10, index: 0 },
+      { start: 2, end: 4, index: 8 },
+      { start: 6, end: 8, index: 6 },
+      { start: 8, end: 13, index: 5 },
+    ],
+    expect: [
+      { start: 0, end: 2, index: 0 },
+      { start: 2, end: 4, index: 8 },
+      { start: 4, end: 6, index: 0 },
+      { start: 6, end: 8, index: 6 },
+      { start: 8, end: 13, index: 5 },
+    ]
+  }
 ];
-

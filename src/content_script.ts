@@ -1,5 +1,5 @@
 /// <reference lib="dom" />
-import { storage } from 'webextension-polyfill';
+import { storage, runtime } from 'webextension-polyfill';
 import { Action, LocalHighlightsObject, HighlightLocation } from './common';
 import { findHighlightIndices, removeHighlightOverlaps } from './highlight';
 import './hho.css';
@@ -406,35 +406,22 @@ function init() {
 init();
 
 async function test() {
-  const result = await browser.runtime.sendMessage(
-    "addon@histre-highlight-only.com", 
-    { action: Action.Save
-    , data: { text: "my highlight text", color: "yellow", local_id: `${prefix_local_id}-s8a9asd`}
-    },
+  // const ext_id = "addon@histre-highlight-only.com";
+  const hl_id = `${prefix_local_id}-xxxxxxx`;
+  const save = await runtime.sendMessage(
+    { action: Action.Save , data: { text: "my highlight text", color: "yellow", local_id: hl_id} },
   )
-  if (!result) {
-    console.error("Failed to save highlight to Histre or local storage");
-  }
-  console.log("r", result);
+  if (!save) { console.error("Failed to save highlight"); }
 
-  const update = await browser.runtime.sendMessage(
-    "addon@histre-highlight-only.com", 
-    { action: Action.Update
-    , data: { color: "blue", local_id: `${prefix_local_id}-s8a9asd`}
-    },
+  const update = await runtime.sendMessage(
+    { action: Action.Update , data: { color: "blue", local_id: hl_id} },
   )
-  console.log("update", update);
+  if (!update) { console.error("Failed to update highlight"); }
 
-  const remove = await browser.runtime.sendMessage(
-    "addon@histre-highlight-only.com", 
-    { action: Action.Remove
-    , data: { id: `${prefix_local_id}-remove`}
-    },
-  )
-  console.log("remove", remove);
-
-
+  const remove = await runtime.sendMessage({ action: Action.Remove , data: { id: hl_id} })
+  if (!remove) { console.error("Failed to remove highlight"); }
 }
-// test();
+
+test();
 
 

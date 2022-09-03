@@ -31,7 +31,8 @@ export async function getManifest() {
       chrome_style: false,
     },
     background: {
-      page: './dist/background.html',
+      scripts: ["./dist/assets/background.js"],
+      // page: './dist/background.html',
       persistent: false,
     },
     icons: {

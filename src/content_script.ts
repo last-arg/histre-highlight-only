@@ -1,6 +1,7 @@
 /// <reference lib="dom" />
 import { storage } from 'webextension-polyfill';
-import { Action, HighlightAdd } from './common';
+import { Action, HighlightLocation, LocalHighlight, LocalHighlightsObject } from './common';
+import { findHighlightIndices, removeHighlightOverlaps, isNonVisibleTag } from './highlight';
 import './hho.css';
 console.log("==== LOAD 'content_script.js' TD ====")
 
@@ -86,6 +87,7 @@ async function contextMenuClick(e: Event) {
     console.log("button click color: ", color)
     highlightSelectedText(sel_obj, color, local_class_id);
     const data = { text: sel_string, color: color, local_id: local_class_id };
+    console.log("data", data)
     sel_obj.removeAllRanges(); // This fires 'selectionchange' event
     const result = await browser.runtime.sendMessage(
       "addon@histre-highlight-only.com", 
@@ -144,6 +146,12 @@ function selectionStartClientRect(sel_obj: Selection) {
 // Selection can contain children elements.
 const mark_elem = document.createElement("mark");
 mark_elem.classList.add("hho-mark");
+
+function createMarkElement(color: string | undefined) {
+  const elem = mark_elem.cloneNode(true);
+  (elem as Element).setAttribute("data-hho-color", color || "yellow");
+  return elem;
+}
 
 function containsNonWhiteSpace(node: Node): number {
   if (node.textContent && /^\s*$/.test(node.textContent)) {
@@ -290,25 +298,136 @@ function startSelection(e: any) {
   // If keyboard is used to start selection
   document.addEventListener("keyup", (e: KeyboardEvent) => {
     if (hasSelectionChangeListener) return;
-    if (e.shiftKey && [37, 38, 39, 40].some((val) => val === e.which)) {
+    if (e.shiftKey && ["ArrowUp", "ArrowRight", "ArrowDown", "ArrowLeft"].some((val) => val === e.key)) {
       selectionChange();
       document.addEventListener("selectionchange", selectionChangeListener)
     }
   }, {once: true})
 }
 
-getContextMenu();
-document.addEventListener("selectstart", startSelection)
+function isEmptyObject(object: Object) {
+  for (const _ in object) {
+    return false;
+  }
+  return true;
+}
 
 
-async function renderLocalHighlights(current_url: string) {
+// Has two solution how to split text nodes and wrap them in HTML element.
+// https://stackoverflow.com/questions/31275446/how-to-wrap-part-of-a-text-in-a-node-with-javascript
+async function renderLocalHighlights1(current_url: string) {
   console.log("==== renderLocalHighlights() ====")
-  const local = await storage.local.get({highlights_add: undefined});
-  if (!local.highlights_add) { return; }
-  const current_highlights = Object.entries<HighlightAdd>(local.highlights_add)
-    .filter(([_, value]) => value.url === current_url);
-  if (current_highlights.length === 0) { return; }
-  console.log(current_highlights)
+  if (isDev) document.body.normalize();
+  const body_text = document.body.textContent
+  if (body_text === null) { return; }
+
+  const local = await storage.local.get({highlights_add: {[current_url]: undefined}});
+  if (local.highlights_add[current_url] === undefined) { return; }
+  const current_highlights = local.highlights_add[current_url].highlights as LocalHighlightsObject;
+  if (isEmptyObject(current_highlights)) { return; }
+  const current_entries = Object.entries(current_highlights);
+  // console.log("highlights", current_entries)
+
+  console.time("Indices")
+  const overlapping_indices = findHighlightIndices(body_text, current_highlights);
+  const indices = removeHighlightOverlaps(overlapping_indices);
+  console.timeEnd("Indices")
+  console.log(indices)
+
+
+  console.time("Higlight DOM")
+  const iter = document.createNodeIterator(document.body, NodeFilter.SHOW_TEXT, null);
+  let currentNode: Node | null = null;
+
+  let hl_loc_index = 0;
+  let node_end = 0;
+  let current_hl_loc: HighlightLocation | null = null;
+  while (currentNode = iter.nextNode()) {
+    const len = currentNode.textContent?.length || 0;
+    let node_start = node_end;
+    node_end += len;
+    // console.log(node_end)
+
+    if (isNonVisibleTag(currentNode)) { continue; }
+
+    let active_node = currentNode;
+
+    // Haven't finished current highlight
+    if (current_hl_loc) {
+      const color = current_entries[current_hl_loc.index][1].color;
+      if (current_hl_loc.end <= node_end) {
+        active_node = (active_node as Text).splitText(len);
+        iter.nextNode();
+        const range = document.createRange();
+        range.selectNode(currentNode);
+        range.surroundContents(createMarkElement(color));
+        iter.nextNode();
+        node_start += active_node.textContent?.length || 0;
+        current_hl_loc = null;
+      } else {
+        const range = document.createRange();
+        range.selectNode(currentNode);
+        range.surroundContents(createMarkElement(color));
+        iter.nextNode();
+        continue;
+      }
+    }
+
+    while (hl_loc_index < indices.length) {
+      const hl_loc = indices[hl_loc_index];
+      // console.log(hl_loc, node_start, node_end)
+      if (hl_loc.start >= node_start && hl_loc.end <= node_end) {
+        // Highlight is inside currentNode
+        // console.log("text", current_entries[hl_loc.index][1])
+        console.log(hl_loc, node_start)
+        const tmp_node = active_node;
+        const start_index = hl_loc.start - node_start;
+        const hl_node = (active_node as Text).splitText(start_index);
+        const len = hl_loc.end - hl_loc.start;
+        node_start += len;
+        // console.log("idnex", start_index, len)
+        active_node = (hl_node as Text).splitText(len);
+        iter.nextNode();
+        iter.nextNode();
+
+        console.log(hl_node)
+        const range = document.createRange();
+        range.selectNode(hl_node);
+        range.surroundContents(createMarkElement(current_entries[hl_loc.index][1].color));
+        iter.nextNode();
+        // return;
+
+        node_start += tmp_node.textContent?.length || 0;
+        hl_loc_index += 1;
+        continue;
+        // console.log("rest", hl_node);
+      } else if (hl_loc.start < node_end) {
+        // Highlight starts inside this node. Ends in another node.
+
+        // Make new node
+        const start_index = hl_loc.start - node_start;
+        console.log(hl_loc.start, node_start)
+        active_node = (active_node as Text).splitText(start_index);
+        const range = document.createRange();
+        range.selectNode(currentNode);
+        range.surroundContents(createMarkElement(current_entries[hl_loc.index][1].color));
+        iter.nextNode();
+        iter.nextNode();
+
+        current_hl_loc = hl_loc;
+        hl_loc_index += 1;
+      }
+
+      break;
+    }
+
+    if (hl_loc_index >= indices.length) {
+      break;
+    }
+  }
+  console.timeEnd("Higlight DOM")
+
+
 
   // {
   //   // for debug
@@ -337,9 +456,114 @@ async function renderLocalHighlights(current_url: string) {
   // } 
 }
 
-// renderLocalHighlights("https://en.wikipedia.org/wiki/Program");
-// renderLocalHighlights("wrong_url");
+function removeHighlights() {
+  const marks = document.querySelectorAll(".hho-mark");
+  for (const m of marks) {
+    const text = m.textContent;
+    m.replaceWith(text)
+  }
+  document.body.normalize();
+}
 
+async function renderLocalHighlights(current_url: string) {
+  console.log("==== renderLocalHighlights() ====")
+  if (isDev) {
+    removeHighlights();
+  }
+  const body_text = document.body.textContent
+  if (body_text === null) { return; }
+
+  const local = await storage.local.get({highlights_add: {[current_url]: undefined}});
+  if (local.highlights_add[current_url] === undefined) { 
+    console.info(`No highlights for ${current_url}`);
+    return; 
+  }
+  const current_highlights = local.highlights_add[current_url].highlights as LocalHighlightsObject;
+  if (isEmptyObject(current_highlights)) { 
+    console.info(`Found url ${current_url} doesn't contain any highlights`);
+    // TODO?: remove url from webext 'storage.local'?
+    return; 
+  }
+  const current_entries = Object.entries(current_highlights);
+
+  console.time("Indices")
+  const overlapping_indices = findHighlightIndices(body_text, current_highlights);
+  const indices = removeHighlightOverlaps(overlapping_indices);
+  console.timeEnd("Indices")
+
+  const iter = document.createNodeIterator(document.body, NodeFilter.SHOW_TEXT, null);
+  let current_node;
+  let total_start = 0;
+  let total_end = 0;
+  const range = document.createRange();
+
+  for (const hl_loc of indices) {
+    if (hl_loc.start >= total_end) {
+      while (current_node = iter.nextNode()) {
+        total_start = total_end;
+        total_end += current_node.textContent?.length || 0;
+        if (hl_loc.start < total_end) {
+          break;
+        }
+      }
+    }
+    if (!current_node) break;
+
+    const node_start = hl_loc.start - total_start;
+    total_start += node_start;
+    let hl_node = (current_node as Text).splitText(node_start);
+    iter.nextNode();
+    const color = current_entries[hl_loc.index][1].color;
+
+    if (hl_loc.end > total_end) {
+      range.selectNode(hl_node);
+      range.surroundContents(createMarkElement(color));
+      total_end = total_start + (hl_node.textContent?.length || 0);
+
+      while (current_node = iter.nextNode()) {
+        total_start = total_end;
+        total_end += current_node.textContent?.length || 0;
+        if (hl_loc.end <= total_end) {
+          const len = total_end - hl_loc.end;
+          total_end = total_start + len;
+          (current_node as Text).splitText(len);
+          range.selectNode(current_node);
+          range.surroundContents(createMarkElement(color));
+
+          // skip new nodes made by splitText and surroundContents
+          iter.nextNode();
+          break;
+        }
+
+        range.selectNode(current_node);
+        range.surroundContents(createMarkElement(color));
+      }
+    } else {
+      const len = hl_loc.end - hl_loc.start;
+      total_end = total_start + len;
+      (hl_node as Text).splitText(len);
+      range.selectNode(hl_node);
+      range.surroundContents(createMarkElement(color));
+      // skip new nodes made by splitText
+      iter.nextNode();
+    }
+
+    console.assert(total_start <= total_end, "Start index is large than end index");
+  }
+}
+
+function init() {
+  const url = "http://localhost:8080/test.html";
+  if(document.readyState === 'loading') {
+    document.addEventListener("DOMContentLoaded", () => renderLocalHighlights(url));
+  } else {
+    renderLocalHighlights(url)
+  }  
+  getContextMenu();
+  document.addEventListener("selectstart", startSelection);
+  // renderLocalHighlights("wrong_url");
+}
+init();
 
 async function test() {
   const result = await browser.runtime.sendMessage(

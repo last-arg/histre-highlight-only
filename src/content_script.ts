@@ -76,11 +76,11 @@ async function contextMenuClick(e: Event) {
   const elem = e.target as Element;
   if (elem.classList.contains("hho-btn-color")) {
     const sel_obj = window.getSelection();
-    const sel_string = sel_obj?.toString() || "";
-    if (!sel_obj || sel_string.length === 0) {
+    if (!hasSelection(sel_obj)) {
       console.info("No selection to save");
       return;
     }
+    const sel_string = sel_obj.toString();
     if (sel_string.length <= MIN_SELECTION_LEN || sel_obj.anchorNode === null) return;
     const local_id = Math.random().toString(36).substring(2,10)
     const local_class_id = `${prefix_local_id}-${local_id}`;
@@ -115,7 +115,6 @@ async function contextMenuClick(e: Event) {
     //   console.log(sel_obj.getRangeAt(i));
     //   console.log(sel_obj.getRangeAt(i).toString());
     // }
-
   }
 }
 
@@ -236,17 +235,22 @@ function debounce(f: any, delay: number) {
   }
 }
 
+function hasSelection(sel: Selection | null): sel is Selection {
+  return sel !== null && sel.toString().length >= 0
+}
+
 function selectionChange() {
-  const sel_obj = window.getSelection();
-  if (!sel_obj || sel_obj?.toString().length === 0) {
+  console.log("Event: selectionchange")
+  const win_selection = window.getSelection();
+  if (!hasSelection(win_selection)) {
     document.removeEventListener("selectionchange", selectionChangeListener);
     getContextMenu().setAttribute("aria-hidden", "true");
     return;
   }
-  if (sel_obj.toString().length <= MIN_SELECTION_LEN || sel_obj.anchorNode === null) return;
+  if (win_selection.toString().length <= MIN_SELECTION_LEN || win_selection.anchorNode === null) return;
   const context_menu = getContextMenu();
   const context_menu_rect = context_menu.getBoundingClientRect();
-  const new_pos = selectionNewPosition(sel_obj, context_menu_rect);
+  const new_pos = selectionNewPosition(win_selection, context_menu_rect);
   context_menu.style.top = `${new_pos.top}px`;
   context_menu.style.left = `${new_pos.left}px`;
   context_menu.setAttribute("aria-hidden", "false");

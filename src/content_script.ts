@@ -384,6 +384,11 @@ async function renderLocalHighlights(current_url: string) {
   }
   const current_entries = Object.entries(current_highlights);
 
+  console.time("Iter all text nodes")
+  const iter = document.createNodeIterator(document.body, NodeFilter.SHOW_TEXT, null);
+  while (iter.nextNode()) {}
+  console.timeEnd("Iter all text nodes")
+
   console.time("Generate ranges")
   const overlapping_indices = findHighlightIndices(body_text, current_highlights);
   const indices = removeHighlightOverlaps(overlapping_indices);

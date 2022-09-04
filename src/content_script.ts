@@ -6,32 +6,31 @@ import { findHighlightIndices, removeHighlightOverlaps } from './highlight';
 import './hho.css';
 console.log("==== LOAD 'content_script.js' TD ====")
 
+type ContextMenuElem = HTMLDivElement;
+enum ContextMenuState { None, New, Exists }
+// Histre colors
+enum Color { yellow, orange, green, blue, purple, red };
+
 const isDev = true;
 
 // TODO: How to handle selection action bar (context menu) position with 
 // mobile native context menu?
 
+const MIN_SELECTION_LEN = 3;
 const prefix_local_id = "hho-local";
 
-type ContextMenu = HTMLDivElement;
-declare global {
-  interface Window {
-    g: {
-      context_menu_elem?: ContextMenu
-    };
+class ContextMenu {
+  elem: ContextMenuElem;
+  state: ContextMenuState = ContextMenuState.None;
+
+  constructor() {
+    this.elem = ContextMenu.renderContextMenu();
   }
-}
-window.g = {
-  context_menu_elem: undefined
-};
 
-const MIN_SELECTION_LEN = 3;
+  setState(state: ContextMenuState) { this.state = state; }
+  isState(state: ContextMenuState) { return this.state === state; }
 
-// Histre colors
-enum Color { yellow, orange, green, blue, purple, red };
-
-function getContextMenu(): ContextMenu {
-  if (!window.g?.context_menu_elem) {
+  static renderContextMenu() {
     document.querySelector(".hho-context-menu")?.remove();
     const container = document.createElement("div");
     container.classList.add("hho-context-menu");
@@ -65,10 +64,16 @@ function getContextMenu(): ContextMenu {
 
     container.addEventListener("click", contextMenuClick);
     document.body.appendChild(container)
-    window.g.context_menu_elem = document.querySelector(".hho-context-menu") as HTMLDivElement;
+    return document.querySelector(".hho-context-menu") as ContextMenuElem;
   }
+}
 
-  return window.g.context_menu_elem;
+const global = {
+  menu: new ContextMenu(),
+};
+
+function getContextMenu(): ContextMenuElem {
+  return global.menu.elem;
 }
 
 async function contextMenuClick(e: Event) {
@@ -402,6 +407,7 @@ async function renderLocalHighlights(current_url: string) {
   highlightDOM(indices, current_entries)
   console.timeEnd("Highlight DOM")
 }
+
 
 function init() {
   const url = "http://localhost:8080/test.html";

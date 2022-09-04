@@ -1,4 +1,5 @@
 /// <reference lib="dom" />
+/// <reference lib="dom.iterable" />
 import { storage, runtime } from 'webextension-polyfill';
 import { Action, LocalHighlightsObject, HighlightLocation } from './common';
 import { findHighlightIndices, removeHighlightOverlaps } from './highlight';
@@ -291,9 +292,9 @@ function isEmptyObject(object: Object) {
 
 function removeHighlights() {
   const marks = document.querySelectorAll(".hho-mark");
-  // @ts-ignore
   for (const m of marks) {
     const text = m.textContent;
+    if (text === null) continue;
     m.replaceWith(text)
   }
   document.body.normalize();

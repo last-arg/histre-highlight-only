@@ -52,6 +52,14 @@
   background-color: #e6cfff;
 }
 
+.hho-btn-remove {
+  display: none;
+}
+
+.hho-context-menu[data-hho-state="modify"] .hho-btn-remove {
+  display: block;
+}
+
 .sr-only {
 	position: absolute;
   width: 1px;

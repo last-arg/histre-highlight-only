@@ -39,7 +39,7 @@ class ContextMenu {
         break;
       }
       case ContextMenuState.create: {
-        console.assert(arg, "Context menu state 'New' requires second function argument 'arg'")
+        console.assert(arg, "Context menu state 'create' requires second function argument 'arg'")
         const rect = this.elem.getBoundingClientRect();
         const new_pos = selectionNewPosition(arg as Selection, rect);
         this.elem.style.top = `${new_pos.top}px`;
@@ -48,7 +48,7 @@ class ContextMenu {
         break;
       }
       case ContextMenuState.modify: {
-        console.assert(arg, "Context menu state 'Exists' requires second function argument 'arg'")
+        console.assert(arg, "Context menu state 'modify' requires second function argument 'arg'")
         const menu_rect = this.elem.getBoundingClientRect();
         const elem_rect = (arg as Element).getBoundingClientRect();
         console.log(elem_rect);
@@ -99,7 +99,8 @@ class ContextMenu {
     {
       const new_button = document.createElement("button");
       new_button.type = "button";
-      new_button.textContent = `Del`;
+      new_button.classList.add("hho-btn-remove");
+      new_button.textContent = `Rem`;
       container.appendChild(new_button);
     }
 

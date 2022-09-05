@@ -7,7 +7,7 @@ import './hho.css';
 console.log("==== LOAD 'content_script.js' TD ====")
 
 type ContextMenuElem = HTMLDivElement;
-enum ContextMenuState { None, New, Exists }
+enum ContextMenuState { none, create, modify }
 // Histre colors
 enum Color { yellow, orange, green, blue, purple, red };
 
@@ -21,22 +21,24 @@ const prefix_local_id = "hho-local";
 
 class ContextMenu {
   elem: ContextMenuElem;
-  state: ContextMenuState = ContextMenuState.None;
+  state: ContextMenuState = ContextMenuState.none;
 
   constructor() {
     this.elem = ContextMenu.renderContextMenu();
     this.elem.addEventListener("click", ContextMenu.handleClick(this));
+    this.elem.setAttribute("data-hho-state", ContextMenuState[ContextMenuState.none]);
   }
 
   isState(state: ContextMenuState) { return this.state === state; }
 
   update(state: ContextMenuState, arg?: Selection | Element) { 
+    this.elem.setAttribute("data-hho-state", ContextMenuState[state]);
     switch(state) {
-      case ContextMenuState.None: {
+      case ContextMenuState.none: {
         this.elem.setAttribute("aria-hidden", "true");
         break;
       }
-      case ContextMenuState.New: {
+      case ContextMenuState.create: {
         console.assert(arg, "Context menu state 'New' requires second function argument 'arg'")
         const rect = this.elem.getBoundingClientRect();
         const new_pos = selectionNewPosition(arg as Selection, rect);
@@ -45,7 +47,7 @@ class ContextMenu {
         this.elem.setAttribute("aria-hidden", "false");
         break;
       }
-      case ContextMenuState.Exists: {
+      case ContextMenuState.modify: {
         console.assert(arg, "Context menu state 'Exists' requires second function argument 'arg'")
         const menu_rect = this.elem.getBoundingClientRect();
         const elem_rect = (arg as Element).getBoundingClientRect();
@@ -91,6 +93,13 @@ class ContextMenu {
       const text_elem = base_button_text.cloneNode(true);
       text_elem.textContent = `Save highlight with ${color} color`;
       new_button.appendChild(text_elem);
+      container.appendChild(new_button);
+    }
+
+    {
+      const new_button = document.createElement("button");
+      new_button.type = "button";
+      new_button.textContent = `Del`;
       container.appendChild(new_button);
     }
 
@@ -291,7 +300,7 @@ function selectionChange() {
   const win_selection = window.getSelection();
   if (!hasSelection(win_selection)) {
     document.removeEventListener("selectionchange", selectionChangeListener);
-    global.menu.update(ContextMenuState.None);
+    global.menu.update(ContextMenuState.none);
     return;
   }
   const selection_str = win_selection.toString();
@@ -299,10 +308,10 @@ function selectionChange() {
     if (selection_str.length === 0) {
       document.removeEventListener("selectionchange", selectionChangeListener);
     }
-    global.menu.update(ContextMenuState.None);
+    global.menu.update(ContextMenuState.none);
     return;
   }
-  global.menu.update(ContextMenuState.New, win_selection);
+  global.menu.update(ContextMenuState.create, win_selection);
 }
 
 const selectionChangeListener = debounce(selectionChange, 100);
@@ -464,12 +473,13 @@ function init() {
   document.addEventListener("click", (e: Event) => {
     const elem = e.target as Element;
     if (elem.classList.contains("hho-mark")) {
-      if (global.menu.isState(ContextMenuState.New)) {
+      if (global.menu.isState(ContextMenuState.create)) {
         return;
       }
-      global.menu.update(ContextMenuState.Exists, elem);
+      global.menu.update(ContextMenuState.modify, elem);
+    } else {
+      global.menu.update(ContextMenuState.none);
     }
-
   })
 }
 init();

@@ -25,10 +25,42 @@ class ContextMenu {
 
   constructor() {
     this.elem = ContextMenu.renderContextMenu();
+    this.elem.addEventListener("click", ContextMenu.handleClick(this));
   }
 
-  setState(state: ContextMenuState) { this.state = state; }
   isState(state: ContextMenuState) { return this.state === state; }
+
+  update(state: ContextMenuState, arg?: Selection | Element) { 
+    switch(state) {
+      case ContextMenuState.None: {
+        this.elem.setAttribute("aria-hidden", "true");
+        break;
+      }
+      case ContextMenuState.New: {
+        console.assert(arg, "Context menu state 'New' requires second function argument 'arg'")
+        const rect = this.elem.getBoundingClientRect();
+        const new_pos = selectionNewPosition(arg as Selection, rect);
+        this.elem.style.top = `${new_pos.top}px`;
+        this.elem.style.left = `${new_pos.left}px`;
+        this.elem.setAttribute("aria-hidden", "false");
+        break;
+      }
+      case ContextMenuState.Exists: {
+        console.assert(arg, "Context menu state 'Exists' requires second function argument 'arg'")
+        const menu_rect = this.elem.getBoundingClientRect();
+        const elem_rect = (arg as Element).getBoundingClientRect();
+        console.log(elem_rect);
+        const top = elem_rect.top + window.pageYOffset - menu_rect.height;
+        const body_rect = document.body.getBoundingClientRect();
+        const left = elem_rect.left + window.pageXOffset - body_rect.x + (elem_rect.width / 2) - (menu_rect.width / 2);
+        this.elem.style.top = `${top}px`;
+        this.elem.style.left = `${left}px`;
+        this.elem.setAttribute("aria-hidden", "false");
+        break;
+      }
+    }
+    this.state = state; 
+  }
 
   static renderContextMenu() {
     document.querySelector(".hho-context-menu")?.remove();
@@ -62,66 +94,67 @@ class ContextMenu {
       container.appendChild(new_button);
     }
 
-    container.addEventListener("click", contextMenuClick);
     document.body.appendChild(container)
     return document.querySelector(".hho-context-menu") as ContextMenuElem;
+  }
+
+  static handleClick(ctx_menu: ContextMenu) {
+    console.log("handleClick")
+    async function handleClickImpl(e: Event) {
+      // console.log("state", ContextMenuState[ctx_menu.state])
+      // return;
+      console.log("save", ctx_menu)
+      const elem = e.target as Element;
+      if (elem.classList.contains("hho-btn-color")) {
+        const sel_obj = window.getSelection();
+        if (!hasSelection(sel_obj)) {
+          console.info("No selection to save");
+          return;
+        }
+        const sel_string = sel_obj.toString();
+        if (sel_string.length <= MIN_SELECTION_LEN || sel_obj.anchorNode === null) return;
+        const local_id = Math.random().toString(36).substring(2,10)
+        const local_class_id = `${prefix_local_id}-${local_id}`;
+        const color = elem.getAttribute("data-hho-color") || "yellow";
+        console.log("button click color: ", color)
+        highlightSelectedText(sel_obj, color, local_class_id);
+        const data = { text: sel_string, color: color, local_id: local_class_id };
+        console.log("data", data)
+        sel_obj.removeAllRanges(); // This fires 'selectionchange' event
+        const result = await runtime.sendMessage(
+          "addon@histre-highlight-only.com", 
+          { action: Action.Save , data: data },
+        )
+        if (!result) {
+          console.error("Failed to save highlight to Histre or local storage");
+          return;
+        }
+        console.log("r", result);
+
+        // TODO: implement saving selection
+        // TODO?: handle saving multiple selections?
+
+        // TODO: Send selection to background
+        // const hl = await browser.runtime.sendMessage()
+        // will be added either to histre or local (if request failed)
+        // figure out how to display success and failure
+        // success: replace local ids with histre ids
+
+
+        // TODO?: implement highlighting for multiselect text?
+        // for (let i = 0; i < sel_obj.rangeCount; i++) {
+        //   console.log(sel_obj.getRangeAt(i));
+        //   console.log(sel_obj.getRangeAt(i).toString());
+        // }
+      }
+    }
+    return handleClickImpl;
   }
 }
 
 const global = {
   menu: new ContextMenu(),
 };
-
-function getContextMenu(): ContextMenuElem {
-  return global.menu.elem;
-}
-
-async function contextMenuClick(e: Event) {
-  console.log("save")
-  const elem = e.target as Element;
-  if (elem.classList.contains("hho-btn-color")) {
-    const sel_obj = window.getSelection();
-    if (!hasSelection(sel_obj)) {
-      console.info("No selection to save");
-      return;
-    }
-    const sel_string = sel_obj.toString();
-    if (sel_string.length <= MIN_SELECTION_LEN || sel_obj.anchorNode === null) return;
-    const local_id = Math.random().toString(36).substring(2,10)
-    const local_class_id = `${prefix_local_id}-${local_id}`;
-    const color = elem.getAttribute("data-hho-color") || "yellow";
-    console.log("button click color: ", color)
-    highlightSelectedText(sel_obj, color, local_class_id);
-    const data = { text: sel_string, color: color, local_id: local_class_id };
-    console.log("data", data)
-    sel_obj.removeAllRanges(); // This fires 'selectionchange' event
-    const result = await browser.runtime.sendMessage(
-      "addon@histre-highlight-only.com", 
-      { action: Action.Save , data: data },
-    )
-    if (!result) {
-      console.error("Failed to save highlight to Histre or local storage");
-      return;
-    }
-    console.log("r", result);
-
-    // TODO: implement saving selection
-    // TODO?: handle saving multiple selections?
-
-    // TODO: Send selection to background
-    // const hl = await browser.runtime.sendMessage()
-    // will be added either to histre or local (if request failed)
-    // figure out how to display success and failure
-    // success: replace local ids with histre ids
-
-
-    // TODO?: implement highlighting for multiselect text?
-    // for (let i = 0; i < sel_obj.rangeCount; i++) {
-    //   console.log(sel_obj.getRangeAt(i));
-    //   console.log(sel_obj.getRangeAt(i).toString());
-    // }
-  }
-}
 
 // Wrapping selected text with <mark>.
 // Selection doesn't start or end at edges of nodes.
@@ -222,8 +255,9 @@ function highlightSelectedText(sel_obj: Selection, color: string, local_id: stri
 
 function selectionNewPosition(selection: Selection, context_menu_rect: DOMRect) {
   const box = selection.getRangeAt(0).getBoundingClientRect();
+  const body_rect = document.body.getBoundingClientRect();
   const top = box.top + window.pageYOffset - context_menu_rect.height;
-  const left = box.left + window.pageXOffset + (box.width / 2) - (context_menu_rect.width / 2);
+  const left = box.left + window.pageXOffset + - body_rect.x + (box.width / 2) - (context_menu_rect.width / 2);
   return { top: top, left: left };
 }
 
@@ -249,16 +283,14 @@ function selectionChange() {
   const win_selection = window.getSelection();
   if (!hasSelection(win_selection)) {
     document.removeEventListener("selectionchange", selectionChangeListener);
-    getContextMenu().setAttribute("aria-hidden", "true");
+    global.menu.update(ContextMenuState.None);
     return;
   }
-  if (win_selection.toString().length <= MIN_SELECTION_LEN || win_selection.anchorNode === null) return;
-  const context_menu = getContextMenu();
-  const context_menu_rect = context_menu.getBoundingClientRect();
-  const new_pos = selectionNewPosition(win_selection, context_menu_rect);
-  context_menu.style.top = `${new_pos.top}px`;
-  context_menu.style.left = `${new_pos.left}px`;
-  context_menu.setAttribute("aria-hidden", "false");
+  if (win_selection.toString().length <= MIN_SELECTION_LEN || win_selection.anchorNode === null) {
+    global.menu.update(ContextMenuState.None);
+    return;
+  }
+  global.menu.update(ContextMenuState.New, win_selection);
 }
 
 const selectionChangeListener = debounce(selectionChange, 100);
@@ -416,8 +448,17 @@ function init() {
   } else {
     renderLocalHighlights(url)
   }  
-  getContextMenu();
   document.addEventListener("selectstart", startSelection);
+  document.addEventListener("click", (e: Event) => {
+    const elem = e.target as Element;
+    if (elem.classList.contains("hho-mark")) {
+      if (global.menu.isState(ContextMenuState.New)) {
+        return;
+      }
+      global.menu.update(ContextMenuState.Exists, elem);
+    }
+
+  })
 }
 init();
 

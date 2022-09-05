@@ -287,6 +287,7 @@ function selectionChange() {
     return;
   }
   if (win_selection.toString().length <= MIN_SELECTION_LEN || win_selection.anchorNode === null) {
+    document.removeEventListener("selectionchange", selectionChangeListener);
     global.menu.update(ContextMenuState.None);
     return;
   }

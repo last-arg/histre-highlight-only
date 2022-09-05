@@ -115,47 +115,52 @@ class ContextMenu {
       // return;
       console.log("save", ctx_menu)
       const elem = e.target as Element;
-      if (elem.classList.contains("hho-btn-color")) {
-        const sel_obj = window.getSelection();
-        if (!hasSelection(sel_obj)) {
-          console.info("No selection to save");
-          return;
+      switch(ctx_menu.state) {
+        case ContextMenuState.create: {
+          if (elem.classList.contains("hho-btn-color")) {
+            const sel_obj = window.getSelection();
+            if (!hasSelection(sel_obj)) {
+              console.info("No selection to save");
+              return;
+            }
+            const sel_string = sel_obj.toString();
+            if (sel_string.length <= MIN_SELECTION_LEN || sel_obj.anchorNode === null) return;
+            const local_id = Math.random().toString(36).substring(2,10)
+            const local_class_id = `${prefix_local_id}-${local_id}`;
+            const color = elem.getAttribute("data-hho-color") || "yellow";
+            console.log("button click color: ", color)
+            highlightSelectedText(sel_obj, color, local_class_id);
+            const data = { text: sel_string, color: color, local_id: local_class_id };
+            console.log("data", data)
+            sel_obj.removeAllRanges(); // This fires 'selectionchange' event
+            const result = await runtime.sendMessage(
+              "addon@histre-highlight-only.com", 
+              { action: Action.Save , data: data },
+            )
+            if (!result) {
+              // TODO: display failure somewhere, somehow?
+              console.error("Failed to save highlight to Histre or local storage");
+              return;
+            }
+            console.log("r", result);
+
+            // TODO?: save multiple selections/ranges?
+            // Each selection/range would be separate highlight
+            // for (let i = 0; i < sel_obj.rangeCount; i++) {
+            //   console.log(sel_obj.getRangeAt(i));
+            //   console.log(sel_obj.getRangeAt(i).toString());
+            // }
+          }
+          break;
         }
-        const sel_string = sel_obj.toString();
-        if (sel_string.length <= MIN_SELECTION_LEN || sel_obj.anchorNode === null) return;
-        const local_id = Math.random().toString(36).substring(2,10)
-        const local_class_id = `${prefix_local_id}-${local_id}`;
-        const color = elem.getAttribute("data-hho-color") || "yellow";
-        console.log("button click color: ", color)
-        highlightSelectedText(sel_obj, color, local_class_id);
-        const data = { text: sel_string, color: color, local_id: local_class_id };
-        console.log("data", data)
-        sel_obj.removeAllRanges(); // This fires 'selectionchange' event
-        const result = await runtime.sendMessage(
-          "addon@histre-highlight-only.com", 
-          { action: Action.Save , data: data },
-        )
-        if (!result) {
-          console.error("Failed to save highlight to Histre or local storage");
-          return;
+        case ContextMenuState.modify: {
+          if (elem.classList.contains("hho-btn-color")) {
+            // TODO: modify highlight color
+          } else if (elem.classList.contains("hho-btn-remove")) {
+            // TODO: remove highlight
+          }
+          break;
         }
-        console.log("r", result);
-
-        // TODO: implement saving selection
-        // TODO?: handle saving multiple selections?
-
-        // TODO: Send selection to background
-        // const hl = await browser.runtime.sendMessage()
-        // will be added either to histre or local (if request failed)
-        // figure out how to display success and failure
-        // success: replace local ids with histre ids
-
-
-        // TODO?: implement highlighting for multiselect text?
-        // for (let i = 0; i < sel_obj.rangeCount; i++) {
-        //   console.log(sel_obj.getRangeAt(i));
-        //   console.log(sel_obj.getRangeAt(i).toString());
-        // }
       }
     }
     return handleClickImpl;

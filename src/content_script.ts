@@ -257,7 +257,15 @@ function selectionNewPosition(selection: Selection, context_menu_rect: DOMRect) 
   const box = selection.getRangeAt(0).getBoundingClientRect();
   const body_rect = document.body.getBoundingClientRect();
   const top = box.top + window.pageYOffset - context_menu_rect.height;
-  const left = box.left + window.pageXOffset + - body_rect.x + (box.width / 2) - (context_menu_rect.width / 2);
+  let left = box.left + window.pageXOffset + - body_rect.x + (box.width / 2) - (context_menu_rect.width / 2);
+
+  // Make sure context menu doesn't go out of bounds horizontally
+  if (left < 0) {
+    left = 0;
+  } else if ((box.left + (context_menu_rect.width)) > body_rect.right) {
+    left = body_rect.right - context_menu_rect.width - body_rect.x + window.pageXOffset;
+  }
+
   return { top: top, left: left };
 }
 

@@ -17,7 +17,7 @@ const isDev = true;
 // mobile native context menu?
 
 const MIN_SELECTION_LEN = 3;
-const prefix_local_id = "hho-local";
+const prefix_local_id = "local";
 
 class ContextMenu {
   elem: ContextMenuElem;
@@ -177,9 +177,10 @@ const global = {
 const mark_elem = document.createElement("mark");
 mark_elem.classList.add("hho-mark");
 
-function createMarkElement(color: string | undefined) {
-  const elem = mark_elem.cloneNode(true);
-  (elem as Element).setAttribute("data-hho-color", color || "yellow");
+function createMarkElement(id: string, color: string | undefined) {
+  const elem = mark_elem.cloneNode(true) as Element;
+  elem.setAttribute("data-hho-color", color || "yellow");
+  elem.setAttribute("data-hho-id", id);
   return elem;
 }
 
@@ -393,10 +394,11 @@ function highlightDOM(ranges: HighlightLocation[], current_entries: any) {
     let hl_node = (current_node as Text).splitText(node_start);
     iter.nextNode();
     const color = current_entries[hl_loc.index][1].color;
+    const hl_id = current_entries[hl_loc.index][0];
 
     if (hl_loc.end > total_end) {
       range.selectNode(hl_node);
-      range.surroundContents(createMarkElement(color));
+      range.surroundContents(createMarkElement(hl_id, color));
       total_end = total_start + (hl_node.textContent?.length || 0);
 
       while (current_node = iter.nextNode()) {
@@ -407,7 +409,7 @@ function highlightDOM(ranges: HighlightLocation[], current_entries: any) {
           total_end = total_start + len;
           (current_node as Text).splitText(len);
           range.selectNode(current_node);
-          range.surroundContents(createMarkElement(color));
+          range.surroundContents(createMarkElement(hl_id, color));
 
           // skip new nodes made by splitText and surroundContents
           iter.nextNode();
@@ -415,14 +417,14 @@ function highlightDOM(ranges: HighlightLocation[], current_entries: any) {
         }
 
         range.selectNode(current_node);
-        range.surroundContents(createMarkElement(color));
+        range.surroundContents(createMarkElement(hl_id, color));
       }
     } else {
       const len = hl_loc.end - hl_loc.start;
       total_end = total_start + len;
       (hl_node as Text).splitText(len);
       range.selectNode(hl_node);
-      range.surroundContents(createMarkElement(color));
+      range.surroundContents(createMarkElement(hl_id, color));
       // skip new nodes made by splitText
       iter.nextNode();
     }

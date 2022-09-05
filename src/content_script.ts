@@ -294,8 +294,11 @@ function selectionChange() {
     global.menu.update(ContextMenuState.None);
     return;
   }
-  if (win_selection.toString().length <= MIN_SELECTION_LEN || win_selection.anchorNode === null) {
-    document.removeEventListener("selectionchange", selectionChangeListener);
+  const selection_str = win_selection.toString();
+  if (selection_str.length <= MIN_SELECTION_LEN || win_selection.anchorNode === null) {
+    if (selection_str.length === 0) {
+      document.removeEventListener("selectionchange", selectionChangeListener);
+    }
     global.menu.update(ContextMenuState.None);
     return;
   }

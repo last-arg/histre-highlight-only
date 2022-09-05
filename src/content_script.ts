@@ -477,7 +477,7 @@ function init() {
         return;
       }
       global.menu.update(ContextMenuState.modify, elem);
-    } else {
+    } else if (global.menu.isState(ContextMenuState.modify)) {
       global.menu.update(ContextMenuState.none);
     }
   })

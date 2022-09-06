@@ -128,10 +128,8 @@ class ContextMenu {
             const local_class_id = `${prefix_local_id}-${local_id}`;
             const color = elem.getAttribute("data-hho-color") || "yellow";
             console.log("button click color: ", color)
-            highlightSelectedText(sel_obj, color, local_class_id);
             const data = { text: sel_string, color: color, local_id: local_class_id };
             console.log("data", data)
-            sel_obj.removeAllRanges(); // This fires 'selectionchange' event
             const result = await runtime.sendMessage(
               "addon@histre-highlight-only.com", 
               { action: Action.Save , data: data },
@@ -141,7 +139,8 @@ class ContextMenu {
               console.error("Failed to save highlight to Histre or local storage");
               return;
             }
-            console.log("r", result);
+            highlightSelectedText(sel_obj, color, local_class_id);
+            sel_obj.removeAllRanges(); // This fires 'selectionchange' event
 
             // TODO?: save multiple selections/ranges?
             // Each selection/range would be separate highlight

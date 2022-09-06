@@ -22,11 +22,11 @@ const prefix_local_id = "local";
 class ContextMenu {
   elem: ContextMenuElem;
   state: ContextMenuState = ContextMenuState.none;
+  highlight_id: string | null;
 
   constructor() {
     this.elem = ContextMenu.renderContextMenu();
-    this.elem.addEventListener("click", ContextMenu.handleClick(this));
-    this.elem.setAttribute("data-hho-state", ContextMenuState[ContextMenuState.none]);
+    document.addEventListener("click", ContextMenu.handleClick(this));
   }
 
   isState(state: ContextMenuState) { return this.state === state; }
@@ -49,9 +49,10 @@ class ContextMenu {
       }
       case ContextMenuState.modify: {
         console.assert(arg, "Context menu state 'modify' requires second function argument 'arg'")
+        const elem = arg as Element;
+        this.highlight_id = elem.getAttribute("data-hho-id");
         const menu_rect = this.elem.getBoundingClientRect();
-        const elem_rect = (arg as Element).getBoundingClientRect();
-        console.log(elem_rect);
+        const elem_rect = elem.getBoundingClientRect();
         const top = elem_rect.top + window.pageYOffset - menu_rect.height;
         const body_rect = document.body.getBoundingClientRect();
         const left = elem_rect.left + window.pageXOffset - body_rect.x + (elem_rect.width / 2) - (menu_rect.width / 2);
@@ -104,6 +105,7 @@ class ContextMenu {
       container.appendChild(new_button);
     }
 
+    container.setAttribute("data-hho-state", ContextMenuState[ContextMenuState.none]);
     document.body.appendChild(container)
     return document.querySelector(".hho-context-menu") as ContextMenuElem;
   }
@@ -111,9 +113,6 @@ class ContextMenu {
   static handleClick(ctx_menu: ContextMenu) {
     console.log("handleClick")
     async function handleClickImpl(e: Event) {
-      // console.log("state", ContextMenuState[ctx_menu.state])
-      // return;
-      console.log("save", ctx_menu)
       const elem = e.target as Element;
       switch(ctx_menu.state) {
         case ContextMenuState.create: {
@@ -155,6 +154,25 @@ class ContextMenu {
         }
         case ContextMenuState.modify: {
           if (elem.classList.contains("hho-btn-color")) {
+            const id = ctx_menu.highlight_id;
+            const color = elem.getAttribute("data-hho-color");
+            console.log(id, color)
+            if (id === null || color === null) {
+              return;
+            }
+            const result = await runtime.sendMessage(
+              "addon@histre-highlight-only.com", 
+              { action: Action.Update , data: {id: id, color: color} },
+            )
+
+            if (result) {
+              for (const hl of document.querySelectorAll(`[data-hho-id="${id}"]`)) {
+                hl.setAttribute("data-hho-color", color)
+              }
+            } else {
+              console.error(`Failed to change highlight '${id}' to color '${color}'`)
+            }
+
             // TODO: modify highlight color
           } else if (elem.classList.contains("hho-btn-remove")) {
             // TODO: remove highlight

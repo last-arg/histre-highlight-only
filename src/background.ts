@@ -323,37 +323,55 @@ browser.runtime.onMessage.addListener((msg: Message, sender: Runtime.MessageSend
   console.log(msg, sender);
   switch (msg.action) {
     case Action.Save: {
-      console.log("save", msg.data.local_id)
+      console.log("save", msg.data)
       return new Promise(async (resolve) => {
         if (sender.tab?.url === undefined) { 
           resolve(false); 
           return;
         }
+        // TODO: histre request
         const url = sender.tab.url;
         let local = await storage.local.get({highlights_add: {[url]: { highlights: {} }}});
         console.log("store", local)
         local.highlights_add[url].title = sender.tab?.title || "";
-        const local_id = msg.data.local_id;
-        local.highlights_add[url].highlights[local_id] = { text: msg.data.text, color: msg.data.color };
+        // TODO: generate id for local highlight
+        const id = `local-xxxxxxx`;
+        local.highlights_add[url].highlights[id] = { text: msg.data.text, color: msg.data.color };
         await storage.local.set(local);
+
+        // TODO: on success return histre id or local id
         resolve(true);
       });
     }
     case Action.Update: {
       console.log("update")
       return new Promise(async (resolve) => {
-        let local = await storage.local.get({highlights_update: {}});
-        local.highlights_update[msg.data.local_id] = msg.data.color;
-        await storage.local.set(local);
+        const id = msg.data.id as string;
+        const is_local_id = id.startsWith("local");
+
+        if (!is_local_id) {
+          // TODO: histre request
+        } else {
+          let local = await storage.local.get({highlights_update: {}});
+          local.highlights_update[id] = msg.data.color;
+          await storage.local.set(local);
+        }
         resolve(true);
       });
     }
     case Action.Remove: {
       console.log("delete")
       return new Promise(async (resolve) => {
-        let local = await storage.local.get({highlights_remove: []});
-        local.highlights_remove.push(msg.data.id);
-        await storage.local.set(local);
+        const id = msg.data.id as string;
+        const is_local_id = id.startsWith("local");
+
+        if (!is_local_id) {
+          // TODO: histre request
+        } else {
+          let local = await storage.local.get({highlights_remove: []});
+          local.highlights_remove.push(id);
+          await storage.local.set(local);
+        }
         resolve(true);
       });
     }

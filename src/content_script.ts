@@ -532,12 +532,12 @@ async function test() {
   // const ext_id = "addon@histre-highlight-only.com";
   const hl_id = `${prefix_local_id}-xxxxxxx`;
   const save = await runtime.sendMessage(
-    { action: Action.Save , data: { text: "my highlight text", color: "yellow", local_id: hl_id} },
+    { action: Action.Save , data: { text: "my highlight text", color: "yellow", id: hl_id} },
   )
   if (!save) { console.error("Failed to save highlight"); }
 
   const update = await runtime.sendMessage(
-    { action: Action.Update , data: { color: "blue", local_id: hl_id} },
+    { action: Action.Update , data: { color: "blue", id: hl_id} },
   )
   if (!update) { console.error("Failed to update highlight"); }
 

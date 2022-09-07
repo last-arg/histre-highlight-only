@@ -22,7 +22,7 @@ const prefix_local_id = "local";
 class ContextMenu {
   elem: ContextMenuElem;
   state: ContextMenuState = ContextMenuState.none;
-  highlight_id: string | null;
+  highlight_id: string | null = null;
 
   constructor() {
     this.elem = ContextMenu.renderContextMenu();
@@ -155,7 +155,6 @@ class ContextMenu {
           if (elem.classList.contains("hho-btn-color")) {
             const id = ctx_menu.highlight_id;
             const color = elem.getAttribute("data-hho-color");
-            console.log(id, color)
             if (id === null || color === null) {
               return;
             }
@@ -164,17 +163,32 @@ class ContextMenu {
               { action: Action.Update , data: {id: id, color: color} },
             )
 
-            if (result) {
-              for (const hl of document.querySelectorAll(`[data-hho-id="${id}"]`)) {
-                hl.setAttribute("data-hho-color", color)
-              }
-            } else {
+            if (!result) {
               console.error(`Failed to change highlight '${id}' to color '${color}'`)
+              return;
             }
 
-            // TODO: modify highlight color
+            for (const hl of document.querySelectorAll(`[data-hho-id="${id}"]`)) {
+              hl.setAttribute("data-hho-color", color)
+            }
           } else if (elem.classList.contains("hho-btn-remove")) {
-            // TODO: remove highlight
+            const id = ctx_menu.highlight_id;
+            if (id === null) {
+              return;
+            }
+
+            const result = await runtime.sendMessage(
+              "addon@histre-highlight-only.com", 
+              { action: Action.Update , data: {id: id} },
+            )
+
+            if (!result) {
+              console.error(`Failed to remove highlight '${id}'`)
+              return;
+            }
+
+            removeHighlights(id)
+            // TODO: check if any highlight is relevealed under removed highlight
           }
           break;
         }
@@ -376,8 +390,13 @@ function isEmptyObject(object: Object) {
   return true;
 }
 
-function removeHighlights() {
-  const marks = document.querySelectorAll(".hho-mark");
+function removeHighlights(hl_id?: string) {
+  console.log("hl_id", hl_id);
+  let hl_selector = ".hho-mark";
+  if (hl_id) {
+    hl_selector += `[data-hho-id="${hl_id}"]`;
+  }
+  const marks = document.querySelectorAll(hl_selector);
   for (const m of marks) {
     const text = m.textContent;
     if (text === null) continue;

@@ -284,21 +284,6 @@ async function init() {
   }
   histre.setHeaderAuthToken(new_auth_data.token.access);
   console.log("new_auth", new_auth_data)
-
-  // {
-  //   const hl = {
-  //     url: "test_url",
-  //     title: "test_title",
-  //     text: "test_text",
-  //     color: "yellow",
-  //   };
-  //   const add = await histre.addHighlight(hl)
-  //   console.log("add", add)
-
-  //   // const rm = await histre.removeHighlight(add!.highlight_id)
-  //   const rm = await histre.removeHighlight("ddajk")
-  //   console.log("remove", rm)
-  // }
 }
 
 // init();
@@ -367,7 +352,7 @@ browser.runtime.onMessage.addListener((msg: Message, sender: Runtime.MessageSend
           is_failed_request = false;
           // TODO: histre request
         } else {
-          // TODO: overwrite local.highlights_update color value
+          // TODO: overwrite local.highlights_add color value
         }
 
         if (is_failed_request) {
@@ -387,20 +372,31 @@ browser.runtime.onMessage.addListener((msg: Message, sender: Runtime.MessageSend
 
         let is_failed_request = true;
         if (!is_local_id) {
-          is_failed_request = false;
           // TODO: histre request
           // const rm = await histre.removeHighlight("ddajk")
+          is_failed_request = false;
+          resolve(true); 
+          return;
         } else {
-          // TODO: overwrite local.highlights_add color value
+          if (sender.tab?.url) { 
+            const url = sender.tab.url;
+            let local = await storage.local.get({highlights_add: {}});
+            delete local.highlights_add[url].highlights[data.id];
+            await storage.local.set(local);
+            resolve(true); 
+            return;
+          }
         }
 
         if (is_failed_request) {
           let local = await storage.local.get({highlights_remove: []});
           local.highlights_remove.push(data.id);
           await storage.local.set(local);
+          resolve(true);
+          return;
         }
 
-        resolve(true);
+        resolve(false);
       });
     }
   }
@@ -408,7 +404,22 @@ browser.runtime.onMessage.addListener((msg: Message, sender: Runtime.MessageSend
 
 if (__DEV__) {; 
   // Add test user data
-  storage.local.set({highlights_add: test_local});
+  const data = {
+    ...test_local,
+    "http://localhost:8080/another.html": {
+      title: "Page title",
+      highlights: {
+        "local-6nazstnm": { 
+          "text": "some text",
+          "color": "yellow" 
+        },
+      }
+    }
+  }
+
+  storage.local.set({highlights_add: data});
+
+  // storage.local.set({highlights_add: data});
 }
 
 

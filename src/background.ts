@@ -101,16 +101,10 @@ class Histre {
     let result_tokens = this.tokens;
     let err_msg: string | undefined = undefined;
     if (result_tokens) {
-      const now = new Date();
-      // NOTE: If we auth_data is valid then curr_auth_data is valid.
-      const created_date = new Date(this.tokens!.created_at);
-      const access_date = new Date(created_date);
-      access_date.setMinutes(access_date.getMinutes() + 15);
-      const refresh_date = new Date(created_date);
-      refresh_date.setDate(refresh_date.getDate() + 30);
+      const is_valid_token = Histre.hasValidTokens(result_tokens.created_at);
 
-      if (now > access_date) {
-        if (now < refresh_date) {
+      if (!is_valid_token.access) {
+        if (is_valid_token.refresh) {
           console.log("Refresh token", result_tokens)
           const resp = await this.refreshAuthToken(this.tokens!.token.refresh);
           if (resp.error) {
@@ -121,7 +115,7 @@ class Histre {
               err_msg += ` Error(${resp.errcode}): ${resp.errmsg}`;
             }
           } else if (resp.data) {
-            this.tokens = { token: resp.data, created_at: now.getUTCMilliseconds() }
+            this.tokens = { token: resp.data, created_at: Date.now() }
             this.setHeaderAuthToken();
             return;
           }
@@ -194,13 +188,17 @@ class Histre {
     this.headers["Authorization"] = `Bearer ${this.tokens?.token.access}`;
   }
 
-  // hasValidAccessToken(created_at: number) {
-  //   const now = new Date();
-  //   const created_date = new Date(created_at);
-  //   const access_date = new Date(created_date);
-  //   access_date.setMinutes(access_date.getMinutes() + 15);
-  //   return now < access_date;
-  // }
+  static hasValidTokens(created_at: number) {
+    const now = new Date();
+    const created_date = new Date(created_at);
+    const access_date = new Date(created_date);
+    access_date.setMinutes(access_date.getMinutes() + 15);
+
+    const refresh_date = new Date(created_date);
+    refresh_date.setDate(refresh_date.getDate() + 30);
+
+    return { access: now < access_date, refresh: now < refresh_date };
+  }
 
   // async function addHighlight(hl: HighlightAdd): Promise<HighlightData | undefined> {
   //   const body = JSON.stringify(hl);

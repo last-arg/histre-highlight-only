@@ -255,12 +255,7 @@ const histre = (function createHistre() {
   };
 })();
 
-// TODO: on request (update, add, remove) failure store data locally
-
-// TODO: Remove highlight 
-// TODO: Update highlight 
-
-// TODO: Save highlight 
+// TODO: Histre: save highlight 
 // 1) Request to save new highlight
 // 2) Is valid token? Get new token
 // 3) Make request
@@ -425,8 +420,6 @@ if (__DEV__) {;
   }
 
   storage.local.set({highlights_add: data});
-
-  // storage.local.set({highlights_add: data});
 }
 
 

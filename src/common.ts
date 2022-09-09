@@ -4,11 +4,15 @@ export enum Action {
   Modify 
 }
 
+export type DataCreate = { text: string, color: string }
+export type DataModify = { id: string, color: string }
+export type DataRemove = { id: string }
+
 export interface Message {
   action: Action,
   // Delete: highlight_id (might be local_id)
   // Save: text, title, color, local_id
-  data: any,
+  data: DataCreate | DataModify | DataRemove,
 }
 
 export type HighlightId = string;

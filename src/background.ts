@@ -1,6 +1,6 @@
 import { storage } from 'webextension-polyfill';
 import type { Runtime } from 'webextension-polyfill';
-import { Message, Action, HighlightAdd } from './common';
+import { Message, Action, HighlightAdd, DataModify, DataRemove, DataCreate } from './common';
 
 // Test import
 import { test_local } from "./tests/test_data";
@@ -329,6 +329,7 @@ browser.runtime.onMessage.addListener((msg: Message, sender: Runtime.MessageSend
           resolve(false); 
           return;
         }
+        const data = msg.data as DataCreate;
         let is_failed_request = true;
         const url = sender.tab.url;
 
@@ -340,7 +341,7 @@ browser.runtime.onMessage.addListener((msg: Message, sender: Runtime.MessageSend
           local.highlights_add[url].title = sender.tab?.title || "";
           // TODO: generate id for local highlight
           const id = `local-xxxxxxx`;
-          local.highlights_add[url].highlights[id] = { text: msg.data.text, color: msg.data.color };
+          local.highlights_add[url].highlights[id] = { text: data.text, color: data.color };
           await storage.local.set(local);
         }
 
@@ -349,10 +350,10 @@ browser.runtime.onMessage.addListener((msg: Message, sender: Runtime.MessageSend
       });
     }
     case Action.Modify: {
-      console.log("update")
+      console.log("update", msg.data)
       return new Promise(async (resolve) => {
-        const id = msg.data.id as string;
-        const is_local_id = id.startsWith("local");
+        const data = msg.data as DataModify;
+        const is_local_id = data.id.startsWith("local");
 
         let is_failed_request = true;
         if (!is_local_id) {
@@ -364,7 +365,7 @@ browser.runtime.onMessage.addListener((msg: Message, sender: Runtime.MessageSend
 
         if (is_failed_request) {
           let local = await storage.local.get({highlights_update: {}});
-          local.highlights_update[id] = msg.data.color;
+          local.highlights_update[data.id] = data.color;
           await storage.local.set(local);
         }
 
@@ -372,22 +373,22 @@ browser.runtime.onMessage.addListener((msg: Message, sender: Runtime.MessageSend
       });
     }
     case Action.Remove: {
-      console.log("delete")
+      console.log("delete", msg.data)
       return new Promise(async (resolve) => {
-        const id = msg.data.id as string;
-        const is_local_id = id.startsWith("local");
+        const data = msg.data as DataRemove;
+        const is_local_id = data.id.startsWith("local");
 
         let is_failed_request = true;
         if (!is_local_id) {
           is_failed_request = false;
           // TODO: histre request
         } else {
-          // TODO: overwrite local.highlights_remove color value
+          // TODO: overwrite local.highlights_add color value
         }
 
         if (is_failed_request) {
           let local = await storage.local.get({highlights_remove: []});
-          local.highlights_remove.push(id);
+          local.highlights_remove.push(data.id);
           await storage.local.set(local);
         }
 

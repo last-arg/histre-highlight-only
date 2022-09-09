@@ -6,6 +6,8 @@ import { findHighlightIndices, removeHighlightOverlaps } from './highlight';
 import './hho.css';
 console.log("==== LOAD 'content_script.js' TD ====")
 
+// TODO: try https://github.com/colinhacks/zod
+
 type ContextMenuElem = HTMLDivElement;
 enum ContextMenuState { none, create, modify }
 // Histre colors
@@ -132,7 +134,7 @@ class ContextMenu {
             console.log("data", data)
             const result = await runtime.sendMessage(
               "addon@histre-highlight-only.com", 
-              { action: Action.Save , data: data },
+              { action: Action.Create , data: data },
             )
             if (!result) {
               // TODO: display failure somewhere, somehow?
@@ -160,7 +162,7 @@ class ContextMenu {
             }
             const result = await runtime.sendMessage(
               "addon@histre-highlight-only.com", 
-              { action: Action.Update , data: {id: id, color: color} },
+              { action: Action.Modify , data: {id: id, color: color} },
             )
 
             if (!result) {
@@ -179,7 +181,7 @@ class ContextMenu {
 
             const result = await runtime.sendMessage(
               "addon@histre-highlight-only.com", 
-              { action: Action.Update , data: {id: id} },
+              { action: Action.Modify , data: {id: id} },
             )
 
             if (!result) {
@@ -485,7 +487,6 @@ async function renderLocalHighlights(current_url: string) {
   const current_highlights = local.highlights_add[current_url].highlights as LocalHighlightsObject;
   if (isEmptyObject(current_highlights)) { 
     console.info(`Found url ${current_url} doesn't contain any highlights`);
-    // TODO?: remove url from webext 'storage.local'?
     return; 
   }
   const current_entries = Object.entries(current_highlights);
@@ -529,15 +530,14 @@ function init() {
 init();
 
 async function test() {
-  // const ext_id = "addon@histre-highlight-only.com";
   const hl_id = `${prefix_local_id}-xxxxxxx`;
   const save = await runtime.sendMessage(
-    { action: Action.Save , data: { text: "my highlight text", color: "yellow", id: hl_id} },
+    { action: Action.Create , data: { text: "my highlight text", color: "yellow", id: hl_id} },
   )
   if (!save) { console.error("Failed to save highlight"); }
 
   const update = await runtime.sendMessage(
-    { action: Action.Update , data: { color: "blue", id: hl_id} },
+    { action: Action.Modify , data: { color: "blue", id: hl_id} },
   )
   if (!update) { console.error("Failed to update highlight"); }
 

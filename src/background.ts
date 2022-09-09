@@ -322,40 +322,52 @@ type MessageReturn = SaveMessage | boolean | undefined;
 browser.runtime.onMessage.addListener((msg: Message, sender: Runtime.MessageSender): undefined | Promise<MessageReturn> => {
   console.log(msg, sender);
   switch (msg.action) {
-    case Action.Save: {
+    case Action.Create: {
       console.log("save", msg.data)
       return new Promise(async (resolve) => {
         if (sender.tab?.url === undefined) { 
           resolve(false); 
           return;
         }
-        // TODO: histre request
+        let is_failed_request = true;
         const url = sender.tab.url;
-        let local = await storage.local.get({highlights_add: {[url]: { highlights: {} }}});
-        console.log("store", local)
-        local.highlights_add[url].title = sender.tab?.title || "";
-        // TODO: generate id for local highlight
-        const id = `local-xxxxxxx`;
-        local.highlights_add[url].highlights[id] = { text: msg.data.text, color: msg.data.color };
-        await storage.local.set(local);
+
+        // TODO: histre request
+
+        if (is_failed_request) {
+          let local = await storage.local.get({highlights_add: {[url]: { highlights: {} }}});
+          console.log("store local", local)
+          local.highlights_add[url].title = sender.tab?.title || "";
+          // TODO: generate id for local highlight
+          const id = `local-xxxxxxx`;
+          local.highlights_add[url].highlights[id] = { text: msg.data.text, color: msg.data.color };
+          await storage.local.set(local);
+        }
 
         // TODO: on success return histre id or local id
         resolve(true);
       });
     }
-    case Action.Update: {
+    case Action.Modify: {
       console.log("update")
       return new Promise(async (resolve) => {
         const id = msg.data.id as string;
         const is_local_id = id.startsWith("local");
 
+        let is_failed_request = true;
         if (!is_local_id) {
+          is_failed_request = false;
           // TODO: histre request
         } else {
+          // TODO: overwrite local.highlights_update color value
+        }
+
+        if (is_failed_request) {
           let local = await storage.local.get({highlights_update: {}});
           local.highlights_update[id] = msg.data.color;
           await storage.local.set(local);
         }
+
         resolve(true);
       });
     }
@@ -365,13 +377,20 @@ browser.runtime.onMessage.addListener((msg: Message, sender: Runtime.MessageSend
         const id = msg.data.id as string;
         const is_local_id = id.startsWith("local");
 
+        let is_failed_request = true;
         if (!is_local_id) {
+          is_failed_request = false;
           // TODO: histre request
         } else {
+          // TODO: overwrite local.highlights_remove color value
+        }
+
+        if (is_failed_request) {
           let local = await storage.local.get({highlights_remove: []});
           local.highlights_remove.push(id);
           await storage.local.set(local);
         }
+
         resolve(true);
       });
     }

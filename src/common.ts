@@ -1,7 +1,7 @@
 export enum Action { 
-  Save, 
+  Create, 
   Remove,
-  Update 
+  Modify 
 }
 
 export interface Message {

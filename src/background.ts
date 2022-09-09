@@ -300,6 +300,17 @@ async function init() {
 
 // init();
 
+function randomString(length: number = 8) {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+
+    let result = '';
+    for (let i = 0; i < length; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+
+    return result;
+};
+
 type SaveMessage = {id: string};
 type MessageReturn = SaveMessage | boolean | undefined;
 
@@ -340,7 +351,7 @@ browser.runtime.onMessage.addListener((msg: Message, sender: Runtime.MessageSend
           console.log("store local", local)
           local.highlights_add[url].title = sender.tab?.title || "";
           // TODO: generate id for local highlight
-          const id = `local-xxxxxxx`;
+          const id = `local-${randomString(6)}`;
           local.highlights_add[url].highlights[id] = { text: data.text, color: data.color };
           await storage.local.set(local);
         }

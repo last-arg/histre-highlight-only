@@ -178,7 +178,7 @@ class ContextMenu {
 
             const result = await runtime.sendMessage(
               "addon@histre-highlight-only.com", 
-              { action: Action.Modify , data: {id: id} },
+              { action: Action.Remove , data: {id: id} },
             )
 
             if (!result) {
@@ -542,6 +542,6 @@ async function test() {
   if (!remove) { console.error("Failed to remove highlight"); }
 }
 
-test();
+// test();
 
 

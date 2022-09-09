@@ -25,7 +25,7 @@ interface AuthData {
   refresh: string,
 }
 type AuthResp = HistreResp<Required<AuthData>>;
-type AuthDataTime = { token: AuthData, created_at: number};
+type ValidToken = { token: AuthData, created_at: number};
 
 type HighlightData = {highlight_id: string, highlight_link: string};
 type HighlightResp = HistreResp<HighlightData>;
@@ -35,16 +35,16 @@ interface UserData {
   password: string,
 }
 
-async function getLocalAuthData(): Promise<AuthDataTime | undefined> {
+async function getLocalAuthData(): Promise<ValidToken | undefined> {
   const data = await storage.local.get(
     {token: {access: undefined, refresh: undefined}, created_at: undefined});
   if (data.token.access && data.token.refresh && data.created_at) {
-    return data as AuthDataTime;
+    return data as ValidToken;
   }
   return undefined;
 }
 
-async function setLocalAuthData(auth_data: AuthDataTime) {
+async function setLocalAuthData(auth_data: ValidToken) {
   await storage.local.set(auth_data);
 }
 
@@ -60,44 +60,32 @@ async function setLocalUser(user: UserData): Promise<void> {
   await storage.local.set(user);
 }
 
-// TODO: make this into class instead
-const histre = (function createHistre() {
-  const host = 'https://histre.com';
-  const api_v1 = `${host}/api/v1`;
-  const authUrl = `${api_v1}/auth_token/`;
-  const refreshAuthUrl = `${api_v1}/auth_token_refresh/`;
-  const highlightUrl = `${api_v1}/highlight/`;
-  let headers: any = { 
-    "Host": host,
+class Histre {
+  static host = 'https://histre.com';
+  static api_v1 = `${Histre.host}/api/v1`;
+  static url = {
+    auth:      `${Histre.api_v1}/auth_token/`,
+    refresh:   `${Histre.api_v1}/auth_token_refresh/`,
+    highlight: `${Histre.api_v1}/highlight/`,
+  };
+  headers: any = { 
+    "Host": Histre.host,
     "Content-Type": "application/json" 
   };
+  user: UserData;
+  tokens?: ValidToken = undefined;
 
-  function setHeaderAuthToken(access: string) {
-    headers["Authorization"] = `Bearer ${access}`;
+  constructor(user: UserData, tokens?: ValidToken) {
+    this.user = user;
+    this.tokens = tokens;
   }
-
-  function removeHeaderAuthToken() { delete headers["Authorization"]; }
-
-  async function authUser(user: UserData): Promise<AuthResp> {
-    const body = JSON.stringify(user);
-    const r = await fetch(authUrl, {
-      headers: headers,
-      method: 'POST',
-      body: body,
-    });
-    const auth_resp = await r.json();
-    // According to Histre API docs some responses might have 'status' field value as 'null'
-    if (!auth_resp.status) {
-      auth_resp.status = r.status;
-    }
-    return auth_resp as AuthResp
-  };
 
   // Most endpoints return 403 (Forbidden) for auth errors.
   // Aquire and refresh endpoints return 401 for auth errors.
-  async function refreshAuthToken(refresh: string): Promise<AuthResp> {
-    const r = await fetch(refreshAuthUrl, {
-      headers: headers,
+  async refreshAuthToken(refresh: string): Promise<AuthResp> {
+    console.assert(this.headers["Authorization"], "Histre HTTP header value requires 'Authorization' value");
+    const r = await fetch(Histre.url.auth, {
+      headers: this.headers,
       method: 'POST',
       body: `{"refresh": "${refresh}"}`,
     });
@@ -109,19 +97,13 @@ const histre = (function createHistre() {
     return auth_resp as AuthResp
   };
 
-  async function requestNewToken(curr_auth_data: AuthDataTime | undefined): Promise<AuthData | undefined> {
-    if (__DEV__) {; 
-      // Add test user data
-      const user = await import("../tmp/.secret.dev");
-      await setLocalUser(user.user)
-    }
-
-    let auth_data = curr_auth_data?.token;
+  async updateTokens() {
+    let result_tokens = this.tokens;
     let err_msg: string | undefined = undefined;
-    if (auth_data) {
+    if (result_tokens) {
       const now = new Date();
       // NOTE: If we auth_data is valid then curr_auth_data is valid.
-      const created_date = new Date(curr_auth_data!.created_at);
+      const created_date = new Date(this.tokens!.created_at);
       const access_date = new Date(created_date);
       access_date.setMinutes(access_date.getMinutes() + 15);
       const refresh_date = new Date(created_date);
@@ -129,8 +111,8 @@ const histre = (function createHistre() {
 
       if (now > access_date) {
         if (now < refresh_date) {
-          console.log("Refresh token", auth_data)
-          const resp = await refreshAuthToken(auth_data.refresh);
+          console.log("Refresh token", result_tokens)
+          const resp = await this.refreshAuthToken(this.tokens!.token.refresh);
           if (resp.error) {
             err_msg = "Failed to refresh access token."
             if (resp.details) {
@@ -139,12 +121,12 @@ const histre = (function createHistre() {
               err_msg += ` Error(${resp.errcode}): ${resp.errmsg}`;
             }
           } else if (resp.data) {
-            auth_data = resp.data
+            this.tokens = { token: resp.data, created_at: now.getUTCMilliseconds() }
+            this.setHeaderAuthToken();
+            return;
           }
         } else {
-          console.log("Tokens are invalid");
-          // Existing tokens are invalid
-          auth_data = undefined;
+          console.log("Tokens have expired. Will try to get new tokens.");
         }
       }
     }
@@ -154,11 +136,10 @@ const histre = (function createHistre() {
       console.info("Will try to authenticate with username and password");
     }
 
-    if (!auth_data) {
+    if (!result_tokens) {
       console.log("Authenticate with username and password")
-      const user = await getLocalUser();
-      if (user) {
-        const resp = await authUser(user);
+      if (this.user) {
+        const resp = await this.authUser();
         if (resp.error) {
           err_msg = "Failed to authenticate user."
           if (resp.details) {
@@ -175,7 +156,11 @@ const histre = (function createHistre() {
             }
           }
         } else if (resp.data) {
-          auth_data = resp.data
+          this.tokens = { token: resp.data, created_at: Date.now() };
+          this.setHeaderAuthToken();
+          return;
+        } else {
+          err_msg = "Failed to authenticate user. Didn't recieve token."
         }
       } else {
         err_msg = "Need to provide username and password"
@@ -184,104 +169,96 @@ const histre = (function createHistre() {
 
     if (err_msg) {
       console.error(err_msg)
-    } else if (auth_data === undefined) {
-      console.error(`Have exhausted all options to authenticate you. Only advice would be to make sure that account credentials are right and keep trying from time to time.`);
+    } else if (result_tokens === undefined) {
+      console.error(`Have exhausted all options to authenticate you. Make sure Histre username and password are correct.`);
     }
-    return auth_data;
   }
 
-  async function newToken(auth_data: AuthDataTime | undefined): Promise<AuthDataTime | undefined> {
-    let new_token = await requestNewToken(auth_data);
-    if (new_token) {
-      auth_data = { created_at: Date.now(), token: new_token };
+  async authUser(): Promise<AuthResp> {
+    const body = JSON.stringify(this.user);
+    const r = await fetch(Histre.url.auth, {
+      headers: this.headers,
+      method: 'POST',
+      body: body,
+    });
+    const auth_resp = await r.json();
+    // According to Histre API docs some responses might have 'status' field value as 'null'
+    if (!auth_resp.status) {
+      auth_resp.status = r.status;
     }
-
-    return auth_data;
-  }
-
-  function hasValidAccessToken(created_at: number) {
-      const now = new Date();
-      const created_date = new Date(created_at);
-      const access_date = new Date(created_date);
-      access_date.setMinutes(access_date.getMinutes() + 15);
-      return now < access_date;
-  }
-
-  async function addHighlight(hl: HighlightAdd): Promise<HighlightData | undefined> {
-    const body = JSON.stringify(hl);
-    const resp = await fetch(highlightUrl, { headers: headers, method: "POST", body: body });
-    const hl_resp = (await resp.json()) as HighlightResp;
-    if (hl_resp.error) {
-      let err_msg = "Failed to add highlight.";
-      if (hl_resp.details) {
-        err_msg += ` Error: ${hl_resp.details.detail}`;
-      } else if (hl_resp.errmsg) {
-        err_msg += ` Error(${hl_resp.errcode}): ${hl_resp.errmsg}`;
-      }
-      console.error(err_msg);
-      return undefined;
-    }
-    return hl_resp.data;
-  }
-
-  // Body response when invalid id is provided:
-  // Object { data: null, error: true, errcode: 400, errmsg: null, status: 200 }
-  async function removeHighlight(id: string): Promise<boolean> {
-    const body = JSON.stringify({highlight_id: id});
-    const resp = await fetch(highlightUrl, { headers: headers, method: "DELETE", body: body });
-    const hl_resp = (await resp.json()) as HighlightResp;
-    if (hl_resp.error) {
-      let err_msg = "Failed to remove highlight.";
-      if (hl_resp.details) {
-        err_msg += ` Error: ${hl_resp.details.detail}`;
-      } else if (hl_resp.errmsg) {
-        err_msg += ` Error(${hl_resp.errcode}): ${hl_resp.errmsg}`;
-      }
-      console.error(err_msg);
-      return false;
-    }
-    return true;
-  }
-
-  // TODO: histre API modify highlight color 
-
-  return {
-    newToken: newToken,
-    hasValidAccessToken: hasValidAccessToken,
-    addHighlight: addHighlight,
-    removeHighlight: removeHighlight,
-    setHeaderAuthToken: setHeaderAuthToken,
-    removeHeaderAuthToken: removeHeaderAuthToken,
+    return auth_resp as AuthResp
   };
-})();
 
-// TODO: Histre: save highlight 
-// 1) Request to save new highlight
-// 2) Is valid token? Get new token
-// 3) Make request
-async function init() {
-  // storage.local.clear();
-  let curr_auth_data = await getLocalAuthData();
-  let new_auth_data = curr_auth_data;
-  if (curr_auth_data === undefined || !histre.hasValidAccessToken(curr_auth_data.created_at)) {
-    // Get new token
-    const auth_data = await histre.newToken(curr_auth_data);
-    if (auth_data) {
-      await setLocalAuthData(auth_data);
-      new_auth_data = auth_data;
-    }
+  setHeaderAuthToken() {
+    console.assert(this.tokens?.token.access, "Don't have a access token to set HTTP header 'Authorization'");
+    this.headers["Authorization"] = `Bearer ${this.tokens?.token.access}`;
   }
 
-  if (new_auth_data === undefined) {
-    histre.removeHeaderAuthToken()
-    console.error("Failed to get valid Histre user token");
-    return;
-  }
-  histre.setHeaderAuthToken(new_auth_data.token.access);
-  console.log("new_auth", new_auth_data)
+  // hasValidAccessToken(created_at: number) {
+  //   const now = new Date();
+  //   const created_date = new Date(created_at);
+  //   const access_date = new Date(created_date);
+  //   access_date.setMinutes(access_date.getMinutes() + 15);
+  //   return now < access_date;
+  // }
+
+  // async function addHighlight(hl: HighlightAdd): Promise<HighlightData | undefined> {
+  //   const body = JSON.stringify(hl);
+  //   const resp = await fetch(highlightUrl, { headers: headers, method: "POST", body: body });
+  //   const hl_resp = (await resp.json()) as HighlightResp;
+  //   if (hl_resp.error) {
+  //     let err_msg = "Failed to add highlight.";
+  //     if (hl_resp.details) {
+  //       err_msg += ` Error: ${hl_resp.details.detail}`;
+  //     } else if (hl_resp.errmsg) {
+  //       err_msg += ` Error(${hl_resp.errcode}): ${hl_resp.errmsg}`;
+  //     }
+  //     console.error(err_msg);
+  //     return undefined;
+  //   }
+  //   return hl_resp.data;
+  // }
+
+  // // Body response when invalid id is provided:
+  // // Object { data: null, error: true, errcode: 400, errmsg: null, status: 200 }
+  // async function removeHighlight(id: string): Promise<boolean> {
+  //   const body = JSON.stringify({highlight_id: id});
+  //   const resp = await fetch(highlightUrl, { headers: headers, method: "DELETE", body: body });
+  //   const hl_resp = (await resp.json()) as HighlightResp;
+  //   if (hl_resp.error) {
+  //     let err_msg = "Failed to remove highlight.";
+  //     if (hl_resp.details) {
+  //       err_msg += ` Error: ${hl_resp.details.detail}`;
+  //     } else if (hl_resp.errmsg) {
+  //       err_msg += ` Error(${hl_resp.errcode}): ${hl_resp.errmsg}`;
+  //     }
+  //     console.error(err_msg);
+  //     return false;
+  //   }
+  //   return true;
+  // }
+
+  // // TODO: histre API modify highlight color 
 }
 
-// init();
+async function initTest() {
+  if (__DEV__) { 
+    // Add test user data
+    const user = await import("../tmp/.secret.dev");
+    await setLocalUser(user.user)
+  }
+
+  const user = await getLocalUser();
+  if (user === undefined) {
+    console.error("Need to provide Histre username and password for authetication.")
+    return;
+  }
+  const token_data = await getLocalAuthData();
+  const h = new Histre(user, token_data);
+  await h.updateTokens();
+  console.log(h)
+}
+initTest()
 
 function randomString() {
   return Math.random().toString(36).substring(2,10)

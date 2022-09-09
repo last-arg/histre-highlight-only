@@ -352,7 +352,14 @@ browser.runtime.onMessage.addListener((msg: Message, sender: Runtime.MessageSend
           is_failed_request = false;
           // TODO: histre request
         } else {
-          // TODO: overwrite local.highlights_add color value
+          if (sender.tab?.url) {
+            const url = sender.tab.url;
+            let local = await storage.local.get({highlights_add: {}});
+            local.highlights_add[url].highlights[data.id].color = data.color;
+            await storage.local.set(local);
+            resolve(true); 
+            return;
+          }
         }
 
         if (is_failed_request) {
@@ -378,7 +385,7 @@ browser.runtime.onMessage.addListener((msg: Message, sender: Runtime.MessageSend
           resolve(true); 
           return;
         } else {
-          if (sender.tab?.url) { 
+          if (sender.tab?.url) {
             const url = sender.tab.url;
             let local = await storage.local.get({highlights_add: {}});
             delete local.highlights_add[url].highlights[data.id];

@@ -60,6 +60,7 @@ async function setLocalUser(user: UserData): Promise<void> {
   await storage.local.set(user);
 }
 
+// TODO: make this into class instead
 const histre = (function createHistre() {
   const host = 'https://histre.com';
   const api_v1 = `${host}/api/v1`;
@@ -242,6 +243,8 @@ const histre = (function createHistre() {
     return true;
   }
 
+  // TODO: histre API modify highlight color 
+
   return {
     newToken: newToken,
     hasValidAccessToken: hasValidAccessToken,
@@ -304,7 +307,7 @@ function randomString() {
   return Math.random().toString(36).substring(2,10)
 };
 
-type SaveMessage = {id: string};
+type SaveMessage = string;
 type MessageReturn = SaveMessage | boolean | undefined;
 
 // Highlights in local storage use cases: 
@@ -333,23 +336,24 @@ browser.runtime.onMessage.addListener((msg: Message, sender: Runtime.MessageSend
           resolve(false); 
           return;
         }
+        let result_id: string | undefined = undefined; 
         const data = msg.data as DataCreate;
         let is_failed_request = true;
         const url = sender.tab.url;
 
         // TODO: histre request
+        // const add = await histre.addHighlight(hl)
 
         if (is_failed_request) {
           let local = await storage.local.get({highlights_add: {[url]: { highlights: {} }}});
           console.log("store local", local)
           local.highlights_add[url].title = sender.tab?.title || "";
-          const id = `${local_id_prefix}-${randomString()}`;
-          local.highlights_add[url].highlights[id] = { text: data.text, color: data.color };
+          result_id = `${local_id_prefix}-${randomString()}`;
+          local.highlights_add[url].highlights[result_id] = { text: data.text, color: data.color };
           await storage.local.set(local);
         }
 
-        // TODO: on success return histre id or local id
-        resolve(true);
+        resolve(result_id);
       });
     }
     case Action.Modify: {
@@ -385,6 +389,7 @@ browser.runtime.onMessage.addListener((msg: Message, sender: Runtime.MessageSend
         if (!is_local_id) {
           is_failed_request = false;
           // TODO: histre request
+          // const rm = await histre.removeHighlight("ddajk")
         } else {
           // TODO: overwrite local.highlights_add color value
         }

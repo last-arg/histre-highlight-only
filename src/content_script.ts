@@ -129,16 +129,16 @@ class ContextMenu {
             console.log("button click color: ", color)
             const data = { text: sel_string, color: color};
             console.log("data", data)
-            const result = await runtime.sendMessage(
+            const result_id = await runtime.sendMessage(
               "addon@histre-highlight-only.com", 
               { action: Action.Create , data: data },
             )
-            if (!result) {
+            if (!result_id) {
               // TODO: display failure somewhere, somehow?
               console.error("Failed to save highlight to Histre or local storage");
               return;
             }
-            highlightSelectedText(sel_obj, color, local_class_id);
+            highlightSelectedText(sel_obj, color, result_id);
             sel_obj.removeAllRanges(); // This fires 'selectionchange' event
 
             // TODO?: save multiple selections/ranges?

@@ -19,7 +19,6 @@ const isDev = true;
 // mobile native context menu?
 
 const MIN_SELECTION_LEN = 3;
-const prefix_local_id = "local";
 
 class ContextMenu {
   elem: ContextMenuElem;
@@ -126,11 +125,9 @@ class ContextMenu {
             }
             const sel_string = sel_obj.toString();
             if (sel_string.length <= MIN_SELECTION_LEN || sel_obj.anchorNode === null) return;
-            const local_id = Math.random().toString(36).substring(2,10)
-            const local_class_id = `${prefix_local_id}-${local_id}`;
             const color = elem.getAttribute("data-hho-color") || "yellow";
             console.log("button click color: ", color)
-            const data = { text: sel_string, color: color, local_id: local_class_id };
+            const data = { text: sel_string, color: color};
             console.log("data", data)
             const result = await runtime.sendMessage(
               "addon@histre-highlight-only.com", 
@@ -530,12 +527,12 @@ function init() {
 init();
 
 async function test() {
-  const hl_id = `${prefix_local_id}-xxxxxxx`;
   const save = await runtime.sendMessage(
-    { action: Action.Create , data: { text: "my highlight text", color: "yellow", id: hl_id} },
+    { action: Action.Create , data: { text: "my highlight text", color: "yellow" } },
   )
   if (!save) { console.error("Failed to save highlight"); }
 
+  const hl_id = "local-xxxxxx";
   const update = await runtime.sendMessage(
     { action: Action.Modify , data: { color: "blue", id: hl_id} },
   )

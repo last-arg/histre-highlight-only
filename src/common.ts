@@ -1,3 +1,5 @@
+export const local_id_prefix = "local";
+
 export enum Action { 
   Create, 
   Remove,

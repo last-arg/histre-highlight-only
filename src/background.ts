@@ -1,6 +1,6 @@
 import { storage } from 'webextension-polyfill';
 import type { Runtime } from 'webextension-polyfill';
-import { Message, Action, HighlightAdd, DataModify, DataRemove, DataCreate } from './common';
+import { Message, Action, HighlightAdd, DataModify, DataRemove, DataCreate, local_id_prefix } from './common';
 
 // Test import
 import { test_local } from "./tests/test_data";
@@ -343,7 +343,6 @@ browser.runtime.onMessage.addListener((msg: Message, sender: Runtime.MessageSend
           let local = await storage.local.get({highlights_add: {[url]: { highlights: {} }}});
           console.log("store local", local)
           local.highlights_add[url].title = sender.tab?.title || "";
-          // TODO: generate id for local highlight
           const id = `${local_id_prefix}-${randomString()}`;
           local.highlights_add[url].highlights[id] = { text: data.text, color: data.color };
           await storage.local.set(local);
@@ -357,7 +356,7 @@ browser.runtime.onMessage.addListener((msg: Message, sender: Runtime.MessageSend
       console.log("update", msg.data)
       return new Promise(async (resolve) => {
         const data = msg.data as DataModify;
-        const is_local_id = data.id.startsWith("local");
+        const is_local_id = data.id.startsWith(local_id_prefix);
 
         let is_failed_request = true;
         if (!is_local_id) {
@@ -380,7 +379,7 @@ browser.runtime.onMessage.addListener((msg: Message, sender: Runtime.MessageSend
       console.log("delete", msg.data)
       return new Promise(async (resolve) => {
         const data = msg.data as DataRemove;
-        const is_local_id = data.id.startsWith("local");
+        const is_local_id = data.id.startsWith(local_id_prefix);
 
         let is_failed_request = true;
         if (!is_local_id) {

@@ -83,8 +83,7 @@ class Histre {
   // Most endpoints return 403 (Forbidden) for auth errors.
   // Aquire and refresh endpoints return 401 for auth errors.
   async refreshAuthToken(refresh: string): Promise<AuthResp> {
-    console.assert(this.headers["Authorization"], "Histre HTTP header value requires 'Authorization' value");
-    const r = await fetch(Histre.url.auth, {
+    const r = await fetch(Histre.url.refresh, {
       headers: this.headers,
       method: 'POST',
       body: `{"refresh": "${refresh}"}`,

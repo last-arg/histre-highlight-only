@@ -216,24 +216,26 @@ class Histre {
   //   return hl_resp.data;
   // }
 
-  // // Body response when invalid id is provided:
-  // // Object { data: null, error: true, errcode: 400, errmsg: null, status: 200 }
-  // async function removeHighlight(id: string): Promise<boolean> {
-  //   const body = JSON.stringify({highlight_id: id});
-  //   const resp = await fetch(highlightUrl, { headers: headers, method: "DELETE", body: body });
-  //   const hl_resp = (await resp.json()) as HighlightResp;
-  //   if (hl_resp.error) {
-  //     let err_msg = "Failed to remove highlight.";
-  //     if (hl_resp.details) {
-  //       err_msg += ` Error: ${hl_resp.details.detail}`;
-  //     } else if (hl_resp.errmsg) {
-  //       err_msg += ` Error(${hl_resp.errcode}): ${hl_resp.errmsg}`;
-  //     }
-  //     console.error(err_msg);
-  //     return false;
-  //   }
-  //   return true;
-  // }
+  // Body response when invalid id is provided:
+  // Object { data: null, error: true, errcode: 400, errmsg: null, status: 200 }
+  async removeHighlight(id: string): Promise<boolean> {
+    const body = JSON.stringify({highlight_id: id});
+    console.log(this.headers)
+    const resp = await fetch(Histre.url.highlight, { headers: this.headers, method: "DELETE", body: body });
+    const hl_resp = (await resp.json()) as HighlightResp;
+    if (hl_resp.error) {
+      console.log("err", hl_resp)
+      let err_msg = "Failed to remove highlight.";
+      if (hl_resp.details) {
+        err_msg += ` Error: ${hl_resp.details.detail}`;
+      } else if (hl_resp.errmsg) {
+        err_msg += ` Error(${hl_resp.errcode}): ${hl_resp.errmsg}`;
+      }
+      console.error(err_msg);
+      return false;
+    }
+    return true;
+  }
 
   // // TODO: histre API modify highlight color 
 }

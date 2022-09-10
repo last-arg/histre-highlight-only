@@ -104,7 +104,6 @@ class Histre {
 
       if (!is_valid_token.access) {
         if (is_valid_token.refresh) {
-          console.log("Refresh token", result_tokens)
           const resp = await this.refreshAuthToken(this.tokens!.token.refresh);
           if (resp.error) {
             err_msg = "Failed to refresh access token."
@@ -115,8 +114,7 @@ class Histre {
             }
           } else if (resp.data) {
             this.tokens = { token: resp.data, created_at: Date.now() }
-            this.setHeaderAuthToken();
-            return;
+            return this.tokens;
           }
         } else {
           console.log("Tokens have expired. Will try to get new tokens.");
@@ -150,8 +148,7 @@ class Histre {
           }
         } else if (resp.data) {
           this.tokens = { token: resp.data, created_at: Date.now() };
-          this.setHeaderAuthToken();
-          return;
+          return this.tokens;
         } else {
           err_msg = "Failed to authenticate user. Didn't recieve token."
         }
@@ -165,6 +162,8 @@ class Histre {
     } else if (result_tokens === undefined) {
       console.error(`Have exhausted all options to authenticate you. Make sure Histre username and password are correct.`);
     }
+
+    return this.tokens;
   }
 
   async authUser(): Promise<AuthResp> {
@@ -249,12 +248,17 @@ async function initTest() {
 
   const user = await getLocalUser();
   if (user === undefined) {
-    console.error("Need to provide Histre username and password for authetication.")
+    console.error("Authetication failed. Need to provide valid Histre username and password.")
     return;
   }
   const token_data = await getLocalAuthData();
   const h = new Histre(user, token_data);
-  await h.updateTokens();
+  const tokens = await h.updateTokens();
+  if (tokens) {
+    await setLocalAuthData(tokens);
+    h.setHeaderAuthToken();
+  }
+  h.removeHighlight("ttesthi")
   console.log(h)
 }
 initTest()

@@ -11,11 +11,11 @@ console.log("==== LOAD ./dist/background.js ====")
 interface HistreResp<T> {
   data?: T,
   // TODO: Not sure if this has defined shape
-  details?: any | undefined
+  details?: any,
   error: boolean,
-  errcode: number,
-  errmsg?: string | undefined,
-  status: number
+  errcode?: number, // Can be null. Got it when tried to remove empty id ("")
+  errmsg?: string, 
+  status?: number, // In some cases can be null
 }
 
 // access is valid for 15 minutes

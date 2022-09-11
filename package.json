@@ -20,7 +20,7 @@
     "dev:pre": "bun run ./scripts/manifest.ts",
     "dev:js": "vite build --config ./vite.config.content.ts --mode development",
     "dev:web": "vite build --clearScreen=false --mode development",
-    "start:firefox": "web-ext run --source-dir ./extension --target=firefox-desktop -u 'about:devtools-toolbox?id=addon%40histre-highlight-only.com&type=extension'",
+    "start:firefox": "web-ext run --source-dir ./extension --target=firefox-desktop -u 'about:devtools-toolbox?id=addon%40histre-highlight-only.com&type=extension' -u 'localhost:8080/test.html'",
     "watch:test": "watchexec -w src/highlight.ts -w src/tests/ 'bun wiptest'"
   }
 }

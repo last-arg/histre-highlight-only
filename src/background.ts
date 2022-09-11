@@ -216,8 +216,13 @@ class Histre {
   // TODO: add type (remove any type)
   static hasError(histre_json: any) {
     if (histre_json.error) {
-      const msg = histre_json.errmsg ? histre_json.errmsg : "<no error message>";
-      console.error(`Histre API error (${histre_json.errcode}): ${msg}`);
+      let msg = "Histre API error";
+      if (histre_json.errcode) {
+        msg += ` (${histre_json.errcode})`;
+      }
+      msg += ": ";
+      msg += histre_json.errmsg ? histre_json.errmsg : "<no error message>";
+      console.error(msg);
       return true;
     }
     return false;

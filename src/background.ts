@@ -198,45 +198,39 @@ class Histre {
     return { access: now < access_date, refresh: now < refresh_date };
   }
 
-  // async function addHighlight(hl: HighlightAdd): Promise<HighlightData | undefined> {
-  //   const body = JSON.stringify(hl);
-  //   const resp = await fetch(highlightUrl, { headers: headers, method: "POST", body: body });
-  //   const hl_resp = (await resp.json()) as HighlightResp;
-  //   if (hl_resp.error) {
-  //     let err_msg = "Failed to add highlight.";
-  //     if (hl_resp.details) {
-  //       err_msg += ` Error: ${hl_resp.details.detail}`;
-  //     } else if (hl_resp.errmsg) {
-  //       err_msg += ` Error(${hl_resp.errcode}): ${hl_resp.errmsg}`;
-  //     }
-  //     console.error(err_msg);
-  //     return undefined;
-  //   }
-  //   return hl_resp.data;
-  // }
+  async addHighlight(hl: HighlightAdd): Promise<Response> {
+    const body = JSON.stringify(hl);
+    return await fetch(Histre.url.highlight, { headers: this.headers, method: "POST", body: body });
+  }
 
   // Body response when invalid id is provided:
   // Object { data: null, error: true, errcode: 400, errmsg: null, status: 200 }
-  async removeHighlight(id: string): Promise<boolean> {
+  async removeHighlight(id: string): Promise<Response> {
     const body = JSON.stringify({highlight_id: id});
     console.log(this.headers)
-    const resp = await fetch(Histre.url.highlight, { headers: this.headers, method: "DELETE", body: body });
-    const hl_resp = (await resp.json()) as HighlightResp;
-    if (hl_resp.error) {
-      console.log("err", hl_resp)
-      let err_msg = "Failed to remove highlight.";
-      if (hl_resp.details) {
-        err_msg += ` Error: ${hl_resp.details.detail}`;
-      } else if (hl_resp.errmsg) {
-        err_msg += ` Error(${hl_resp.errcode}): ${hl_resp.errmsg}`;
-      }
-      console.error(err_msg);
-      return false;
-    }
-    return true;
+    return await fetch(Histre.url.highlight, { headers: this.headers, method: "DELETE", body: body });
   }
 
   // // TODO: histre API modify highlight color 
+
+  // TODO: add type (remove any type)
+  static hasError(histre_json: any) {
+    if (histre_json.error) {
+      const msg = histre_json.errmsg ? histre_json.errmsg : "<no error message>";
+      console.error(`Histre API error (${histre_json.errcode}): ${msg}`);
+      return true;
+    }
+    return false;
+  }
+}
+
+function isValidResponse(resp: Response): boolean {
+  if (resp.status === 200) {
+    return true;
+  }
+
+  console.error(`Got invalid HTTP response ${resp.status} ${resp.statusText}`);
+  return false;
 }
 
 async function initTest() {
@@ -257,8 +251,42 @@ async function initTest() {
   if (tokens) {
     await setLocalAuthData(tokens);
     h.setHeaderAuthToken();
+  } else {
+    console.error("Failed to set Histre 'Authorization' token");
+    return;
   }
-  h.removeHighlight("ttesthi")
+
+  const add: HighlightAdd = {
+    url: "test_url",
+    title: "test_title",
+    text: "test_text",
+    color: "yellow"
+  }
+
+  let test_id = "";
+  const add_resp = await h.addHighlight(add);
+  if (isValidResponse(add_resp)) {
+    const j = await add_resp.json();
+    console.log("j", j)
+    // TODO: validate json with zod
+    if (Histre.hasError(j)) {
+      // TODO: Histre API error
+    }
+    test_id = j.data.highlight_id;
+  }
+
+
+  const rm_resp = await h.removeHighlight(test_id)
+  if (isValidResponse(rm_resp)) {
+    console.log("resp OK", rm_resp);
+    const resp_json = await rm_resp.json();
+    // TODO: validate json with zod
+    console.log(resp_json)
+    if (Histre.hasError(resp_json)) {
+      // TODO: Histre API error
+    }
+  }
+
   console.log(h)
 }
 initTest()

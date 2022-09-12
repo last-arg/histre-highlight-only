@@ -213,15 +213,19 @@ class Histre {
     return await fetch(Histre.url.highlight + `?${params}`, { headers: this.headers, method: "GET" });
   }
 
-  // Body response when invalid id is provided:
-  // Object { data: null, error: true, errcode: 400, errmsg: null, status: 200 }
-  async removeHighlight(id: string): Promise<Response> {
-    const body = JSON.stringify({highlight_id: id});
-    console.log(this.headers)
-    return await fetch(Histre.url.highlight, { headers: this.headers, method: "DELETE", body: body });
+  async getHighlightByUrl(url: string): Promise<Response> {
+    const params = new URLSearchParams({url: url});
+    return await fetch(Histre.url.highlight + `?${params}`, { headers: this.headers, method: "GET" });
   }
 
-  // // TODO: histre API modify highlight color 
+  // Body response when invalid id is provided:
+  // Object { data: null, error: true, errcode: 400, errmsg: null, status: 200 }
+  // If all highlights are deleted from url it will leave behind a note. If note is empty
+  // and want to delete it have to make more requests.
+  async removeHighlight(id: string): Promise<Response> {
+    const body = JSON.stringify({highlight_id: id});
+    return await fetch(Histre.url.highlight, { headers: this.headers, method: "DELETE", body: body });
+  }
 
   // TODO: add type (remove any type)
   static hasError(histre_json: any) {
@@ -271,8 +275,9 @@ async function initTest() {
     return;
   }
 
+  const test_url = "test_url";
   const add: HighlightAdd = {
-    url: "test_url",
+    url: test_url,
     title: "test_title",
     text: "test_text",
     color: "yellow"
@@ -290,13 +295,36 @@ async function initTest() {
     test_id = j.data.highlight_id;
   }
 
-
   {
     const resp = await h.updateHighlight({highlight_id: test_id, color: "blue"})
     if (isValidResponse(resp)) {
       const resp_json = await resp.json();
       // TODO: validate json with zod
       console.log("update", resp_json)
+      if (Histre.hasError(resp_json)) {
+        // TODO: Histre API error
+      }
+    }
+  }
+
+  {
+    const resp = await h.getHighlightByUrl(test_url)
+    if (isValidResponse(resp)) {
+      const resp_json = await resp.json();
+      // TODO: validate json with zod
+      console.log("getByUrl", resp_json)
+      if (Histre.hasError(resp_json)) {
+        // TODO: Histre API error
+      }
+    }
+  }
+
+  {
+    const rm_resp = await h.removeHighlight(test_id)
+    if (isValidResponse(rm_resp)) {
+      const resp_json = await rm_resp.json();
+      // TODO: validate json with zod
+      console.log("remove", resp_json)
       if (Histre.hasError(resp_json)) {
         // TODO: Histre API error
       }
@@ -314,19 +342,6 @@ async function initTest() {
       }
     }
   }
-
-  const rm_resp = await h.removeHighlight(test_id)
-  if (isValidResponse(rm_resp)) {
-    console.log("resp OK", rm_resp);
-    const resp_json = await rm_resp.json();
-    // TODO: validate json with zod
-    console.log(resp_json)
-    if (Histre.hasError(resp_json)) {
-      // TODO: Histre API error
-    }
-  }
-
-  console.log(h)
 }
 initTest()
 

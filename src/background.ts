@@ -1,7 +1,7 @@
 import { storage } from 'webextension-polyfill';
 import type { Runtime } from 'webextension-polyfill';
-import { Message, ValidToken, UserData, Action, DataModify, DataRemove, DataCreate, local_id_prefix } from './common';
-import { Histre } from './histre';
+import { Message, ValidToken, UserData, Action, DataModify, DataRemove, DataCreate, local_id_prefix, HighlightAdd } from './common';
+import { Histre, isValidResponse } from './histre';
 
 // Test import
 import { test_local } from "./tests/test_data";
@@ -63,6 +63,49 @@ type MessageReturn = SaveMessage | boolean | undefined;
 //   },
 //   highlights_remove: [<id>],
 // }
+
+async function histreAddHighlight(histre: Histre | undefined, hl: HighlightAdd): Promise<string | undefined> {
+  if (histre === undefined) {
+    return undefined;
+  }
+
+  const resp = await histre.addHighlight(hl);
+  if (!isValidResponse(resp)) {
+    return undefined;
+  }
+  const body = await resp.json();
+  // TODO: validate 'body'?
+  if (Histre.hasError(body)) {
+    return undefined;
+  }
+  // TODO: validate body.data with zod
+  console.log(resp)
+
+  return body.data.id as string;
+}
+
+let histre: Histre | undefined = undefined; 
+
+(async function initHistre() {
+  if (__DEV__) {
+    const secret = await import("../tmp/.secret.dev");
+    setLocalUser(secret.user)
+  }
+
+  const user_data = await getLocalUser(); 
+  if (user_data) {
+    const token_data = await getLocalAuthData();
+    histre = new Histre(user_data, token_data);
+    const token = await histre.updateTokens()
+    if (token) {
+      await setLocalAuthData(token)
+      histre.setHeaderAuthToken()
+    }
+    return histre;
+  }
+  return undefined;
+})();
+
 browser.runtime.onMessage.addListener((msg: Message, sender: Runtime.MessageSender): undefined | Promise<MessageReturn> => {
   console.log(msg, sender);
   switch (msg.action) {
@@ -75,16 +118,20 @@ browser.runtime.onMessage.addListener((msg: Message, sender: Runtime.MessageSend
         }
         let result_id: string | undefined = undefined; 
         const data = msg.data as DataCreate;
-        let is_failed_request = true;
         const url = sender.tab.url;
+        const title = sender.tab?.title || "";
 
-        // TODO: histre request
-        // const add = await histre.addHighlight(hl)
+        result_id = await histreAddHighlight(histre, {
+           url: url,
+           title: title,
+           text: data.text,
+           color: data.color
+        })
 
-        if (is_failed_request) {
+        if (!result_id) {
           let local = await storage.local.get({highlights_add: {[url]: { highlights: {} }}});
           console.log("store local", local)
-          local.highlights_add[url].title = sender.tab?.title || "";
+          local.highlights_add[url].title = title;
           result_id = `${local_id_prefix}-${randomString()}`;
           local.highlights_add[url].highlights[result_id] = { text: data.text, color: data.color };
           await storage.local.set(local);
@@ -161,7 +208,7 @@ browser.runtime.onMessage.addListener((msg: Message, sender: Runtime.MessageSend
   }
 });
 
-if (__DEV__) {; 
+if (__DEV__) {
   // Add test user data
   const data = {
     ...test_local,

@@ -76,5 +76,7 @@ interface HistreResp<T> {
 }
 
 export type AuthResp = HistreResp<Required<AuthData>>;
+export type AddResp = HistreResp<{highlight_id: string, highlight_link: string}>;
 export type ValidToken = { token: AuthData, created_at: number};
+
 

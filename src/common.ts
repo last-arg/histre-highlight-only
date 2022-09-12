@@ -53,4 +53,28 @@ export interface HighlightUpdate {
   color: string
 }
 
+export interface UserData {
+  username: string,
+  password: string,
+}
+
+// access is valid for 15 minutes
+// refresh is valid for 30 days
+export interface AuthData {
+  access: string,
+  refresh: string,
+}
+
+interface HistreResp<T> {
+  data?: T,
+  // TODO: Not sure if this has defined shape
+  details?: any,
+  error: boolean,
+  errcode?: number, // Can be null. Got it when tried to remove empty id ("")
+  errmsg?: string, 
+  status?: number, // In some cases can be null
+}
+
+export type AuthResp = HistreResp<Required<AuthData>>;
+export type ValidToken = { token: AuthData, created_at: number};
 

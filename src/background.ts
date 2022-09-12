@@ -1,66 +1,20 @@
 import { storage } from 'webextension-polyfill';
 import type { Runtime } from 'webextension-polyfill';
-import { Message, Action, HighlightAdd, HighlightUpdate, DataModify, DataRemove, DataCreate, local_id_prefix } from './common';
+import { Message, ValidToken, AuthResp, UserData, Action, HighlightAdd, HighlightUpdate, DataModify, DataRemove, DataCreate, local_id_prefix } from './common';
 
 // Test import
 import { test_local } from "./tests/test_data";
+import { backgroundTest as histreTests } from './test_background';
+
+const runTests = true;
+
 
 console.log("==== LOAD ./dist/background.js ====")
 
+// type HighlightData = {highlight_id: string, highlight_link: string};
+// type HighlightResp = HistreResp<HighlightData>;
 
-interface HistreResp<T> {
-  data?: T,
-  // TODO: Not sure if this has defined shape
-  details?: any,
-  error: boolean,
-  errcode?: number, // Can be null. Got it when tried to remove empty id ("")
-  errmsg?: string, 
-  status?: number, // In some cases can be null
-}
-
-// access is valid for 15 minutes
-// refresh is valid for 30 days
-interface AuthData {
-  access: string,
-  refresh: string,
-}
-type AuthResp = HistreResp<Required<AuthData>>;
-type ValidToken = { token: AuthData, created_at: number};
-
-type HighlightData = {highlight_id: string, highlight_link: string};
-type HighlightResp = HistreResp<HighlightData>;
-
-interface UserData {
-  username: string,
-  password: string,
-}
-
-async function getLocalAuthData(): Promise<ValidToken | undefined> {
-  const data = await storage.local.get(
-    {token: {access: undefined, refresh: undefined}, created_at: undefined});
-  if (data.token.access && data.token.refresh && data.created_at) {
-    return data as ValidToken;
-  }
-  return undefined;
-}
-
-async function setLocalAuthData(auth_data: ValidToken) {
-  await storage.local.set(auth_data);
-}
-
-async function getLocalUser(): Promise<UserData | undefined> {
-  const data = await storage.local.get({username: undefined, password: undefined});
-  if (data.username && data.password) {
-    return data as UserData;
-  }
-  return undefined;
-}
-
-async function setLocalUser(user: UserData): Promise<void> {
-  await storage.local.set(user);
-}
-
-class Histre {
+export class Histre {
   static host = 'https://histre.com';
   static api_v1 = `${Histre.host}/api/v1`;
   static url = {
@@ -243,7 +197,7 @@ class Histre {
   }
 }
 
-function isValidResponse(resp: Response): boolean {
+export function isValidResponse(resp: Response): boolean {
   if (resp.status === 200) {
     return true;
   }
@@ -252,98 +206,6 @@ function isValidResponse(resp: Response): boolean {
   return false;
 }
 
-async function initTest() {
-  if (__DEV__) { 
-    // Add test user data
-    const user = await import("../tmp/.secret.dev");
-    await setLocalUser(user.user)
-  }
-
-  const user = await getLocalUser();
-  if (user === undefined) {
-    console.error("Authetication failed. Need to provide valid Histre username and password.")
-    return;
-  }
-  const token_data = await getLocalAuthData();
-  const h = new Histre(user, token_data);
-  const tokens = await h.updateTokens();
-  if (tokens) {
-    await setLocalAuthData(tokens);
-    h.setHeaderAuthToken();
-  } else {
-    console.error("Failed to set Histre 'Authorization' token");
-    return;
-  }
-
-  const test_url = "test_url";
-  const add: HighlightAdd = {
-    url: test_url,
-    title: "test_title",
-    text: "test_text",
-    color: "yellow"
-  }
-
-  let test_id = "";
-  const add_resp = await h.addHighlight(add);
-  if (isValidResponse(add_resp)) {
-    const j = await add_resp.json();
-    console.log("add", j)
-    // TODO: validate json with zod
-    if (Histre.hasError(j)) {
-      // TODO: Histre API error
-    }
-    test_id = j.data.highlight_id;
-  }
-
-  {
-    const resp = await h.updateHighlight({highlight_id: test_id, color: "blue"})
-    if (isValidResponse(resp)) {
-      const resp_json = await resp.json();
-      // TODO: validate json with zod
-      console.log("update", resp_json)
-      if (Histre.hasError(resp_json)) {
-        // TODO: Histre API error
-      }
-    }
-  }
-
-  {
-    const resp = await h.getHighlightByUrl(test_url)
-    if (isValidResponse(resp)) {
-      const resp_json = await resp.json();
-      // TODO: validate json with zod
-      console.log("getByUrl", resp_json)
-      if (Histre.hasError(resp_json)) {
-        // TODO: Histre API error
-      }
-    }
-  }
-
-  {
-    const rm_resp = await h.removeHighlight(test_id)
-    if (isValidResponse(rm_resp)) {
-      const resp_json = await rm_resp.json();
-      // TODO: validate json with zod
-      console.log("remove", resp_json)
-      if (Histre.hasError(resp_json)) {
-        // TODO: Histre API error
-      }
-    }
-  }
-
-  {
-    const resp = await h.getHighlightById(test_id)
-    if (isValidResponse(resp)) {
-      const resp_json = await resp.json();
-      // TODO: validate json with zod
-      console.log("getById", resp_json)
-      if (Histre.hasError(resp_json)) {
-        // TODO: Histre API error
-      }
-    }
-  }
-}
-initTest()
 
 function randomString() {
   return Math.random().toString(36).substring(2,10)
@@ -482,6 +344,10 @@ if (__DEV__) {;
   }
 
   storage.local.set({highlights_add: data});
+
+  if (runTests) {
+    histreTests()
+  }
 }
 
 
@@ -490,3 +356,4 @@ if (__DEV__) {;
 // browser.runtime.openOptionsPage()
 // const bg_href = (await browser.runtime.getBackgroundPage()).location.href;
 // console.log(bg_href)
+

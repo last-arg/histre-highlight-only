@@ -208,6 +208,11 @@ class Histre {
     return await fetch(Histre.url.highlight, { headers: this.headers, method: "PATCH", body: body });
   }
 
+  async getHighlightById(id: string): Promise<Response> {
+    const params = new URLSearchParams({highlight_id: id});
+    return await fetch(Histre.url.highlight + `?${params}`, { headers: this.headers, method: "GET" });
+  }
+
   // Body response when invalid id is provided:
   // Object { data: null, error: true, errcode: 400, errmsg: null, status: 200 }
   async removeHighlight(id: string): Promise<Response> {
@@ -292,6 +297,18 @@ async function initTest() {
       const resp_json = await resp.json();
       // TODO: validate json with zod
       console.log("update", resp_json)
+      if (Histre.hasError(resp_json)) {
+        // TODO: Histre API error
+      }
+    }
+  }
+
+  {
+    const resp = await h.getHighlightById(test_id)
+    if (isValidResponse(resp)) {
+      const resp_json = await resp.json();
+      // TODO: validate json with zod
+      console.log("getById", resp_json)
       if (Histre.hasError(resp_json)) {
         // TODO: Histre API error
       }

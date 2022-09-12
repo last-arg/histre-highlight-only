@@ -2,6 +2,7 @@ import { storage } from 'webextension-polyfill';
 import { ValidToken, UserData } from './common';
 import { isValidResponse, Histre } from './background'
 
+// TODO: move storage related functions
 async function getLocalAuthData(): Promise<ValidToken | undefined> {
   const data = await storage.local.get(
     {token: {access: undefined, refresh: undefined}, created_at: undefined});
@@ -28,7 +29,14 @@ async function setLocalUser(user: UserData): Promise<void> {
   await storage.local.set(user);
 }
 
+function assert(b: boolean, msg: string) {
+  if (!b) {
+    throw Error(msg);
+  }
+}
+
 export async function histreTests() {
+  console.log("Start Histre API tests");
   if (__DEV__) { 
     // Add test user data
     const user = await import("../tmp/.secret.dev");
@@ -60,62 +68,44 @@ export async function histreTests() {
   }
 
   let test_id = "";
-  const add_resp = await h.addHighlight(add);
-  if (isValidResponse(add_resp)) {
-    const j = await add_resp.json();
-    console.log("add", j)
-    // TODO: validate json with zod
-    if (Histre.hasError(j)) {
-      // TODO: Histre API error
-    }
-    test_id = j.data.highlight_id;
+  {
+    const resp = await h.addHighlight(add);
+    assert(isValidResponse(resp), "Histre request returned invalid response status");
+    const body = await resp.json();
+    assert(!Histre.hasError(body), "Histre response failed due to error")
+    assert(body.data.highlight_id.length > 0, "Invalid higlight ID")
+    test_id = body.data.highlight_id;
   }
 
   {
     const resp = await h.updateHighlight({highlight_id: test_id, color: "blue"})
-    if (isValidResponse(resp)) {
-      const resp_json = await resp.json();
-      // TODO: validate json with zod
-      console.log("update", resp_json)
-      if (Histre.hasError(resp_json)) {
-        // TODO: Histre API error
-      }
-    }
+    assert(isValidResponse(resp), "Histre request returned invalid response status");
+    const body = await resp.json();
+    assert(!Histre.hasError(body), "Histre response failed due to error")
   }
 
   {
     const resp = await h.getHighlightByUrl(test_url)
-    if (isValidResponse(resp)) {
-      const resp_json = await resp.json();
-      // TODO: validate json with zod
-      console.log("getByUrl", resp_json)
-      if (Histre.hasError(resp_json)) {
-        // TODO: Histre API error
-      }
-    }
+    assert(isValidResponse(resp), "Histre request returned invalid response status");
+    const body = await resp.json();
+    assert(!Histre.hasError(body), "Histre response failed due to error")
+    assert(body.count === 1, "Response must contain 1 item (highlight)")
+    assert(body.data[0].color === "blue", "Highlight color must be 'blue'")
   }
 
   {
-    const rm_resp = await h.removeHighlight(test_id)
-    if (isValidResponse(rm_resp)) {
-      const resp_json = await rm_resp.json();
-      // TODO: validate json with zod
-      console.log("remove", resp_json)
-      if (Histre.hasError(resp_json)) {
-        // TODO: Histre API error
-      }
-    }
+    const resp = await h.removeHighlight(test_id)
+    assert(isValidResponse(resp), "Histre request returned invalid response status");
+    const body = await resp.json();
+    assert(!Histre.hasError(body), "Histre response failed due to error")
   }
 
   {
     const resp = await h.getHighlightById(test_id)
-    if (isValidResponse(resp)) {
-      const resp_json = await resp.json();
-      // TODO: validate json with zod
-      console.log("getById", resp_json)
-      if (Histre.hasError(resp_json)) {
-        // TODO: Histre API error
-      }
-    }
+    assert(isValidResponse(resp), "Histre request returned invalid response status");
+    const body = await resp.json();
+    assert(!Histre.hasError(body), "Histre response failed due to error")
+    assert(body.count === 0, "Response must contain item (highlight)")
   }
+  console.log("Finished Histre API tests");
 }

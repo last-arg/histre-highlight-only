@@ -4,7 +4,7 @@ import { Message, ValidToken, AuthResp, UserData, Action, HighlightAdd, Highligh
 
 // Test import
 import { test_local } from "./tests/test_data";
-import { backgroundTest as histreTests } from './test_background';
+import { histreTests } from './test_background';
 
 const runTests = true;
 

@@ -48,3 +48,11 @@ export interface HighlightAdd {
   // extra (Object): optional
 }
 
+export interface HighlightUpdate {
+  highlight_id: string,
+  color: string
+  // tweet (Boolean): optional
+  // extra (Object): optional
+}
+
+

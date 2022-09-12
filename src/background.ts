@@ -1,6 +1,6 @@
 import { storage } from 'webextension-polyfill';
 import type { Runtime } from 'webextension-polyfill';
-import { Message, Action, HighlightAdd, DataModify, DataRemove, DataCreate, local_id_prefix } from './common';
+import { Message, Action, HighlightAdd, HighlightUpdate, DataModify, DataRemove, DataCreate, local_id_prefix } from './common';
 
 // Test import
 import { test_local } from "./tests/test_data";
@@ -203,6 +203,11 @@ class Histre {
     return await fetch(Histre.url.highlight, { headers: this.headers, method: "POST", body: body });
   }
 
+  async updateHighlight(input: HighlightUpdate): Promise<Response> {
+    const body = JSON.stringify(input);
+    return await fetch(Histre.url.highlight, { headers: this.headers, method: "PATCH", body: body });
+  }
+
   // Body response when invalid id is provided:
   // Object { data: null, error: true, errcode: 400, errmsg: null, status: 200 }
   async removeHighlight(id: string): Promise<Response> {
@@ -272,7 +277,7 @@ async function initTest() {
   const add_resp = await h.addHighlight(add);
   if (isValidResponse(add_resp)) {
     const j = await add_resp.json();
-    console.log("j", j)
+    console.log("add", j)
     // TODO: validate json with zod
     if (Histre.hasError(j)) {
       // TODO: Histre API error
@@ -280,6 +285,18 @@ async function initTest() {
     test_id = j.data.highlight_id;
   }
 
+
+  {
+    const resp = await h.updateHighlight({highlight_id: test_id, color: "blue"})
+    if (isValidResponse(resp)) {
+      const resp_json = await resp.json();
+      // TODO: validate json with zod
+      console.log("update", resp_json)
+      if (Histre.hasError(resp_json)) {
+        // TODO: Histre API error
+      }
+    }
+  }
 
   const rm_resp = await h.removeHighlight(test_id)
   if (isValidResponse(rm_resp)) {

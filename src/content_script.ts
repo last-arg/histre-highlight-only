@@ -538,8 +538,8 @@ async function test() {
   )
   if (!update) { console.error("Failed to update highlight"); }
 
-  // const remove = await runtime.sendMessage({ action: Action.Remove , data: { id: hl_id} })
-  // if (!remove) { console.error("Failed to remove highlight"); }
+  const remove = await runtime.sendMessage({ action: Action.Remove , data: { id: hl_id} })
+  if (!remove) { console.error("Failed to remove highlight"); }
 }
 
 setTimeout(test, 0);

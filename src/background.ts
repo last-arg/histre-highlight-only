@@ -147,6 +147,30 @@ async function histreUpdateHighlight(histre: Histre | undefined, hl: HighlightUp
   return true;
 }
 
+async function histreRemoveHighlight(histre: Histre | undefined, hl_id: string): Promise<boolean> {
+  if (histre === undefined) {
+    return false;
+  }
+
+  const resp = await histre.removeHighlight(hl_id);
+  if (!isValidResponse(resp)) {
+    return false;
+  }
+  const body = await resp.json();
+  const parsed = histreResponseSchema.safeParse(body);
+  if (!parsed.success) {
+    for (const issue of parsed.error.issues) {
+      console.error(`Failed to validate '${issue.path[0]}' field in Histre JSON response. Error: ${issue.message}`)
+    }
+    return false;
+  }
+  if (Histre.hasError(body)) {
+    return false;
+  }
+
+  return true;
+}
+
 let histre: Histre | undefined = undefined; 
 
 (async function initHistre() {
@@ -212,6 +236,10 @@ browser.runtime.onMessage.addListener((msg: Message, sender: Runtime.MessageSend
         let added_to_histre = false;
         if (!is_local_id) {
           added_to_histre = await histreUpdateHighlight(histre, { highlight_id: data.id, color: data.color });
+          if (added_to_histre) {
+            resolve(true)
+            return;
+          }
         } else {
           if (sender.tab?.url) {
             const url = sender.tab.url;
@@ -241,13 +269,13 @@ browser.runtime.onMessage.addListener((msg: Message, sender: Runtime.MessageSend
         const data = msg.data as DataRemove;
         const is_local_id = data.id.startsWith(local_id_prefix);
 
-        let is_failed_request = true;
+        let added_to_histre = false;
         if (!is_local_id) {
-          // TODO: histre request
-          // const rm = await histre.removeHighlight("ddajk")
-          is_failed_request = false;
-          resolve(true); 
-          return;
+          added_to_histre = await histreRemoveHighlight(histre, data.id);
+          if (added_to_histre) {
+            resolve(true)
+            return;
+          }
         } else {
           if (sender.tab?.url) {
             const url = sender.tab.url;
@@ -259,7 +287,7 @@ browser.runtime.onMessage.addListener((msg: Message, sender: Runtime.MessageSend
           }
         }
 
-        if (is_failed_request) {
+        if (!added_to_histre) {
           let local = await storage.local.get({highlights_remove: []});
           local.highlights_remove.push(data.id);
           await storage.local.set(local);

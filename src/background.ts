@@ -1,5 +1,5 @@
 import { storage, Runtime } from 'webextension-polyfill';
-import { Message, ValidToken, UserData, Action, DataModify, DataRemove, DataCreate, local_id_prefix, HighlightAdd } from './common';
+import { Message, ValidToken, Action, DataModify, DataRemove, DataCreate, local_id_prefix, HighlightAdd } from './common';
 import { Histre, isValidResponse } from './histre';
 import { z } from 'zod';
 
@@ -23,10 +23,18 @@ async function setLocalAuthData(auth_data: ValidToken) {
   await storage.local.set(auth_data);
 }
 
+const localUserSchema = z.object({
+  username: z.string(),
+  password: z.string(),
+})
+
+type UserData = z.infer<typeof localUserSchema>;
+
 async function getLocalUser(): Promise<UserData | undefined> {
   const data = await storage.local.get({username: undefined, password: undefined});
-  if (data.username && data.password) {
-    return data as UserData;
+  const user = localUserSchema.safeParse(data);
+  if (user.success) {
+    return user.data
   }
   return undefined;
 }

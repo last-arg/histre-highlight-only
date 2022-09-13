@@ -167,7 +167,6 @@ export class Histre {
     return await fetch(Histre.url.highlight, { headers: this.headers, method: "DELETE", body: body });
   }
 
-  // TODO: add type (remove any type)
   static hasError(histre_json: HistreResponse) {
     if (histre_json.error) {
       let msg = "Histre API error";

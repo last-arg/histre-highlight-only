@@ -6,8 +6,6 @@ import { findHighlightIndices, removeHighlightOverlaps } from './highlight';
 import './hho.css';
 console.log("==== LOAD 'content_script.js' TD ====")
 
-// TODO: try https://github.com/colinhacks/zod
-
 type ContextMenuElem = HTMLDivElement;
 enum ContextMenuState { none, create, modify }
 // Histre colors

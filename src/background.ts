@@ -1,5 +1,5 @@
 import { storage, Runtime } from 'webextension-polyfill';
-import { Message, ValidToken, Action, DataModify, DataRemove, DataCreate, local_id_prefix, HighlightAdd } from './common';
+import { Message, Action, DataModify, DataRemove, DataCreate, local_id_prefix, HighlightAdd } from './common';
 import { Histre, isValidResponse } from './histre';
 import { z } from 'zod';
 
@@ -8,13 +8,23 @@ import { test_local } from "./tests/test_data";
 
 console.log("==== LOAD ./dist/background.js ====")
 
+const localAuthSchema = z.object({
+  created_at: z.number(),
+  token: z.object({
+    access: z.string(),
+    refresh: z.string(),
+  }),
+})
+
+type ValidToken = z.infer<typeof localAuthSchema>;
+
 // TODO: move storage related functions
 async function getLocalAuthData(): Promise<ValidToken | undefined> {
   const data = await storage.local.get(
     {token: {access: undefined, refresh: undefined}, created_at: undefined});
-  // TODO: use zod to validate data?
-  if (data.token.access && data.token.refresh && data.created_at) {
-    return data as ValidToken;
+  const token = localAuthSchema.safeParse(data);
+  if (token.success) {
+    return token.data
   }
   return undefined;
 }

@@ -1,5 +1,5 @@
 import { storage, Runtime } from 'webextension-polyfill';
-import { Message, Action, DataModify, DataRemove, DataCreate, local_id_prefix, HighlightAdd, HighlightUpdate } from './common';
+import { Message, Action, DataModify, DataRemove, DataCreate, local_id_prefix, HighlightAdd, HighlightUpdate, histreResponseSchema } from './common';
 import { Histre, isValidResponse } from './histre';
 import { z } from 'zod';
 
@@ -80,15 +80,6 @@ type MessageReturn = SaveMessage | boolean | undefined;
 const addDataSchema = z.object({
   highlight_id: z.string(),
   highlight_link: z.string(),
-})
-
-const histreResponseSchema = z.object({
-  data: z.unknown().nullable(),
-  details: z.unknown().nullable(),
-  error: z.boolean(),
-  errcode: z.number().nullable(),
-  errmsg: z.string().nullable(),
-  status: z.number().nullable(),
 })
 
 async function histreAddHighlight(histre: Histre | undefined, hl: HighlightAdd): Promise<string | undefined> {

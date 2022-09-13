@@ -1,4 +1,4 @@
-import { ValidToken, UserData, AuthResp, HighlightAdd, HighlightUpdate } from './common';
+import { ValidToken, UserData, AuthResp, HighlightAdd, HighlightUpdate, HistreResponse } from './common';
 
 export class Histre {
   static host = 'https://histre.com';
@@ -168,7 +168,7 @@ export class Histre {
   }
 
   // TODO: add type (remove any type)
-  static hasError(histre_json: any) {
+  static hasError(histre_json: HistreResponse) {
     if (histre_json.error) {
       let msg = "Histre API error";
       if (histre_json.errcode) {

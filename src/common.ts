@@ -1,4 +1,16 @@
+import { z } from 'zod';
+
 export const local_id_prefix = "local";
+
+export const histreResponseSchema = z.object({
+  data: z.unknown().nullable(),
+  details: z.unknown().nullable(),
+  error: z.boolean(),
+  errcode: z.number().nullable(),
+  errmsg: z.string().nullable(),
+  status: z.number().nullable(),
+})
+export type HistreResponse = z.infer<typeof histreResponseSchema>;
 
 export enum Action { 
   Create, 

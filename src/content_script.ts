@@ -542,6 +542,6 @@ async function test() {
   if (!remove) { console.error("Failed to remove highlight"); }
 }
 
-setTimeout(test, 0);
+// setTimeout(test, 0);
 
 

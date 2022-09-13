@@ -72,10 +72,11 @@ export interface UserData {
 
 // access is valid for 15 minutes
 // refresh is valid for 30 days
-export interface AuthData {
-  access: string,
-  refresh: string,
-}
+export const histreAuthSchema = z.object({
+  access: z.string(),
+  refresh: z.string(),
+})
+export type AuthData = z.infer<typeof histreAuthSchema>
 
 interface HistreResp<T> {
   data?: T,

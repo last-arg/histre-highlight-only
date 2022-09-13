@@ -1,4 +1,4 @@
-import { ValidToken, UserData, AuthResp, HighlightAdd, HighlightUpdate, HistreResponse } from './common';
+import { ValidToken, UserData, AuthData, AuthResp, HighlightAdd, HighlightUpdate, HistreResponse, histreResponseSchema, histreAuthSchema } from './common';
 
 export class Histre {
   static host = 'https://histre.com';
@@ -70,29 +70,12 @@ export class Histre {
     if (!result_tokens) {
       console.log("Authenticating with username and password")
       if (this.user) {
-        const resp = await this.authUser();
-        if (resp === undefined) {
-          console.log("Histre authentication request failed.")
-        } else if (resp.error) {
-          err_msg = "Failed to authenticate user."
-          if (resp.details) {
-            err_msg += " Error: ";
-            if (resp.details.detail) {
-              err_msg += resp.details.detail;
-            } else {
-              if (resp.details.username) {
-                err_msg += "'username' field may not be blank"
-              } else if (resp.details.password) {
-                if (resp.details.username) { err_msg += " and "; }
-                err_msg += "'password' field may not be blank"
-              }
-            }
-          }
-        } else if (resp.data) {
-          this.tokens = { token: resp.data, created_at: Date.now() };
+        const new_token = await this.authUser();
+        if (new_token) {
+          this.tokens = { token: new_token, created_at: Date.now() };
           return this.tokens;
         } else {
-          err_msg = "Failed to authenticate user. Didn't recieve token."
+          err_msg = "Failed to authenticate user."
         }
       } else {
         err_msg = "Need to provide username and password"
@@ -108,17 +91,41 @@ export class Histre {
     return this.tokens;
   }
 
-  async authUser(): Promise<AuthResp | undefined> {
-    const body = JSON.stringify(this.user);
-    const r = await fetch(Histre.url.auth, {
+  async authUser(): Promise<AuthData | undefined> {
+    const req_body = JSON.stringify(this.user);
+    const resp = await fetch(Histre.url.auth, {
       headers: this.headers,
       method: 'POST',
-      body: body,
+      body: req_body,
     });
-    if (r.status !== 200) {
+    if (isValidResponse(resp)) {
       return undefined;
     }
-    return await r.json();
+    const body = await resp.json();
+    const parsed = histreResponseSchema.safeParse(body);
+    if (!parsed.success) {
+      for (const issue of parsed.error.issues) {
+        console.error(`Failed to validate '${issue.path[0]}' field in Histre JSON response. Error: ${issue.message}`)
+      }
+      return undefined;
+    }
+
+    // TODO: parsed.body.details might contain more specific error message.
+    // Something to do with username or password.
+    // Do it in hasError() fn instead?
+    if (Histre.hasError(body)) {
+      return undefined;
+    }
+
+    const parsed_data = histreAuthSchema.safeParse(body.data.data)
+    if (!parsed_data.success) {
+      for (const issue of parsed_data.error.issues) {
+        console.error(`Failed to validate 'data.${issue.path[0]}' field in Histre JSON response. Error: ${issue.message}`)
+      }
+      return undefined;
+    }
+
+    return parsed_data.data;
   };
 
   setHeaderAuthToken() {

@@ -1,5 +1,5 @@
 import { storage, Runtime } from 'webextension-polyfill';
-import { Message, Action, DataModify, DataRemove, DataCreate, local_id_prefix, HighlightAdd } from './common';
+import { Message, Action, DataModify, DataRemove, DataCreate, local_id_prefix, HighlightAdd, HighlightUpdate } from './common';
 import { Histre, isValidResponse } from './histre';
 import { z } from 'zod';
 
@@ -123,6 +123,30 @@ async function histreAddHighlight(histre: Histre | undefined, hl: HighlightAdd):
   return parsed_data.data.highlight_id;
 }
 
+async function histreUpdateHighlight(histre: Histre | undefined, hl: HighlightUpdate): Promise<boolean> {
+  if (histre === undefined) {
+    return false;
+  }
+
+  const resp = await histre.updateHighlight(hl);
+  if (!isValidResponse(resp)) {
+    return false;
+  }
+  const body = await resp.json();
+  const parsed = histreResponseSchema.safeParse(body);
+  if (!parsed.success) {
+    for (const issue of parsed.error.issues) {
+      console.error(`Failed to validate '${issue.path[0]}' field in Histre JSON response. Error: ${issue.message}`)
+    }
+    return false;
+  }
+  if (Histre.hasError(body)) {
+    return false;
+  }
+
+  return true;
+}
+
 let histre: Histre | undefined = undefined; 
 
 (async function initHistre() {
@@ -146,7 +170,7 @@ let histre: Histre | undefined = undefined;
 })();
 
 browser.runtime.onMessage.addListener((msg: Message, sender: Runtime.MessageSender): undefined | Promise<MessageReturn> => {
-  console.log(msg, sender);
+  // console.log(msg, sender);
   switch (msg.action) {
     case Action.Create: {
       console.log("save", msg.data)
@@ -185,10 +209,9 @@ browser.runtime.onMessage.addListener((msg: Message, sender: Runtime.MessageSend
         const data = msg.data as DataModify;
         const is_local_id = data.id.startsWith(local_id_prefix);
 
-        let is_failed_request = true;
+        let added_to_histre = false;
         if (!is_local_id) {
-          is_failed_request = false;
-          // TODO: histre request
+          added_to_histre = await histreUpdateHighlight(histre, { highlight_id: data.id, color: data.color });
         } else {
           if (sender.tab?.url) {
             const url = sender.tab.url;
@@ -200,13 +223,16 @@ browser.runtime.onMessage.addListener((msg: Message, sender: Runtime.MessageSend
           }
         }
 
-        if (is_failed_request) {
+        // Is histre highlight but request failed
+        if (!added_to_histre) {
           let local = await storage.local.get({highlights_update: {}});
           local.highlights_update[data.id] = data.color;
           await storage.local.set(local);
+          resolve(true)
+          return;
         }
 
-        resolve(true);
+        resolve(false);
       });
     }
     case Action.Remove: {

@@ -1,7 +1,7 @@
-import { storage } from 'webextension-polyfill';
-import type { Runtime } from 'webextension-polyfill';
+import { storage, Runtime } from 'webextension-polyfill';
 import { Message, ValidToken, UserData, Action, DataModify, DataRemove, DataCreate, local_id_prefix, HighlightAdd } from './common';
 import { Histre, isValidResponse } from './histre';
+import { z } from 'zod';
 
 // Test import
 import { test_local } from "./tests/test_data";
@@ -35,11 +35,6 @@ async function setLocalUser(user: UserData): Promise<void> {
   await storage.local.set(user);
 }
 
-// type HighlightData = {highlight_id: string, highlight_link: string};
-// type HighlightResp = HistreResp<HighlightData>;
-
-
-
 function randomString() {
   return Math.random().toString(36).substring(2,10)
 };
@@ -64,6 +59,20 @@ type MessageReturn = SaveMessage | boolean | undefined;
 //   highlights_remove: [<id>],
 // }
 
+const addDataSchema = z.object({
+  highlight_id: z.string(),
+  highlight_link: z.string(),
+})
+
+const histreResponseSchema = z.object({
+  data: z.unknown().nullable(),
+  details: z.unknown().nullable(),
+  error: z.boolean(),
+  errcode: z.number().nullable(),
+  errmsg: z.string().nullable(),
+  status: z.number().nullable(),
+})
+
 async function histreAddHighlight(histre: Histre | undefined, hl: HighlightAdd): Promise<string | undefined> {
   if (histre === undefined) {
     return undefined;
@@ -74,14 +83,26 @@ async function histreAddHighlight(histre: Histre | undefined, hl: HighlightAdd):
     return undefined;
   }
   const body = await resp.json();
-  // TODO: validate 'body'?
+  const parsed = histreResponseSchema.safeParse(body);
+  if (!parsed.success) {
+    for (const issue of parsed.error.issues) {
+      console.error(`Failed to validate '${issue.path[0]}' field in Histre JSON response. Error: ${issue.message}`)
+    }
+    return undefined;
+  }
   if (Histre.hasError(body)) {
     return undefined;
   }
-  // TODO: validate body.data with zod
-  console.log(resp)
 
-  return body.data.id as string;
+  const parsed_data = addDataSchema.safeParse(parsed.data.data);
+  if (!parsed_data.success) {
+    for (const issue of parsed_data.error.issues) {
+      console.error(`Failed to validate 'data.${issue.path[0]}' field in Histre JSON response. Error: ${issue.message}`)
+    }
+    return undefined;
+  }
+
+  return parsed_data.data.highlight_id;
 }
 
 let histre: Histre | undefined = undefined; 

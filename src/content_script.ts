@@ -532,16 +532,16 @@ async function test() {
   )
   if (!save) { console.error("Failed to save highlight"); }
 
-  const hl_id = "local-xxxxxx";
-  const update = await runtime.sendMessage(
-    { action: Action.Modify , data: { color: "blue", id: hl_id} },
-  )
-  if (!update) { console.error("Failed to update highlight"); }
+  // const hl_id = "local-xxxxxx";
+  // const update = await runtime.sendMessage(
+  //   { action: Action.Modify , data: { color: "blue", id: hl_id} },
+  // )
+  // if (!update) { console.error("Failed to update highlight"); }
 
-  const remove = await runtime.sendMessage({ action: Action.Remove , data: { id: hl_id} })
-  if (!remove) { console.error("Failed to remove highlight"); }
+  // const remove = await runtime.sendMessage({ action: Action.Remove , data: { id: hl_id} })
+  // if (!remove) { console.error("Failed to remove highlight"); }
 }
 
-// test();
+setTimeout(test, 0);
 
 

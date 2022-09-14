@@ -20,40 +20,16 @@ export class Histre {
     this.tokens = tokens;
   }
 
-  // Most endpoints return 403 (Forbidden) for auth errors.
-  // Aquire and refresh endpoints return 401 for auth errors.
-  async refreshAuthToken(refresh: string): Promise<AuthResp> {
-    const r = await fetch(Histre.url.refresh, {
-      headers: this.headers,
-      method: 'POST',
-      body: `{"refresh": "${refresh}"}`,
-    });
-    const auth_resp = await r.json();
-    // According to Histre API docs some responses might have 'status' field value as 'null'
-    if (!auth_resp.status) {
-      auth_resp.status = r.status;
-    }
-    return auth_resp as AuthResp
-  };
-
   async updateTokens() {
     let result_tokens = this.tokens;
     let err_msg: string | undefined = undefined;
     if (result_tokens) {
       const is_valid_token = Histre.hasValidTokens(result_tokens.created_at);
-
       if (!is_valid_token.access) {
         if (is_valid_token.refresh) {
           const resp = await this.refreshAuthToken(this.tokens!.token.refresh);
-          if (resp.error) {
-            err_msg = "Failed to refresh access token."
-            if (resp.details) {
-              err_msg += ` Error: ${resp.details.detail}`;
-            } else if (resp.errmsg) {
-              err_msg += ` Error(${resp.errcode}): ${resp.errmsg}`;
-            }
-          } else if (resp.data) {
-            this.tokens = { token: resp.data, created_at: Date.now() }
+          if (resp) {
+            this.tokens = { token: resp, created_at: Date.now() }
             return this.tokens;
           }
         } else {
@@ -113,6 +89,42 @@ export class Histre {
     // TODO: parsed.body.details might contain more specific error message.
     // Something to do with username or password.
     // Do it in hasError() fn instead?
+    if (Histre.hasError(body)) {
+      return undefined;
+    }
+
+    const parsed_data = histreAuthSchema.safeParse(body.data.data)
+    if (!parsed_data.success) {
+      for (const issue of parsed_data.error.issues) {
+        console.error(`Failed to validate 'data.${issue.path[0]}' field in Histre JSON response. Error: ${issue.message}`)
+      }
+      return undefined;
+    }
+
+    return parsed_data.data;
+  };
+
+  // Most endpoints return 403 (Forbidden) for auth errors.
+  // Aquire and refresh endpoints return 401 for auth errors.
+  async refreshAuthToken(refresh: string): Promise<AuthData | undefined> {
+    const r = await fetch(Histre.url.refresh, {
+      headers: this.headers,
+      method: 'POST',
+      body: `{"refresh": "${refresh}"}`,
+    });
+    const resp = await r.json();
+    if (isValidResponse(resp)) {
+      return undefined;
+    }
+    const body = await resp.json();
+    const parsed = histreResponseSchema.safeParse(body);
+    if (!parsed.success) {
+      for (const issue of parsed.error.issues) {
+        console.error(`Failed to validate '${issue.path[0]}' field in Histre JSON response. Error: ${issue.message}`)
+      }
+      return undefined;
+    }
+
     if (Histre.hasError(body)) {
       return undefined;
     }

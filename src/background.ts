@@ -1,39 +1,13 @@
 import { storage, Runtime } from 'webextension-polyfill';
-import { Message, Action, DataModify, DataRemove, DataCreate, local_id_prefix, HighlightAdd, HighlightUpdate, histreResponseSchema, UserData, localUserSchema, ValidToken, localAuthSchema } from './common';
+import { Message, Action, DataModify, DataRemove, DataCreate, local_id_prefix, HighlightAdd, HighlightUpdate, histreResponseSchema } from './common';
 import { Histre, isValidResponse } from './histre';
 import { z } from 'zod';
 
 // Test import
 import { test_local } from "./tests/test_data";
+import { getLocalAuthData, getLocalUser, setLocalAuthData, setLocalUser } from './storage';
 
 console.log("==== LOAD ./dist/background.js ====")
-
-async function getLocalAuthData(): Promise<ValidToken | undefined> {
-  const data = await storage.local.get(
-    {token: {access: undefined, refresh: undefined}, created_at: undefined});
-  const token = localAuthSchema.safeParse(data);
-  if (token.success) {
-    return token.data
-  }
-  return undefined;
-}
-
-async function setLocalAuthData(auth_data: ValidToken) {
-  await storage.local.set(auth_data);
-}
-
-async function getLocalUser(): Promise<UserData | undefined> {
-  const data = await storage.local.get({username: undefined, password: undefined});
-  const user = localUserSchema.safeParse(data);
-  if (user.success) {
-    return user.data
-  }
-  return undefined;
-}
-
-async function setLocalUser(user: UserData): Promise<void> {
-  await storage.local.set(user);
-}
 
 function randomString() {
   return Math.random().toString(36).substring(2,10)

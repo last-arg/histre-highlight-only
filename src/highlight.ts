@@ -4,6 +4,10 @@ import type { HighlightLocation, LocalHighlightsObject} from "./common";
 // Could try to use Uint32Array to get more performance [start, end, index_to, ...]
 // {start, end, index_to_id_color}[]
 // {id, color}[]
+// If I make {...}[] into Uint32Array I can't use JS native sort, have to write my own
+// 
+// Could turn {...} into a tuple (Uint32Array or [...])
+
 
 export function findHighlightIndices(body_text: string, current_highlights: LocalHighlightsObject): HighlightLocation[] {
   console.assert(body_text !== null, "body_text can't be null");

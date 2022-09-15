@@ -44,13 +44,6 @@ export interface LocalHighlight {
 
 export interface LocalHighlightsObject { [id: HighlightId]: LocalHighlight, }
 
-export interface LocalHighlightInfo {
-  [url: string] : {
-    title: string,
-    highlights: LocalHighlightsObject
-  }
-}
-
 export interface HighlightAdd {
   url: string,
   title: string,
@@ -65,11 +58,6 @@ export interface HighlightUpdate {
   color: string
 }
 
-export interface UserData {
-  username: string,
-  password: string,
-}
-
 // access is valid for 15 minutes
 // refresh is valid for 30 days
 export const histreAuthSchema = z.object({
@@ -78,18 +66,17 @@ export const histreAuthSchema = z.object({
 })
 export type AuthData = z.infer<typeof histreAuthSchema>
 
-interface HistreResp<T> {
-  data?: T,
-  // TODO: Not sure if this has defined shape
-  details?: any,
-  error: boolean,
-  errcode?: number, // Can be null. Got it when tried to remove empty id ("")
-  errmsg?: string, 
-  status?: number, // In some cases can be null
-}
+export const localUserSchema = z.object({
+  username: z.string(),
+  password: z.string(),
+})
+export type UserData = z.infer<typeof localUserSchema>;
 
-export type AuthResp = HistreResp<Required<AuthData>>;
-export type AddResp = HistreResp<{highlight_id: string, highlight_link: string}>;
-export type ValidToken = { token: AuthData, created_at: number};
-
-
+export const localAuthSchema = z.object({
+  created_at: z.number(),
+  token: z.object({
+    access: z.string(),
+    refresh: z.string(),
+  }),
+})
+export type ValidToken = z.infer<typeof localAuthSchema>;

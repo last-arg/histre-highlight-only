@@ -1,4 +1,4 @@
-import { ValidToken, UserData, AuthData, AuthResp, HighlightAdd, HighlightUpdate, HistreResponse, histreResponseSchema, histreAuthSchema } from './common';
+import { ValidToken, UserData, AuthData, HighlightAdd, HighlightUpdate, HistreResponse, histreResponseSchema, histreAuthSchema } from './common';
 
 export class Histre {
   static host = 'https://histre.com';
@@ -86,9 +86,6 @@ export class Histre {
       return undefined;
     }
 
-    // TODO: parsed.body.details might contain more specific error message.
-    // Something to do with username or password.
-    // Do it in hasError() fn instead?
     if (Histre.hasError(body)) {
       return undefined;
     }
@@ -186,6 +183,9 @@ export class Histre {
     return await fetch(Histre.url.highlight, { headers: this.headers, method: "DELETE", body: body });
   }
 
+  // TODO: parsed.body.details might contain more specific error message.
+  // Something to do with username or password.
+  // Do it in hasError() fn instead?
   static hasError(histre_json: HistreResponse) {
     if (histre_json.error) {
       let msg = "Histre API error";

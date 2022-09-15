@@ -1,5 +1,5 @@
 import { storage, Runtime } from 'webextension-polyfill';
-import { Message, Action, DataModify, DataRemove, DataCreate, local_id_prefix, HighlightAdd, HighlightUpdate, histreResponseSchema } from './common';
+import { Message, Action, DataModify, DataRemove, DataCreate, local_id_prefix, HighlightAdd, HighlightUpdate, histreResponseSchema, UserData, localUserSchema, ValidToken, localAuthSchema } from './common';
 import { Histre, isValidResponse } from './histre';
 import { z } from 'zod';
 
@@ -7,16 +7,6 @@ import { z } from 'zod';
 import { test_local } from "./tests/test_data";
 
 console.log("==== LOAD ./dist/background.js ====")
-
-const localAuthSchema = z.object({
-  created_at: z.number(),
-  token: z.object({
-    access: z.string(),
-    refresh: z.string(),
-  }),
-})
-
-type ValidToken = z.infer<typeof localAuthSchema>;
 
 // TODO: move storage related functions
 async function getLocalAuthData(): Promise<ValidToken | undefined> {
@@ -32,13 +22,6 @@ async function getLocalAuthData(): Promise<ValidToken | undefined> {
 async function setLocalAuthData(auth_data: ValidToken) {
   await storage.local.set(auth_data);
 }
-
-const localUserSchema = z.object({
-  username: z.string(),
-  password: z.string(),
-})
-
-type UserData = z.infer<typeof localUserSchema>;
 
 async function getLocalUser(): Promise<UserData | undefined> {
   const data = await storage.local.get({username: undefined, password: undefined});
@@ -56,26 +39,6 @@ async function setLocalUser(user: UserData): Promise<void> {
 function randomString() {
   return Math.random().toString(36).substring(2,10)
 };
-
-type SaveMessage = string;
-type MessageReturn = SaveMessage | boolean | undefined;
-
-// Highlights in local storage use cases: 
-// 1. Save highlights to Histre
-// 2. Highlight page text
-// 3. Delete highlight
-//    If local id remove it from 'highlight.save'
-// 4. Update highlight color. 
-//    If local id change object in 'highlight.save.<local_id>.color'
-// {
-//   highlights_add: {
-//       <local_id>: HighlighAdd
-//   },
-//   highlights_update: {
-//     <id>: color
-//   },
-//   highlights_remove: [<id>],
-// }
 
 const addDataSchema = z.object({
   highlight_id: z.string(),
@@ -183,6 +146,10 @@ let histre: Histre | undefined = undefined;
   }
   return undefined;
 })();
+
+
+type SaveMessage = string;
+type MessageReturn = SaveMessage | boolean | undefined;
 
 browser.runtime.onMessage.addListener((msg: Message, sender: Runtime.MessageSender): undefined | Promise<MessageReturn> => {
   // console.log(msg, sender);

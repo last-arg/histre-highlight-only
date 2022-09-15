@@ -22,7 +22,7 @@ export async function getManifest() {
     description: pkg.description,
     browser_action: {
       // TODO: icon-512
-      default_icon: './assets/icon-48.png',
+      default_icon: './dist/assets/icon-48.png',
       default_popup: './dist/popup.html',
     },
     options_ui: {

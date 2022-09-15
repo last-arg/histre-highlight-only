@@ -51,7 +51,7 @@ export class Histre {
           this.tokens = { token: new_token, created_at: Date.now() };
           return this.tokens;
         } else {
-          err_msg = "Failed to authenticate user."
+          err_msg = "Failed to authenticate user"
         }
       } else {
         err_msg = "Need to provide username and password"
@@ -74,7 +74,7 @@ export class Histre {
       method: 'POST',
       body: req_body,
     });
-    if (isValidResponse(resp)) {
+    if (!isValidResponse(resp)) {
       return undefined;
     }
     const body = await resp.json();
@@ -90,7 +90,7 @@ export class Histre {
       return undefined;
     }
 
-    const parsed_data = histreAuthSchema.safeParse(body.data.data)
+    const parsed_data = histreAuthSchema.safeParse(parsed.data.data)
     if (!parsed_data.success) {
       for (const issue of parsed_data.error.issues) {
         console.error(`Failed to validate 'data.${issue.path[0]}' field in Histre JSON response. Error: ${issue.message}`)
@@ -110,7 +110,7 @@ export class Histre {
       body: `{"refresh": "${refresh}"}`,
     });
     const resp = await r.json();
-    if (isValidResponse(resp)) {
+    if (!isValidResponse(resp)) {
       return undefined;
     }
     const body = await resp.json();
@@ -126,7 +126,7 @@ export class Histre {
       return undefined;
     }
 
-    const parsed_data = histreAuthSchema.safeParse(body.data.data)
+    const parsed_data = histreAuthSchema.safeParse(parsed.data.data)
     if (!parsed_data.success) {
       for (const issue of parsed_data.error.issues) {
         console.error(`Failed to validate 'data.${issue.path[0]}' field in Histre JSON response. Error: ${issue.message}`)

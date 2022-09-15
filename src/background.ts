@@ -8,7 +8,6 @@ import { test_local } from "./tests/test_data";
 
 console.log("==== LOAD ./dist/background.js ====")
 
-// TODO: move storage related functions
 async function getLocalAuthData(): Promise<ValidToken | undefined> {
   const data = await storage.local.get(
     {token: {access: undefined, refresh: undefined}, created_at: undefined});

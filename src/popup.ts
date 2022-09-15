@@ -1,4 +1,5 @@
-import { localUserSchema } from "./common";
+import { runtime } from "webextension-polyfill";
+import { localUserSchema, Action } from "./common";
 import { getLocalUser, setLocalUser } from "./storage";
 
 function init() {
@@ -22,13 +23,23 @@ function init() {
     const form_data = new FormData(form_elem);
     const user = localUserSchema.safeParse({username: form_data.get("username"), password: form_data.get("password")});
     if (!user.success) {
-      console.error("Invalid username and/or password entered");
+      console.error("Failed to save. Make sure username and/or password is correct.");
       feedback.dataset.state = "failed";
       return;
     }
-    await setLocalUser(user.data);
-    console.log("New username and password saved")
-    feedback.dataset.state = "saved";
+
+    const is_saved = await runtime.sendMessage(
+      "addon@histre-highlight-only.com", 
+      { action: Action.UpdateUser , data: user.data },
+    )
+
+    if (is_saved) {
+      console.log("New username and password saved")
+      feedback.dataset.state = "saved";
+    } else {
+      console.error("Failed to save. Make sure username and/or password is correct.");
+      feedback.dataset.state = "failed";
+    }
     e.preventDefault();
   });
 

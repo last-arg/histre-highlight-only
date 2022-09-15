@@ -20,6 +20,11 @@ export class Histre {
     this.tokens = tokens;
   }
 
+  updateUser(user: UserData) {
+    this.user = user;
+    this.tokens = undefined
+  }
+
   async updateTokens() {
     let result_tokens = this.tokens;
     let err_msg: string | undefined = undefined;

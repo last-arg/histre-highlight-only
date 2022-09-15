@@ -1,5 +1,5 @@
 import { storage, Runtime } from 'webextension-polyfill';
-import { Message, Action, DataModify, DataRemove, DataCreate, local_id_prefix, HighlightAdd, HighlightUpdate, histreResponseSchema } from './common';
+import { Message, Action, DataModify, DataRemove, DataCreate, local_id_prefix, HighlightAdd, HighlightUpdate, histreResponseSchema, UserData } from './common';
 import { Histre, isValidResponse } from './histre';
 import { z } from 'zod';
 
@@ -229,6 +229,27 @@ browser.runtime.onMessage.addListener((msg: Message, sender: Runtime.MessageSend
         resolve(false);
       });
     }
+    case Action.UpdateUser: {
+      console.log("update user", msg.data)
+      return new Promise(async (resolve) => {
+        const curr = await getLocalUser();
+        const user = msg.data as UserData;
+
+        if (curr?.username === user.username && curr?.password, user.password) {
+          resolve(true);
+          return;
+        }
+
+        await setLocalUser(user);
+        resolve(true);
+        if (!histre) {
+          resolve(false);
+          return;
+        }
+        histre.updateUser(user)
+        histre.updateTokens()
+      });
+    }
   }
 });
 
@@ -271,10 +292,3 @@ if (__DEV__) {
     }
   })
 }
-
-
-
-// browser.runtime.openOptionsPage()
-// const bg_href = (await browser.runtime.getBackgroundPage()).location.href;
-// console.log(bg_href)
-

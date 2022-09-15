@@ -15,7 +15,8 @@ export type HistreResponse = z.infer<typeof histreResponseSchema>;
 export enum Action { 
   Create, 
   Remove,
-  Modify 
+  Modify,
+  UpdateUser,
 }
 
 export type DataCreate = { text: string, color: string }
@@ -26,7 +27,7 @@ export interface Message {
   action: Action,
   // Delete: highlight_id (might be local_id)
   // Save: text, title, color, local_id
-  data: DataCreate | DataModify | DataRemove,
+  data: DataCreate | DataModify | DataRemove | UserData,
 }
 
 export type HighlightId = string;

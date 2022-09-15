@@ -251,11 +251,13 @@ if (__DEV__) {
 
   // For faster debugging popup.html
   browser.tabs.query({currentWindow: true})
-  .then((tabs) => {
+  .then(async (tabs) => {
     const root_url = browser.runtime.getURL("/");
     const popup_url = root_url + "dist/popup.html";
 
     let has_popup_tab = false;
+    // browser.tabs.reload won't ever fire because when web extension
+    // is reloaded popup.html tab is also closed.
     for (const tab of tabs) {
       if (tab.url == popup_url) {
         browser.tabs.reload(tab.id)
@@ -265,7 +267,7 @@ if (__DEV__) {
     }
 
     if (!has_popup_tab) {
-      browser.tabs.create({ url: popup_url });
+      browser.tabs.create({ url: popup_url, active: false});
     }
   })
 }

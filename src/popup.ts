@@ -1,6 +1,6 @@
 import { runtime } from "webextension-polyfill";
 import { localUserSchema, Action } from "./common";
-import { getLocalUser, setLocalUser } from "./storage";
+import { getLocalUser } from "./storage";
 
 function init() {
   const form = document.querySelector("form")!;
@@ -15,6 +15,7 @@ function init() {
 
 
   form.addEventListener("submit", async (e) => {
+    e.preventDefault();
     feedback.dataset.state = "none";
     if (!e.target) {
       return;
@@ -40,7 +41,7 @@ function init() {
       console.error("Failed to save. Make sure username and/or password is correct.");
       feedback.dataset.state = "failed";
     }
-    e.preventDefault();
+    return;
   });
 
   // setTimeout(() => {
@@ -48,4 +49,5 @@ function init() {
   // }, 1)
 }
 
-document.addEventListener("DOMContentLoaded", init);
+init();
+// document.addEventListener("DOMContentLoaded", init);

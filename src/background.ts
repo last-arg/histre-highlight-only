@@ -7,8 +7,6 @@ import { z } from 'zod';
 import { test_local } from "./tests/test_data";
 import { getLocalAuthData, getLocalUser, setLocalAuthData, setLocalUser } from './storage';
 
-console.log("==== LOAD ./dist/background.js ====")
-
 function randomString() {
   return Math.random().toString(36).substring(2,10)
 };
@@ -125,10 +123,8 @@ type SaveMessage = string;
 type MessageReturn = SaveMessage | boolean | undefined;
 
 browser.runtime.onMessage.addListener((msg: Message, sender: Runtime.MessageSender): undefined | Promise<MessageReturn> => {
-  // console.log(msg, sender);
   switch (msg.action) {
     case Action.Create: {
-      console.log("save", msg.data)
       return new Promise(async (resolve) => {
         if (sender.tab?.url === undefined) { 
           resolve(false); 
@@ -148,7 +144,6 @@ browser.runtime.onMessage.addListener((msg: Message, sender: Runtime.MessageSend
 
         if (!result_id) {
           let local = await storage.local.get({highlights_add: {[url]: { highlights: {} }}});
-          console.log("store local", local)
           local.highlights_add[url].title = title;
           result_id = `${local_id_prefix}-${randomString()}`;
           local.highlights_add[url].highlights[result_id] = { text: data.text, color: data.color };
@@ -159,7 +154,6 @@ browser.runtime.onMessage.addListener((msg: Message, sender: Runtime.MessageSend
       });
     }
     case Action.Modify: {
-      console.log("update", msg.data)
       return new Promise(async (resolve) => {
         const data = msg.data as DataModify;
         const is_local_id = data.id.startsWith(local_id_prefix);
@@ -195,7 +189,6 @@ browser.runtime.onMessage.addListener((msg: Message, sender: Runtime.MessageSend
       });
     }
     case Action.Remove: {
-      console.log("delete", msg.data)
       return new Promise(async (resolve) => {
         const data = msg.data as DataRemove;
         const is_local_id = data.id.startsWith(local_id_prefix);
@@ -230,7 +223,6 @@ browser.runtime.onMessage.addListener((msg: Message, sender: Runtime.MessageSend
       });
     }
     case Action.UpdateUser: {
-      console.log("update user", msg.data)
       return new Promise(async (resolve) => {
         const curr = await getLocalUser();
         const user = msg.data as UserData;

@@ -3,8 +3,6 @@ import type { Manifest } from 'webextension-polyfill'
 import type PkgType from '../package.json'
 import { isDev, port, r } from '../scripts/utils'
 
-// TODO: change/make icon. Currently using Histre logo/icon.
-
 // Base on 'https://github.com/antfu/vitesse-webext/'
 export async function getManifest() {
   const raw_json = await fs.promises.readFile(r('package.json'));
@@ -23,8 +21,7 @@ export async function getManifest() {
     version: pkg.version,
     description: pkg.description,
     browser_action: {
-      // TODO: icon-512
-      default_icon: './dist/assets/icon-48.png',
+      default_icon: './dist/assets/icon.svg',
       default_popup: './dist/popup.html',
     },
     options_ui: {
@@ -37,8 +34,7 @@ export async function getManifest() {
       persistent: false,
     },
     icons: {
-      // TODO: add more icons size?
-      48: './assets/icon-48.png',
+      512: './dist/assets/icon.svg',
     },
     permissions: [
       'tabs',

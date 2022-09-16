@@ -3,6 +3,8 @@ import { defineConfig } from 'vite';
 import AutoImport from 'unplugin-auto-import/vite';
 import {isDev, r, port} from './scripts/utils';
 
+// TODO: when build or dev copy src/assets/icon.svg to extension/dist/assets/
+
 export const sharedConfig: UserConfig = {
   root: r('src'),
   resolve: {

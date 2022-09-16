@@ -54,6 +54,10 @@ p {
   margin: 0;
 }
 
+fieldset {
+  padding: 0;
+}
+
 h1 {
   line-height: 1.1;
   font-size: var(--step-1);
@@ -71,18 +75,37 @@ button:hover {
   background: #66e9ff;
 }
 
-label {
+#user label {
   display: block;
 }
 
-input {
+input[type="text"],
+input[type="password"] {
   width: 100%;
   padding-inline: var(--space-3xs);
 }
 
+fieldset {
+  border: none;
+}
+
+.positions {
+  background: white;
+  border-radius: 2px;
+  padding: var(--space-3xs);
+}
+
+.positions > div {
+  display: flex;
+}
+
+.radio label {
+  margin-left: var(--space-2xs)
+}
+
 form {
   background: #f7f7f7;
-  max-width: 20rem;
+  max-width: 21rem;
   margin-inline: auto;
   padding: var(--space-xs);
 }
@@ -91,32 +114,43 @@ form {
   margin-top: 1em;
 }
 
-#feedback > p {
+.feedback > p {
   display: none;
   padding-inline: var(--space-2xs);
   padding-block: var(--space-3xs);
 }
 
-#saved {
+.saved {
   background: #e9ffe4;
   border: 1px solid #b8dfb7;
   color: #196417;
 }
 
-#failed {
+.failed {
   background: #ffe4e4;
   border: 1px solid #ffc7c7;
   color: #641717;
 }
 
-#feedback[data-state="saved"] > #saved,
-#feedback[data-state="failed"] > #failed {
+.feedback[data-state="saved"] > .saved,
+.feedback[data-state="failed"] > .failed {
   display: block;
 }
 
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
 </style>
 <body>
-  <form action="#" class="stack">
+  <form id="user" class="stack">
     <h1>Histre user data</h1>
     <div>
       <label for="username">Username</label>
@@ -127,9 +161,31 @@ form {
       <input type="password" id="password" name="password">
     </div>
     <button>Save user data</button>
-    <div id="feedback" data-state="none">
-      <p id="saved">Saved.</p>
-      <p id="failed">Saving failed. Make sure username and/or password is correct.</p>
+    <div class="feedback" data-state="none">
+      <p class="saved">Saved.</p>
+      <p class="failed">Saving failed. Make sure username and/or password is correct.</p>
+    </div>
+  </form>
+  <form id="settings" class="stack">
+    <h1>Settings</h1>
+    <fieldset>
+      <legend class="sr-only">Context menu position</legend>
+      <p aria-hidden="true">Context menu position</p>
+      <div class="positions">
+        <div class="radio">
+          <input type="radio" id="position-top" name="position" checked>
+          <label for="position-top">Top</label>
+        </div>
+        <div class="radio">
+          <input type="radio" id="position-bottom" name="position">
+          <label for="position-bottom">Bottom</label>
+        </div>
+      </div>
+    </fieldset>
+    <button>Save settings</button>
+    <div class="feedback" data-state="none">
+      <p class="saved">Saved.</p>
+      <p class="failed">Saving failed.</p>
     </div>
   </form>
   <script type="module" src="./popup.ts"></script>

@@ -1,22 +1,31 @@
 import { runtime } from "webextension-polyfill";
 import { localUserSchema, Action } from "./common";
-import { getLocalUser } from "./storage";
+import { getLocalUser, getPosition } from "./storage";
 
 function init() {
-  const form = document.querySelector("form")!;
-  const feedback = form.querySelector("#feedback")! as HTMLElement;
+  const user_form = document.querySelector("#user")!;
+  const user_feedback = user_form.querySelector(".feedback")! as HTMLElement;
+  const settings_form = document.querySelector("#settings")!;
+  const settings_feedback = settings_form.querySelector(".feedback")! as HTMLElement;
 
   getLocalUser().then((data) => {
     if (data) {
-      form.querySelector<HTMLInputElement>("#username")!.value = data.username;
-      form.querySelector<HTMLInputElement>("#password")!.value = data.password;
+      user_form.querySelector<HTMLInputElement>("#username")!.value = data.username;
+      user_form.querySelector<HTMLInputElement>("#password")!.value = data.password;
     }
   });
 
+  getPosition().then((pos) => {
+    const new_pos = pos || "top";
+    const new_input = settings_form.querySelector<HTMLInputElement>("#position-" + new_pos);
+    if (new_input) {
+      new_input.checked = true;
+    }
+  });
 
-  form.addEventListener("submit", async (e) => {
+  user_form.addEventListener("submit", async (e) => {
     e.preventDefault();
-    feedback.dataset.state = "none";
+    user_feedback.dataset.state = "none";
     if (!e.target) {
       return;
     }
@@ -25,7 +34,7 @@ function init() {
     const user = localUserSchema.safeParse({username: form_data.get("username"), password: form_data.get("password")});
     if (!user.success) {
       console.error("Failed to save. Make sure username and/or password is correct.");
-      feedback.dataset.state = "failed";
+      user_feedback.dataset.state = "failed";
       return;
     }
 
@@ -36,18 +45,25 @@ function init() {
 
     if (is_saved) {
       console.log("New username and password saved")
-      feedback.dataset.state = "saved";
+      user_feedback.dataset.state = "saved";
     } else {
       console.error("Failed to save. Make sure username and/or password is correct.");
-      feedback.dataset.state = "failed";
+      user_feedback.dataset.state = "failed";
     }
     return;
   });
 
   // setTimeout(() => {
-  //   form.querySelector("button")!.click()
+  //   user_form.querySelector("button")!.click()
   // }, 1)
+
+  settings_form.addEventListener("submit", async (e) => {
+    e.preventDefault()
+    console.log("save settings")
+    return;
+  })
+
+
 }
 
 init();
-// document.addEventListener("DOMContentLoaded", init);

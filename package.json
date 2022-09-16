@@ -17,11 +17,16 @@
     "vite": "^3.0.0"
   },
   "scripts": {
-    "dev": "run-p dev:*",
-    "dev:pre": "bun run ./scripts/manifest.ts",
+    "dev": "run-p dev:* manifest",
+    "manifest": "bun run ./scripts/manifest.ts",
     "dev:js": "vite build --config ./vite.config.content.ts --mode development",
     "dev:web": "vite build --clearScreen=false --mode development",
+    "build": "NODE_ENV=production run-s clear manifest build:web build:js",
+    "build:web": "vite build",
+    "build:js": "vite build --config vite.config.content.ts",
+    "clear": "rm -rf extension/dist extension/manifest.json extension.*",
     "start:firefox": "web-ext run --source-dir ./extension --target=firefox-desktop -u 'about:devtools-toolbox?id=addon%40histre-highlight-only.com&type=extension' -u 'localhost:8080/test.html'",
+    "pack:xpi": "WEB_EXT_ARTIFACTS_DIR=./ web-ext build --source-dir ./extension --filename extension.xpi --overwrite-dest",
     "watch:test": "watchexec -w src/ -w src/tests/ 'bun wiptest'"
   }
 }

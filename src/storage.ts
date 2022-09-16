@@ -1,5 +1,5 @@
 import { storage } from 'webextension-polyfill';
-import { localAuthSchema, localUserSchema, UserData, ValidToken } from "./common";
+import { localAuthSchema, localUserSchema, Position, UserData, ValidToken } from "./common";
 
 export async function getLocalAuthData(): Promise<ValidToken | undefined> {
   const data = await storage.local.get(
@@ -28,4 +28,11 @@ export async function setLocalUser(user: UserData): Promise<void> {
   await storage.local.set(user);
 }
 
+export async function getPosition(): Promise<Position | undefined> {
+  const data = await storage.local.get({context_menu_position: undefined});
+  return data.context_menu_position;
+}
 
+export async function setPosition(pos: Position): Promise<void> {
+  await storage.local.set({context_menu_position: pos});
+}

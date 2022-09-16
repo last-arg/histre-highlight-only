@@ -1,9 +1,10 @@
 /// <reference lib="dom" />
 /// <reference lib="dom.iterable" />
 import { storage, runtime } from 'webextension-polyfill';
-import { Action, LocalHighlightsObject, HighlightLocation } from './common';
+import { Action, LocalHighlightsObject, HighlightLocation, Position } from './common';
 import { findHighlightIndices, removeHighlightOverlaps } from './highlight';
 import './hho.css';
+import { getPosition } from './storage';
 console.log("==== LOAD 'content_script.js' TD ====")
 
 type ContextMenuElem = HTMLDivElement;
@@ -22,10 +23,12 @@ class ContextMenu {
   elem: ContextMenuElem;
   state: ContextMenuState = ContextMenuState.none;
   highlight_id: string | null = null;
+  pos: Position = "top";
 
   constructor() {
     this.elem = ContextMenu.renderContextMenu();
     document.addEventListener("click", ContextMenu.handleClick(this));
+    getPosition().then((pos) => { this.pos = pos || "top"; })
   }
 
   isState(state: ContextMenuState) { return this.state === state; }
@@ -40,7 +43,7 @@ class ContextMenu {
       case ContextMenuState.create: {
         console.assert(arg, "Context menu state 'create' requires second function argument 'arg'")
         const rect = this.elem.getBoundingClientRect();
-        const new_pos = selectionNewPosition(arg as Selection, rect);
+        const new_pos = selectionNewPosition(arg as Selection, rect, this.pos);
         this.elem.style.top = `${new_pos.top}px`;
         this.elem.style.left = `${new_pos.left}px`;
         this.elem.setAttribute("aria-hidden", "false");
@@ -297,10 +300,16 @@ function highlightSelectedText(sel_obj: Selection, color: string, local_id: stri
   }
 }
 
-function selectionNewPosition(selection: Selection, context_menu_rect: DOMRect) {
+function selectionNewPosition(selection: Selection, context_menu_rect: DOMRect, pos: Position) {
   const box = selection.getRangeAt(0).getBoundingClientRect();
   const body_rect = document.body.getBoundingClientRect();
-  const top = box.top + window.pageYOffset - context_menu_rect.height;
+  let top = 0;
+  const margin = 10;
+  if (pos === "top") {
+    top = box.top + window.pageYOffset - context_menu_rect.height - margin;
+  } else if (pos === "bottom") {
+    top = box.bottom + window.pageYOffset + margin;
+  }
   let left = box.left + window.pageXOffset + - body_rect.x + (box.width / 2) - (context_menu_rect.width / 2);
 
   // Make sure context menu doesn't go out of bounds horizontally

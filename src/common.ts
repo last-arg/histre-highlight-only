@@ -81,3 +81,5 @@ export const localAuthSchema = z.object({
   }),
 })
 export type ValidToken = z.infer<typeof localAuthSchema>;
+
+export type Position = "top" | "bottom";

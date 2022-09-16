@@ -524,22 +524,22 @@ function init() {
 }
 init();
 
-async function test() {
-  const hl_id = await runtime.sendMessage(
-    { action: Action.Create , data: { text: "my highlight text", color: "yellow" } },
-  )
-  if (!hl_id) { console.error("Failed to save highlight"); }
+// {
+//   async function test() {
+//     const hl_id = await runtime.sendMessage(
+//       { action: Action.Create , data: { text: "my highlight text", color: "yellow" } },
+//     )
+//     if (!hl_id) { console.error("Failed to save highlight"); }
 
-  // const hl_id = "local-xxxxxx";
-  const update = await runtime.sendMessage(
-    { action: Action.Modify , data: { color: "blue", id: hl_id} },
-  )
-  if (!update) { console.error("Failed to update highlight"); }
+//     // const hl_id = "local-xxxxxx";
+//     const update = await runtime.sendMessage(
+//       { action: Action.Modify , data: { color: "blue", id: hl_id} },
+//     )
+//     if (!update) { console.error("Failed to update highlight"); }
 
-  const remove = await runtime.sendMessage({ action: Action.Remove , data: { id: hl_id} })
-  if (!remove) { console.error("Failed to remove highlight"); }
-}
+//     const remove = await runtime.sendMessage({ action: Action.Remove , data: { id: hl_id} })
+//     if (!remove) { console.error("Failed to remove highlight"); }
+//   }
 
-// setTimeout(test, 0);
-
-
+//   setTimeout(test, 0);
+// }

@@ -1,6 +1,6 @@
 import { runtime } from "webextension-polyfill";
-import { localUserSchema, Action } from "./common";
-import { getLocalUser, getPosition } from "./storage";
+import { localUserSchema, Action, Position } from "./common";
+import { getLocalUser, getPosition, setPosition } from "./storage";
 
 function init() {
   const user_form = document.querySelector("#user")!;
@@ -58,8 +58,22 @@ function init() {
   // }, 1)
 
   settings_form.addEventListener("submit", async (e) => {
-    e.preventDefault()
-    console.log("save settings")
+    e.preventDefault();
+    if (!e.target) {
+      return;
+    }
+    const form_elem = e.target as HTMLFormElement;
+    const form_data = new FormData(form_elem);
+    const pos = form_data.get("position") as Position;
+    if (!pos) {
+      return;
+    }
+    const curr_pos = (await getPosition()) || "top";
+    if (curr_pos === pos) {
+      return;
+    }
+    setPosition(pos)
+    // TODO: update tabs with new position
     return;
   })
 

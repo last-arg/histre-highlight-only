@@ -14,9 +14,6 @@ enum Color { yellow, orange, green, blue, purple, red };
 
 const isDev = true;
 
-// TODO: How to handle selection action bar (context menu) position with 
-// mobile native context menu?
-
 const MIN_SELECTION_LEN = 3;
 
 class ContextMenu {
@@ -113,7 +110,6 @@ class ContextMenu {
   }
 
   static handleClick(ctx_menu: ContextMenu) {
-    console.log("handleClick")
     async function handleClickImpl(e: Event) {
       const elem = e.target as Element;
       switch(ctx_menu.state) {
@@ -127,9 +123,7 @@ class ContextMenu {
             const sel_string = sel_obj.toString();
             if (sel_string.length <= MIN_SELECTION_LEN || sel_obj.anchorNode === null) return;
             const color = elem.getAttribute("data-hho-color") || "yellow";
-            console.log("button click color: ", color)
             const data = { text: sel_string, color: color};
-            console.log("data", data)
             const result_id = await runtime.sendMessage(
               "addon@histre-highlight-only.com", 
               { action: Action.Create , data: data },
@@ -397,7 +391,6 @@ function isEmptyObject(object: Object) {
 }
 
 function removeHighlights(hl_id?: string) {
-  console.log("hl_id", hl_id);
   let hl_selector = ".hho-mark";
   if (hl_id) {
     hl_selector += `[data-hho-id="${hl_id}"]`;
@@ -528,6 +521,16 @@ function init() {
       global.menu.update(ContextMenuState.modify, elem);
     } else if (global.menu.isState(ContextMenuState.modify)) {
       global.menu.update(ContextMenuState.none);
+    }
+  })
+
+  runtime.onMessage.addListener((msg: {pos: Position}) => {
+    if (global.menu.pos !== msg.pos) {
+      global.menu.pos = msg.pos;
+      const win_selection = window.getSelection();
+      if (global.menu.state !== ContextMenuState.none && win_selection) {
+        global.menu.update(global.menu.state, win_selection)
+      }
     }
   })
 }

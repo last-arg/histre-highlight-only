@@ -59,6 +59,7 @@ function init() {
 
   settings_form.addEventListener("submit", async (e) => {
     e.preventDefault();
+    settings_feedback.dataset.state = "none";
     if (!e.target) {
       return;
     }
@@ -69,15 +70,21 @@ function init() {
       return;
     }
     const curr_pos = (await getPosition()) || "top";
+    settings_feedback.dataset.state = "saved";
     if (curr_pos === pos) {
       return;
     }
-    setPosition(pos)
-    // TODO: update tabs with new position
+    setPosition(pos);
+
+    // Send position change to other tabs
+    const tabs = await browser.tabs.query({})
+    for (const tab of tabs) {
+      if (tab.id) {
+        browser.tabs.sendMessage(tab.id, {pos: pos})
+      }
+    }
     return;
   })
-
-
 }
 
 init();

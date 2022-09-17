@@ -1,16 +1,16 @@
-<svg width="512" height="514" viewBox="0 0 512 514" fill="none" xmlns="http://www.w3.org/2000/svg">
-<rect x="265.692" y="343.175" width="282.758" height="44.3131" transform="rotate(-60 265.692 343.175)" fill="#231A1A"/>
-<rect x="228.072" y="321.455" width="282.758" height="43.8763" transform="rotate(-60 228.072 321.455)" fill="#3D3535"/>
-<rect x="369.451" y="76.579" width="87.7525" height="43.8763" transform="rotate(-60 369.451 76.579)" fill="#F02E3A"/>
-<rect x="407.449" y="98.5172" width="87.7525" height="43.8763" transform="rotate(-60 407.449 98.5172)" fill="#E51420"/>
-<path d="M191.293 421L214.302 381.057L236.819 394.057L221 421L191.293 421Z" fill="#FF4550"/>
-<path d="M221 421L236.819 394.057L259.336 407.057L250.5 421L221 421Z" fill="#EF202C"/>
-<path d="M211.487 379.431L228.072 321.455L266.07 343.393L236.819 394.057L211.487 379.431Z" fill="#F02E3A"/>
-<path d="M236.819 394.057L266.07 343.393L304.068 365.331L262.855 409.089L236.819 394.057Z" fill="#E51420"/>
-<rect x="23" y="424" width="233" height="64" fill="#FF4550"/>
-<rect x="256" y="424" width="235" height="64" fill="#E51420"/>
-<circle cx="57.5" cy="456.5" r="57.5" fill="#FF4550"/>
-<circle cx="57" cy="457" r="31" fill="white"/>
-<circle cx="454.5" cy="456.5" r="57.5" fill="#E51420"/>
-<circle cx="455" cy="457" r="31" fill="white"/>
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect x="265.452" y="341.589" width="281.833" height="44.3131" transform="rotate(-60 265.452 341.589)" fill="#231A1A"/>
+<rect x="227.833" y="319.869" width="281.833" height="43.8763" transform="rotate(-60 227.833 319.869)" fill="#3D3535"/>
+<rect x="368.749" y="75.7947" width="87.4654" height="43.8763" transform="rotate(-60 368.749 75.7947)" fill="#F02E3A"/>
+<rect x="406.747" y="97.7328" width="87.4654" height="43.8763" transform="rotate(-60 406.747 97.7328)" fill="#E51420"/>
+<path d="M191.225 419.118L214.158 379.305L236.676 392.306L220.908 419.16L191.225 419.118Z" fill="#FF4550"/>
+<path d="M220.908 419.16L236.676 392.306L259.193 405.306L250.383 419.202L220.908 419.16Z" fill="#EF202C"/>
+<path d="M211.344 377.68L227.833 319.869L265.831 341.807L236.676 392.306L211.344 377.68Z" fill="#F02E3A"/>
+<path d="M236.676 392.306L265.831 341.807L303.829 363.746L262.711 407.337L236.676 392.306Z" fill="#E51420"/>
+<rect x="23" y="422" width="233" height="64" fill="#FF4550"/>
+<rect x="256" y="422" width="235" height="64" fill="#E51420"/>
+<circle cx="57.5" cy="454.5" r="57.5" fill="#FF4550"/>
+<circle cx="57" cy="455" r="31" fill="white"/>
+<circle cx="454.5" cy="454.5" r="57.5" fill="#E51420"/>
+<circle cx="455" cy="455" r="31" fill="white"/>
 </svg>

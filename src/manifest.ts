@@ -40,8 +40,6 @@ export async function getManifest() {
       'tabs',
       'storage',
       'activeTab',
-      'http://*/',
-      'https://*/',
     ],
     content_scripts: [{
       matches: ['http://*/*', 'https://*/*'],

@@ -512,7 +512,7 @@ async function renderLocalHighlights(current_url: string) {
 
 
 function init() {
-  const url = "http://localhost:8080/test.html";
+  const url = window.location.href;
   if(document.readyState === 'loading') {
     document.addEventListener("DOMContentLoaded", () => renderLocalHighlights(url));
   } else {

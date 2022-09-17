@@ -3,6 +3,8 @@ import type { Manifest } from 'webextension-polyfill'
 import type PkgType from '../package.json'
 import { isDev, port, r } from '../scripts/utils'
 
+// TODO: make icon.svg into square
+
 // Base on 'https://github.com/antfu/vitesse-webext/'
 export async function getManifest() {
   const raw_json = await fs.promises.readFile(r('package.json'));

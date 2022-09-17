@@ -1,5 +1,5 @@
 # Histre highlight only
-Highlight text on page and save it to histre. Main thing is to get it working on
+Highlight text on page and save it to [histre](https://histre.com/). Main thing is to get it working on
 android firefox.
 
 ## Build

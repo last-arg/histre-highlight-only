@@ -1,8 +1,9 @@
 {
   "name": "histre-highlight-only",
   "displayName": "Histre highlight only",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Save highlighted text using Histre API",
+  "license": "MIT",
   "dependencies": {
     "@types/webextension-polyfill": "^0.9.0",
     "typescript": "^4.7.4",

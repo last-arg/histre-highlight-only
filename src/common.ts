@@ -19,7 +19,7 @@ export enum Action {
   UpdateUser,
 }
 
-export type DataCreate = { text: string, color: string }
+export type DataCreate = { text: string, color: string, id: string }
 export type DataModify = { id: string, color: string }
 export type DataRemove = { id: string }
 

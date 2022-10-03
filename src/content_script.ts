@@ -1,7 +1,7 @@
 /// <reference lib="dom" />
 /// <reference lib="dom.iterable" />
 import { storage, runtime } from 'webextension-polyfill';
-import { Action, LocalHighlightsObject, HighlightLocation, Position } from './common';
+import { Action, LocalHighlightsObject, HighlightLocation, Position, local_id_prefix } from './common';
 import { findHighlightIndices, removeHighlightOverlaps } from './highlight';
 import './hho.css';
 import { getPosition } from './storage';
@@ -76,6 +76,7 @@ class ContextMenu {
     style.type = "text/css";
     // Cache busting for dev mode
     const css_version = isDev ? Date.now().toString() : "";
+    // TODO: style remove button
     style.href = browser.runtime.getURL("./dist/assets/hho.style.css?v=" + css_version);
     container.appendChild(style)
 
@@ -123,18 +124,22 @@ class ContextMenu {
             const sel_string = sel_obj.toString();
             if (sel_string.length <= MIN_SELECTION_LEN || sel_obj.anchorNode === null) return;
             const color = elem.getAttribute("data-hho-color") || "yellow";
-            const data = { text: sel_string, color: color};
-            const result_id = await runtime.sendMessage(
+            let result_id = `${local_id_prefix}-${randomString()}`;
+            highlightSelectedText(sel_obj, color, result_id);
+            sel_obj.removeAllRanges(); // This fires 'selectionchange' event
+            const data = { text: sel_string, color: color, id: result_id };
+            result_id = await runtime.sendMessage(
               "addon@histre-highlight-only.com", 
-              { action: Action.Create , data: data },
+              { action: Action.Create, data: data },
             )
             if (!result_id) {
               // TODO: display failure somewhere, somehow?
               console.error("Failed to save highlight to Histre or local storage");
               return;
             }
-            highlightSelectedText(sel_obj, color, result_id);
-            sel_obj.removeAllRanges(); // This fires 'selectionchange' event
+
+            // TODO: swap generated local id with histre id if histre id was returned
+
 
             // TODO?: save multiple selections/ranges?
             // Each selection/range would be separate highlight
@@ -190,6 +195,10 @@ class ContextMenu {
     }
     return handleClickImpl;
   }
+}
+
+function randomString() {
+  return Math.random().toString(36).substring(2,10)
 }
 
 const global = {

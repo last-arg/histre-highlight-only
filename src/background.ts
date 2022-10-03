@@ -3,13 +3,12 @@ import { Message, Action, DataModify, DataRemove, DataCreate, local_id_prefix, H
 import { Histre, isValidResponse } from './histre';
 import { z } from 'zod';
 
+// TODO: add local saved highlights to Histre
+// When to do do it?
+
 // Test import
 import { test_local } from "./tests/test_data";
 import { getLocalAuthData, getLocalUser, setLocalAuthData, setLocalUser } from './storage';
-
-function randomString() {
-  return Math.random().toString(36).substring(2,10)
-};
 
 const addDataSchema = z.object({
   highlight_id: z.string(),
@@ -148,8 +147,7 @@ browser.runtime.onMessage.addListener((msg: Message, sender: Runtime.MessageSend
             local.highlights_add[url] = { highlights: {} };
           }
           local.highlights_add[url].title = title;
-          result_id = `${local_id_prefix}-${randomString()}`;
-          local.highlights_add[url].highlights[result_id] = { text: data.text, color: data.color };
+          local.highlights_add[url].highlights[data.id] = { text: data.text, color: data.color };
           await storage.local.set(local);
         }
 

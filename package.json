@@ -28,6 +28,7 @@
     "build:js": "vite build --config vite.config.content.ts",
     "clear": "rm -rf extension/dist extension/manifest.json extension.*",
     "start:firefox": "web-ext run --source-dir ./extension --target=firefox-desktop -u 'about:devtools-toolbox?id=addon%40histre-highlight-only.com&type=extension' -u 'localhost:8080/test.html'",
+    "start:firefox-android": "web-ext run --source-dir ./extension --target=firefox-android --android-device=R52R3013DCB --firefox-apk=org.mozilla.fenix",
     "pack:xpi": "WEB_EXT_ARTIFACTS_DIR=./ web-ext build --source-dir ./extension --filename extension.xpi --overwrite-dest",
     "watch:test": "watchexec -w src/ -w src/tests/ 'bun wiptest'"
   }

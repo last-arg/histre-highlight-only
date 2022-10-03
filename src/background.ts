@@ -135,15 +135,18 @@ browser.runtime.onMessage.addListener((msg: Message, sender: Runtime.MessageSend
         const url = sender.tab.url;
         const title = sender.tab?.title || "";
 
-        result_id = await histreAddHighlight(histre, {
-           url: url,
-           title: title,
-           text: data.text,
-           color: data.color
-        })
+        // result_id = await histreAddHighlight(histre, {
+        //    url: url,
+        //    title: title,
+        //    text: data.text,
+        //    color: data.color
+        // })
 
         if (!result_id) {
           let local = await storage.local.get({highlights_add: {[url]: { highlights: {} }}});
+          if (local.highlights_add[url] === undefined) {
+            local.highlights_add[url] = { highlights: {} };
+          }
           local.highlights_add[url].title = title;
           result_id = `${local_id_prefix}-${randomString()}`;
           local.highlights_add[url].highlights[result_id] = { text: data.text, color: data.color };

@@ -124,11 +124,11 @@ class ContextMenu {
             const sel_string = sel_obj.toString();
             if (sel_string.length <= MIN_SELECTION_LEN || sel_obj.anchorNode === null) return;
             const color = elem.getAttribute("data-hho-color") || "yellow";
-            let result_id = `${local_id_prefix}-${randomString()}`;
-            highlightSelectedText(sel_obj, color, result_id);
+            let local_id = `${local_id_prefix}-${randomString()}`;
+            highlightSelectedText(sel_obj, color, local_id);
             sel_obj.removeAllRanges(); // This fires 'selectionchange' event
-            const data = { text: sel_string, color: color, id: result_id };
-            result_id = await runtime.sendMessage(
+            const data = { text: sel_string, color: color, id: local_id };
+            const result_id = await runtime.sendMessage(
               "addon@histre-highlight-only.com", 
               { action: Action.Create, data: data },
             )
@@ -136,6 +136,11 @@ class ContextMenu {
               // TODO: display failure somewhere, somehow?
               console.error("Failed to save highlight to Histre or local storage");
               return;
+            }
+
+            const marks = document.querySelectorAll(`.hho-mark[data-hho-id="${local_id}"]`)
+            for (const mark of marks) {
+              mark.setAttribute("data-hho-id", result_id)
             }
 
             // TODO: swap generated local id with histre id if histre id was returned
@@ -233,6 +238,7 @@ function highlightSelectedText(sel_obj: Selection, color: string, local_id: stri
 
   if (end_container == start_container) {
     const new_mark = mark_elem.cloneNode(true) as Element;
+    new_mark.setAttribute("data-hho-id", local_id);
     new_mark.setAttribute("data-hho-color", color);
     r.surroundContents(new_mark);
     return;
@@ -510,6 +516,38 @@ async function renderLocalHighlights(current_url: string) {
   console.time("Highlight DOM")
   highlightDOM(indices, current_entries)
   console.timeEnd("Highlight DOM")
+
+  // @test
+  // TODO: Find if removed highlight was covering other highlights
+  // Find all previous <mark> elements with class 'hho-mark'. The elements
+  // have to be contiguous. Might find duplicates. Want last found elements,
+  // those elements will be where highlight begins.
+  // 
+  {
+    // console.log(current_highlights)
+    const id = "local-4twzo1f2";
+    const elems = document.querySelectorAll(`[data-hho-id="${id}"]`);
+    console.log("highlight sections length: ", elems.length)
+    const first = elems[0];
+    let prev = first.previousElementSibling;
+    const prev_elems = [];
+    while (prev?.classList.contains("hho-mark")) {
+      prev_elems.push(prev);
+      prev_elems.push(prev);
+      prev = prev.previousElementSibling;
+    }
+    const filtered_elems = prev_elems.filter((elem, elem_index, arr) => {
+      const id = elem.getAttribute("data-hho-id");
+      const index = arr.findIndex((el) => el.getAttribute("data-hho-id") === id);
+      console.log("index", elem_index, index)
+      return elem_index === index;
+    })
+    console.log(filtered_elems)
+    // console.log("test", first.previousElementSibling)
+    // console.log("test", first.previousSibling)
+    // console.log("test", first.previousSibling?.previousSibling)
+    // console.log("test", first.nextElementSibling)
+  }
 }
 
 

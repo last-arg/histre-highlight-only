@@ -105,13 +105,15 @@ let histre: Histre = new Histre();
   const user_data = await getLocalUser(); 
   if (user_data) {
     const token_data = await getLocalAuthData();
+    if (token_data) {
+      histre.tokens = token_data;
+    }
     histre.setUser(user_data)
-    histre.tokens = token_data;
     const token = await histre.updateTokens()
     if (token) {
       await setLocalAuthData(token)
-      histre.setHeaderAuthToken()
     }
+    histre.setHeaderAuthToken()
   }
 })();
 

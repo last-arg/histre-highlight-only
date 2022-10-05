@@ -1,7 +1,7 @@
 {
   "name": "histre-highlight-only",
   "displayName": "Histre highlight only",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Save highlighted text using Histre API",
   "license": "MIT",
   "dependencies": {

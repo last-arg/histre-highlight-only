@@ -95,26 +95,24 @@ async function histreRemoveHighlight(histre: Histre | undefined, hl_id: string):
   return true;
 }
 
-let histre: Histre | undefined = undefined; 
+let histre: Histre = new Histre(); 
 
 (async function initHistre() {
-  if (__DEV__) {
-    const secret = await import("../tmp/.secret.dev");
-    setLocalUser(secret.user)
+  if (__DEV__ && __user__?.username) {
+    setLocalUser(__user__)
   }
 
   const user_data = await getLocalUser(); 
   if (user_data) {
     const token_data = await getLocalAuthData();
-    histre = new Histre(user_data, token_data);
+    histre.setUser(user_data)
+    histre.tokens = token_data;
     const token = await histre.updateTokens()
     if (token) {
       await setLocalAuthData(token)
       histre.setHeaderAuthToken()
     }
-    return histre;
   }
-  return undefined;
 })();
 
 
@@ -134,12 +132,12 @@ browser.runtime.onMessage.addListener((msg: Message, sender: Runtime.MessageSend
         const url = sender.tab.url;
         const title = sender.tab?.title || "";
 
-        // result_id = await histreAddHighlight(histre, {
-        //    url: url,
-        //    title: title,
-        //    text: data.text,
-        //    color: data.color
-        // })
+        result_id = await histreAddHighlight(histre, {
+           url: url,
+           title: title,
+           text: data.text,
+           color: data.color
+        })
 
         if (!result_id) {
           let local = await storage.local.get({highlights_add: {[url]: { highlights: {} }}});
@@ -228,19 +226,20 @@ browser.runtime.onMessage.addListener((msg: Message, sender: Runtime.MessageSend
         const curr = await getLocalUser();
         const user = msg.data as UserData;
 
-        if (curr?.username === user.username && curr?.password, user.password) {
+        if (curr?.username === user.username && curr?.password === user.password) {
           resolve(true);
           return;
         }
 
         await setLocalUser(user);
-        resolve(true);
         if (!histre) {
           resolve(false);
           return;
         }
-        histre.updateUser(user)
+        histre.setUser(user)
         histre.updateTokens()
+        histre.setHeaderAuthToken()
+        resolve(true);
       });
     }
   }

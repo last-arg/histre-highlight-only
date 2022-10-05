@@ -1,3 +1,4 @@
+import {readFileSync} from 'fs';
 import type { UserConfig } from 'vite';
 import { defineConfig } from 'vite';
 import AutoImport from 'unplugin-auto-import/vite';
@@ -12,6 +13,7 @@ export const sharedConfig: UserConfig = {
   },
   define: {
     __DEV__: isDev,
+    __user__: JSON.parse(readFileSync('./tmp/.secret.dev.json', 'utf-8')),
   },
   plugins: [
     AutoImport({

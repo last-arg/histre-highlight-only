@@ -12,18 +12,12 @@ export class Histre {
     "Host": "histre.com",
     "Content-Type": "application/json" 
   };
-  user: UserData;
+  user?: UserData = undefined;
   tokens?: ValidToken = undefined;
 
-  constructor(user: UserData, tokens?: ValidToken) {
-    this.user = user;
-    this.tokens = tokens;
-  }
+  constructor() {}
 
-  updateUser(user: UserData) {
-    this.user = user;
-    this.tokens = undefined
-  }
+  setUser(user: UserData) { this.user = user; }
 
   async updateTokens() {
     let result_tokens = this.tokens;

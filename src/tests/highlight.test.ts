@@ -1,14 +1,39 @@
 import { it, expect } from "bun:test";
 import { readFileSync } from "fs";
-import { LocalHighlightsObject } from "../common";
+import { LocalHighlightsObject, removeHighlightFromDom } from "../common";
 import { findHighlightIndices, removeHighlightOverlaps } from "../highlight";
 import { test_local, test_data } from "./test_data";
 
 // TODO: check out https://github.com/lusito/mockzilla-webextension
+// 
 // TODO: Consider [jsdom](https://www.npmjs.com/package/jsdom) for testing DOM with node/bun
 // jsdom not working with bun: https://github.com/oven-sh/bun/issues/198
+// 
 // jsdom alternative? [domino](https://www.npmjs.com/package/domino)
+// domino crashed and has an thread panic
 
+import { parse } from 'node-html-parser';
+// import {parse} from 'parse5';
+it("remove highlight from DOM", () => {
+  const test_highlights = {
+    "1": { text: "et iure velit", color: "yellow"},
+    "2": { text: "iure", color: "blue"},
+    "3": { text: "Ut consequatur voluptatum consectetur placeat", color: "yellow"},
+    "4": { text: "consequatur voluptatum", color: "blue"},
+    "5": { text: "tatum conse", color: "green"},
+  };
+  const highlights_file = readFileSync("./src/tests/highlights.html", "utf-8");
+  const document = parse(highlights_file);
+  {
+    const before_elems = document.querySelectorAll(`[data-hho-id="2"]`);
+    expect(before_elems.length).toBe(1);
+    expect(document.querySelectorAll(`[data-hho-id="1"]`).length).toBe(2);
+    removeHighlightFromDom(test_highlights, before_elems)
+    expect(document.querySelectorAll(`[data-hho-id="2"]`).length).toBe(0);
+    expect(before_elems[0].getAttribute("data-hho-id")).toBe("1");
+    expect(before_elems[0].getAttribute("data-hho-color")).toBe("yellow");
+  }
+})
 
 function expectRanges(input: any[], expect: any[]): void {
   if (input.length !== expect.length) {

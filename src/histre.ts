@@ -181,7 +181,7 @@ export class Histre {
     return await fetch(Histre.url.highlight, { headers: this.headers, method: "DELETE", body: body });
   }
 
-  // TODO: parsed.body.details might contain more specific error message.
+  // TODO?: parsed.body.details might contain more specific error message.
   // Something to do with username or password.
   // Do it in hasError() fn instead?
   static hasError(histre_json: HistreResponse) {

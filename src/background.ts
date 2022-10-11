@@ -3,8 +3,7 @@ import { Message, Action, DataModify, DataRemove, DataCreate, local_id_prefix, H
 import { Histre, isValidResponse } from './histre';
 import { z } from 'zod';
 
-// TODO: add local saved highlights to Histre
-// When to do do it?
+// TODO: When to add locally saved highlight to Histre?
 
 // Test import
 import { test_local } from "./tests/test_data";

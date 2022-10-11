@@ -1,3 +1,6 @@
+/*
+TODO: use !important incase something overwrites on site?
+*/
 .hho-context-menu {
   padding: 10px;
   position: absolute;
@@ -19,13 +22,23 @@
 }
 
 .hho-btn-color {
-  width: 20px;
-  height: 20px;
+  outline: 10px solid #f9f9f9;
+  width: 25px;
+  height: 25px;
+  border-style: none;
+  border-radius: 50% !important;
+}
+
+.hho-mark {
+  padding: 0;
+  margin: 0;
+  border-style: none;
 }
 
 .hho-mark[data-hho-color="yellow"],
 .hho-btn-color[data-hho-color="yellow"] {
   background-color: #ffffba;
+  border-color: #ffffba;
 }
 .hho-mark[data-hho-color="orange"],
 .hho-btn-color[data-hho-color="orange"] {

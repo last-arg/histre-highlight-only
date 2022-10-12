@@ -477,10 +477,12 @@ function highlightDOM(ranges: HighlightLocation[], current_entries: any) {
       }
     } else {
       const len = hl_loc.end - hl_loc.start;
-      total_end = total_start + len;
-      (hl_node as Text).splitText(len);
-      range.selectNode(hl_node);
-      range.surroundContents(createMarkElement(hl_id, color));
+      if (len > 0) {
+        total_end = total_start + len;
+        (hl_node as Text).splitText(len);
+        range.selectNode(hl_node);
+        range.surroundContents(createMarkElement(hl_id, color));
+      }
       // skip new nodes made by splitText
       iter.nextNode();
     }
@@ -577,47 +579,43 @@ function removeHighlightFromDom(highlights: LocalHighlightsObject, elems: NodeLi
     console.log("filter", filtered_elems.length)
     let fill_len = fill_elem.textContent?.length || 0;
     let fill_text_node: Node | undefined = undefined;
+    let extra_len = 0;
     for (const [f_elem, len] of filtered_elems) {
       const curr_id = f_elem.getAttribute("data-hho-id")!;
       const {text, color} = highlights[curr_id];
       // TODO: make sure f_elem is start of highlight?  
-      const total_len = len + fill_len;
+
+      const right_len = len + extra_len;
+      const total_len = right_len + fill_len;
       if (text.length >= total_len && fill_text_node === undefined) {
-        console.log("REPLACE")
         fill_elem.setAttribute("data-hho-id", curr_id);
         fill_elem.setAttribute("data-hho-color", color!);
         break;
-      } else if (text.length > len) {
-        console.log("MULTIPLE")
-        // Highlight only covers part of 'removed' node
-        // TODO: highlight only covers part of node
-        // remove surrounding <mark>
-        // split text node in right place
-        // change text node 
+      } else if (text.length > right_len) {
         if (fill_text_node === undefined) {
           fill_text_node = fill_elem.firstChild!;
-          // fill_elem.parentNode?.insertBefore(fill_text_node, fill_elem);
-          // fill_elem.remove();
-
           fill_elem.replaceWith(fill_text_node);
-          const text_end = (fill_text_node as Text).splitText(text.length - len);
-
-          const r = document.createRange();
-          r.selectNode(fill_text_node);
-          const new_mark = mark_elem.cloneNode(true) as Element;
-          new_mark.setAttribute("data-hho-id", curr_id);
-          new_mark.setAttribute("data-hho-color", color!);
-          r.surroundContents(new_mark)
-          fill_text_node = text_end;
         }
+
+        let text_end = fill_text_node as Text;
+        const split_len = text.length - right_len;
+        if (split_len < total_len) {
+          text_end = text_end.splitText(Math.min(split_len, fill_len));
+        }
+        extra_len += text_end.textContent?.length || 0
+
+        const r = document.createRange();
+        r.selectNode(fill_text_node);
+        const new_mark = mark_elem.cloneNode(true) as Element;
+        new_mark.setAttribute("data-hho-id", curr_id);
+        new_mark.setAttribute("data-hho-color", color!);
+        r.surroundContents(new_mark)
+        fill_text_node = text_end;
+        fill_len = fill_text_node?.textContent?.length || 0;
       } else if (fill_text_node === undefined) {
-        console.log("JUST remove")
         fill_elem.replaceWith(fill_elem.textContent!);
         break;
       }
-
-      // console.log(text)
-      // console.log(text.slice(0,len))
     }
   }
 }
@@ -664,9 +662,12 @@ async function test() {
       const test_highlights = {
         "1": { text: "et iure velit", color: "yellow"},
         "2": { text: "iure", color: "blue"},
-        "3": { text: "Ut consequatur voluptatum consectetur placeat", color: "yellow"},
+        "3": { text: "Ut consequatur voluptatum con", color: "yellow"},
         "4": { text: "consequatur voluptatum", color: "blue"},
         "5": { text: "tatum conse", color: "green"},
+        // "6": { text: "illum consequatur", color: "yellow"},
+        // "7": { text: "quatur dol", color: "orange"},
+
       };
       removeHighlights();
       const overlapping_indices = findHighlightIndices(document.body.textContent!, test_highlights);
@@ -675,24 +676,28 @@ async function test() {
       highlightDOM(indices, current_entries)
 
       // Tests
-      // {
-      //   const before_elems = document.querySelectorAll(`[data-hho-id="2"]`);
-      //   console_expect(1, before_elems.length)
-      //   console_expect(2, document.querySelectorAll(`[data-hho-id="1"]`).length);
-      //   removeHighlightFromDom(test_highlights, before_elems)
-      //   console_expect(0, document.querySelectorAll(`[data-hho-id="2"]`).length);
-      //   console_expect(3, document.querySelectorAll(`[data-hho-id="1"]`).length);
-      // }
+      {
+        console.group("Test 1");
+        const before_elems = document.querySelectorAll(`[data-hho-id="2"]`);
+        console_expect(1, before_elems.length)
+        console_expect(2, document.querySelectorAll(`[data-hho-id="1"]`).length);
+        removeHighlightFromDom(test_highlights, before_elems)
+        console_expect(0, document.querySelectorAll(`[data-hho-id="2"]`).length);
+        console_expect(3, document.querySelectorAll(`[data-hho-id="1"]`).length);
+        console.groupEnd()
+      }
 
       {
+        console.group("Test 2");
         const before_elems = document.querySelectorAll(`[data-hho-id="5"]`);
         console_expect(1, before_elems.length)
-        console_expect(2, document.querySelectorAll(`[data-hho-id="3"]`).length);
+        // console_expect(2, document.querySelectorAll(`[data-hho-id="3"]`).length);
         console_expect(1, document.querySelectorAll(`[data-hho-id="4"]`).length);
         removeHighlightFromDom(test_highlights, before_elems)
         console_expect(0, document.querySelectorAll(`[data-hho-id="5"]`).length)
-        console_expect(3, document.querySelectorAll(`[data-hho-id="3"]`).length);
+        // console_expect(3, document.querySelectorAll(`[data-hho-id="3"]`).length);
         console_expect(2, document.querySelectorAll(`[data-hho-id="4"]`).length);
+        console.groupEnd()
       }
   }
 }

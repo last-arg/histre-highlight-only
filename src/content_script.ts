@@ -491,9 +491,6 @@ function highlightDOM(ranges: HighlightLocation[], current_entries: any) {
 
 async function renderLocalHighlights(current_url: string) {
   console.log("==== renderLocalHighlights() ====")
-  if (isDev) {
-    removeHighlights();
-  }
   const body_text = document.body.textContent
   if (body_text === null) { return; }
 
@@ -565,25 +562,37 @@ function init() {
       }
     }
   })
+
 }
 init();
 
-// {
-//   async function test() {
-//     const hl_id = await runtime.sendMessage(
-//       { action: Action.Create , data: { text: "my highlight text", color: "yellow" } },
-//     )
-//     if (!hl_id) { console.error("Failed to save highlight"); }
+test();
+async function test() {
+  const console_expect = (expect: any, got: any) => console.assert(expect === got, `\n  Expected: ${expect}\n  Got: ${got}`);
+  console.log("==== Running tests ====")
+  if (window.location.href === "http://localhost:8080/highlights.html") {
+      // Setup
+      const test_highlights = {
+        "1": { text: "et iure velit", color: "yellow"},
+        "2": { text: "iure", color: "blue"},
+        "3": { text: "Ut consequatur voluptatum consectetur placeat", color: "yellow"},
+        "4": { text: "consequatur voluptatum", color: "blue"},
+        "5": { text: "tatum conse", color: "green"},
+      };
+      removeHighlights();
+      const overlapping_indices = findHighlightIndices(document.body.textContent!, test_highlights);
+      const indices = removeHighlightOverlaps(overlapping_indices);
+      const current_entries = Object.entries(test_highlights);
+      highlightDOM(indices, current_entries)
 
-//     // const hl_id = "local-xxxxxx";
-//     const update = await runtime.sendMessage(
-//       { action: Action.Modify , data: { color: "blue", id: hl_id} },
-//     )
-//     if (!update) { console.error("Failed to update highlight"); }
-
-//     const remove = await runtime.sendMessage({ action: Action.Remove , data: { id: hl_id} })
-//     if (!remove) { console.error("Failed to remove highlight"); }
-//   }
-
-//   setTimeout(test, 0);
-// }
+      // Tests
+      {
+        const before_elems = document.querySelectorAll(`[data-hho-id="2"]`);
+        console_expect(1, before_elems.length)
+        console_expect(2, document.querySelectorAll(`[data-hho-id="1"]`).length);
+        removeHighlightFromDom(test_highlights, before_elems)
+        console_expect(0, document.querySelectorAll(`[data-hho-id="2"]`).length);
+        console_expect(3, document.querySelectorAll(`[data-hho-id="1"]`).length);
+      }
+  }
+}

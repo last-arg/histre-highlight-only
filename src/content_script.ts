@@ -445,6 +445,10 @@ function highlightDOM(ranges: HighlightLocation[], current_entries: any) {
     }
     if (!current_node) break;
 
+    // TODO: I think this should be done in findHighlightIndices or removeHighlightOverlaps
+    if (hl_loc.start > hl_loc.end) {
+      continue;
+    }
     const node_start = hl_loc.start - total_start;
     total_start += node_start;
     let hl_node = (current_node as Text).splitText(node_start);
@@ -477,14 +481,13 @@ function highlightDOM(ranges: HighlightLocation[], current_entries: any) {
       }
     } else {
       const len = hl_loc.end - hl_loc.start;
-      if (len > 0) {
+      if (len >= 0) {
         total_end = total_start + len;
         (hl_node as Text).splitText(len);
         range.selectNode(hl_node);
         range.surroundContents(createMarkElement(hl_id, color));
+        iter.nextNode();
       }
-      // skip new nodes made by splitText
-      iter.nextNode();
     }
 
     console.assert(total_start <= total_end, "Start index is large than end index");
@@ -573,6 +576,7 @@ function removeHighlightFromDom(highlights: LocalHighlightsObject, elems: NodeLi
     console.log("prev", prev_elems.length);
     const filtered_elems = prev_elems.filter(([elem, _], elem_index, arr) => {
       const id = elem.getAttribute("data-hho-id");
+      // TODO: also filter based on length?
       const index = arr.findLastIndex(([el, _]) => el.getAttribute("data-hho-id") === id);
       return elem_index === index;
     })

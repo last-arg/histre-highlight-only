@@ -1,7 +1,7 @@
 /// <reference lib="dom" />
 /// <reference lib="dom.iterable" />
 import { storage, runtime } from 'webextension-polyfill';
-import { Action, LocalHighlightsObject, HighlightLocation, Position, local_id_prefix, removeHighlightFromDom } from './common';
+import { Action, LocalHighlightsObject, HighlightLocation, Position, local_id_prefix } from './common';
 import { findHighlightIndices, removeHighlightOverlaps } from './highlight';
 import './hho.css';
 import { getPosition } from './storage';
@@ -602,11 +602,13 @@ function removeHighlightFromDom(highlights: LocalHighlightsObject, elems: NodeLi
         }
 
         let text_end = fill_text_node as Text;
-        const split_len = text.length - right_len;
+        let split_len = text.length - right_len;
+        split_len = Math.min(split_len, fill_len)
         if (split_len < total_len) {
-          text_end = text_end.splitText(Math.min(split_len, fill_len));
+          text_end = (fill_text_node as Text).splitText(split_len);
         }
-        extra_len += text_end.textContent?.length || 0
+        console.assert(split_len === fill_text_node.textContent!.length, "Text node (text_start) length should match splitText offset (split_len)");
+        extra_len += split_len;
 
         const r = document.createRange();
         r.selectNode(fill_text_node);
@@ -615,7 +617,7 @@ function removeHighlightFromDom(highlights: LocalHighlightsObject, elems: NodeLi
         new_mark.setAttribute("data-hho-color", color!);
         r.surroundContents(new_mark)
         fill_text_node = text_end;
-        fill_len = fill_text_node?.textContent?.length || 0;
+        fill_len = fill_len - extra_len;
       } else if (fill_text_node === undefined) {
         fill_elem.replaceWith(fill_elem.textContent!);
         break;
@@ -669,8 +671,11 @@ async function test() {
         "3": { text: "Ut consequatur voluptatum con", color: "yellow"},
         "4": { text: "consequatur voluptatum", color: "blue"},
         "5": { text: "tatum conse", color: "green"},
-        // "6": { text: "illum consequatur", color: "yellow"},
-        // "7": { text: "quatur dol", color: "orange"},
+        "6": { text: "Dignissimos officiis qui odio", color: "yellow"},
+        "7": { text: "officiis", color: "blue"},
+        "8": { text: " qui ", color: "orange"},
+        "9": { text: "Aliquam", color: "yellow"},
+        "10": { text: "Aliquam illum", color: "blue"},
 
       };
       removeHighlights();
@@ -681,7 +686,7 @@ async function test() {
 
       // Tests
       {
-        console.group("Test 1");
+        console.group(`Test highlight '${test_highlights["1"].text}'`);
         const before_elems = document.querySelectorAll(`[data-hho-id="2"]`);
         console_expect(1, before_elems.length)
         console_expect(2, document.querySelectorAll(`[data-hho-id="1"]`).length);
@@ -692,14 +697,14 @@ async function test() {
       }
 
       {
-        console.group("Test 2");
+        console.group(`Test highlight '${test_highlights["3"].text}'`);
         const before_elems = document.querySelectorAll(`[data-hho-id="5"]`);
         console_expect(1, before_elems.length)
-        // console_expect(2, document.querySelectorAll(`[data-hho-id="3"]`).length);
+        console_expect(1, document.querySelectorAll(`[data-hho-id="3"]`).length);
         console_expect(1, document.querySelectorAll(`[data-hho-id="4"]`).length);
         removeHighlightFromDom(test_highlights, before_elems)
         console_expect(0, document.querySelectorAll(`[data-hho-id="5"]`).length)
-        // console_expect(3, document.querySelectorAll(`[data-hho-id="3"]`).length);
+        console_expect(2, document.querySelectorAll(`[data-hho-id="3"]`).length);
         console_expect(2, document.querySelectorAll(`[data-hho-id="4"]`).length);
         console.groupEnd()
       }

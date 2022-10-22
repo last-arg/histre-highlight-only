@@ -583,32 +583,32 @@ function removeHighlightFromDom(highlights: LocalHighlightsObject, elems: NodeLi
     console.log("filter", filtered_elems.length)
     let fill_len = fill_elem.textContent?.length || 0;
     let fill_text_node: Node | undefined = undefined;
-    let extra_len = 0;
-    for (const [f_elem, len] of filtered_elems) {
-      const curr_id = f_elem.getAttribute("data-hho-id")!;
+    let used_fill_len = 0;
+    for (const [filter_elem, filter_len] of filtered_elems) {
+      const curr_id = filter_elem.getAttribute("data-hho-id")!;
       const {text, color} = highlights[curr_id];
       // TODO: make sure f_elem is start of highlight?  
 
-      const right_len = len + extra_len;
-      const total_len = right_len + fill_len;
+      const used_filter_len = filter_len + used_fill_len;
+      const total_len = used_filter_len + fill_len;
       if (text.length >= total_len && fill_text_node === undefined) {
         fill_elem.setAttribute("data-hho-id", curr_id);
         fill_elem.setAttribute("data-hho-color", color!);
         break;
-      } else if (text.length > right_len) {
+      } else if (text.length > used_filter_len) {
         if (fill_text_node === undefined) {
           fill_text_node = fill_elem.firstChild!;
           fill_elem.replaceWith(fill_text_node);
         }
 
         let text_end = fill_text_node as Text;
-        let split_len = text.length - right_len;
+        let split_len = text.length - used_filter_len;
         split_len = Math.min(split_len, fill_len)
         if (split_len < total_len) {
           text_end = (fill_text_node as Text).splitText(split_len);
         }
         console.assert(split_len === fill_text_node.textContent!.length, "Text node (text_start) length should match splitText offset (split_len)");
-        extra_len += split_len;
+        used_fill_len += split_len;
 
         const r = document.createRange();
         r.selectNode(fill_text_node);
@@ -617,7 +617,7 @@ function removeHighlightFromDom(highlights: LocalHighlightsObject, elems: NodeLi
         new_mark.setAttribute("data-hho-color", color!);
         r.surroundContents(new_mark)
         fill_text_node = text_end;
-        fill_len = fill_len - extra_len;
+        fill_len = fill_len - used_fill_len;
       } else if (fill_text_node === undefined) {
         fill_elem.replaceWith(fill_elem.textContent!);
         break;

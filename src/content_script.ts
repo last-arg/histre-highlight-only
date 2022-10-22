@@ -708,5 +708,29 @@ async function test() {
         console_expect(2, document.querySelectorAll(`[data-hho-id="4"]`).length);
         console.groupEnd()
       }
+
+      {
+        console.group(`Test highlight '${test_highlights["10"].text}'`);
+        const before_elems = document.querySelectorAll(`[data-hho-id="10"]`);
+        console_expect(1, before_elems.length)
+        console_expect(1, document.querySelectorAll(`[data-hho-id="9"]`).length);
+        removeHighlightFromDom(test_highlights, before_elems)
+        console_expect(0, document.querySelectorAll(`[data-hho-id="10"]`).length);
+        console_expect(2, document.querySelectorAll(`[data-hho-id="9"]`).length)
+        console.groupEnd()
+      }
+
+      {
+        console.group(`Test highlight '${test_highlights["8"].text}'`);
+        const before_elems = document.querySelectorAll(`[data-hho-id="8"]`);
+        console_expect(1, before_elems.length)
+        console_expect(2, document.querySelectorAll(`[data-hho-id="6"]`).length);
+        console_expect(1, document.querySelectorAll(`[data-hho-id="7"]`).length);
+        removeHighlightFromDom(test_highlights, before_elems)
+        console_expect(0, document.querySelectorAll(`[data-hho-id="8"]`).length);
+        console_expect(3, document.querySelectorAll(`[data-hho-id="6"]`).length);
+        console_expect(1, document.querySelectorAll(`[data-hho-id="7"]`).length)
+        console.groupEnd()
+      }
   }
 }

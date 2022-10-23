@@ -541,8 +541,6 @@ async function removeHighlight(id: string, url: string) {
 function removeHighlightFromDom(highlights: LocalHighlightsObject, elems: NodeListOf<Element>) {
   // TODO: have to hold on to histre highlights and local highlights.
   // Or get local highlight when needed?
-  console.log("elems to remove: ", elems.length)
-  console.log("elems length: ", elems[0].textContent!.length)
   for (const fill_elem of elems) {
     let prev = fill_elem.previousSibling;
     const prev_elems: [Element, number][] = [];
@@ -567,20 +565,17 @@ function removeHighlightFromDom(highlights: LocalHighlightsObject, elems: NodeLi
     }
 
     if (prev_elems.length === 0) {
-      console.log("ALONE")
       fill_elem.replaceWith(fill_elem.textContent!);
       continue;
     }
 
-    console.log("prev", prev_elems);
-    console.log("prev", prev_elems.length);
     const filtered_elems = prev_elems.filter(([elem, _], elem_index, arr) => {
       const id = elem.getAttribute("data-hho-id");
       // TODO: also filter based on length?
       const index = arr.findLastIndex(([el, _]) => el.getAttribute("data-hho-id") === id);
       return elem_index === index;
     })
-    console.log("filter", filtered_elems.length)
+
     let fill_len = fill_elem.textContent?.length || 0;
     let fill_text_node: Node | undefined = undefined;
     let used_fill_len = 0;
@@ -618,9 +613,6 @@ function removeHighlightFromDom(highlights: LocalHighlightsObject, elems: NodeLi
         r.surroundContents(new_mark)
         fill_text_node = text_end;
         fill_len = fill_len - used_fill_len;
-      } else if (fill_text_node === undefined) {
-        fill_elem.replaceWith(fill_elem.textContent!);
-        break;
       }
     }
   }
@@ -730,6 +722,15 @@ async function test() {
         console_expect(0, document.querySelectorAll(`[data-hho-id="8"]`).length);
         console_expect(3, document.querySelectorAll(`[data-hho-id="6"]`).length);
         console_expect(1, document.querySelectorAll(`[data-hho-id="7"]`).length)
+        console.groupEnd()
+      }
+
+      {
+        console.group(`Test highlight '${test_highlights["9"].text}'`);
+        const before_elems = document.querySelectorAll(`[data-hho-id="9"]`);
+        console_expect(2, before_elems.length)
+        removeHighlightFromDom(test_highlights, before_elems)
+        console_expect(0, document.querySelectorAll(`[data-hho-id="9"]`).length);
         console.groupEnd()
       }
   }

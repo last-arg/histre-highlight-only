@@ -15,6 +15,7 @@ export const sharedConfig: UserConfig = {
     __DEV__: isDev,
     __user__: JSON.parse(readFileSync('./tmp/.secret.dev.json', 'utf-8')),
   },
+  mode: isDev ? 'development' : 'production',
   plugins: [
     AutoImport({
       imports: [
@@ -44,46 +45,48 @@ export const sharedConfig: UserConfig = {
   },
 }
 
-export default defineConfig(({ command }) => ({
-  ...sharedConfig,
-  base: command === 'serve' ? `http://localhost:${port}/` : '/dist/',
-  server: {
-    port,
-    hmr: {
-      host: 'localhost',
+export default defineConfig(({ command }) => {
+  console.log(command)
+  return {
+    ...sharedConfig,
+    base: command === 'serve' ? `http://localhost:${port}/` : '/dist/',
+    server: {
+      port: port,
+      hmr: {
+        host: 'localhost',
+      },
     },
-  },
-  build: {
-    reportCompressedSize: !isDev,
-    minify: !isDev,
-    cssCodeSplit: false,
-    watch: isDev ? {} : undefined,
-    outDir: r('extension/dist'),
-    emptyOutDir: false,
-    sourcemap: isDev ? 'inline' : false,
-    // https://developer.chrome.com/docs/webstore/program_policies/#:~:text=Code%20Readability%20Requirements
-    // terserOptions: {
-    //   compress: !isDev,
-    //   mangle: false,
+    build: {
+      reportCompressedSize: !isDev,
+      minify: !isDev,
+      cssCodeSplit: false,
+      watch: isDev ? {} : undefined,
+      outDir: r('extension/dist'),
+      emptyOutDir: false,
+      sourcemap: isDev ? 'inline' : false,
+      // https://developer.chrome.com/docs/webstore/program_policies/#:~:text=Code%20Readability%20Requirements
+      // terserOptions: {
+      //   compress: !isDev,
+      //   mangle: false,
+      // },
+      rollupOptions: {
+        input: {
+          background: r('src/background.html'),
+          // options: r('src/options.html'),
+          popup: r('src/popup.html'),
+        },
+        output: {
+          entryFileNames: `assets/[name].js`,
+          chunkFileNames: `assets/[name].js`,
+          assetFileNames: `assets/[name].[ext]`
+        },
+      },
+    },
+    plugins: [
+      ...sharedConfig.plugins!,
+    ],
+    // test: {
+    //   globals: true,
+    //   environment: 'jsdom',
     // },
-    rollupOptions: {
-      input: {
-        background: r('src/background.html'),
-        // options: r('src/options.html'),
-        popup: r('src/popup.html'),
-      },
-      output: {
-        entryFileNames: `assets/[name].js`,
-        chunkFileNames: `assets/[name].js`,
-        assetFileNames: `assets/[name].[ext]`
-      },
-    },
-  },
-  plugins: [
-    ...sharedConfig.plugins!,
-  ],
-  test: {
-    globals: true,
-    environment: 'jsdom',
-  },
-}))
+}})

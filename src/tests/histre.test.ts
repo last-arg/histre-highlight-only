@@ -10,7 +10,8 @@ it("histre API requests", async () => {
     console.error("Authetication failed. Need to provide valid Histre username and password.")
     return;
   }
-  const h = new Histre(user, undefined);
+  const h = new Histre();
+  h.setUser(user);
   const token = await h.updateTokens();
   expect(token !== undefined).toBe(true);
   h.setHeaderAuthToken();

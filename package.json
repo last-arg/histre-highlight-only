@@ -21,6 +21,7 @@
   },
   "scripts": {
     "dev": "run-p dev:* manifest icon",
+    "dev-test": "vite ./src/tests/",
     "manifest": "bun run ./scripts/manifest.ts",
     "dev:js": "vite build --config ./vite.config.content.ts --mode development",
     "dev:web": "vite build --clearScreen=false --mode development",

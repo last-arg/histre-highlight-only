@@ -29,12 +29,17 @@ export function findHighlightIndices(body_text: string, current_highlights: Loca
   return locations;
 }
 
-export function removeHighlightOverlaps(locations: HighlightLocation[]): HighlightLocation[] {
-  locations.sort((a, b) => a.start - b.start);
-  return removeHighlightOverlapsImpl(locations)
+export function getHighlightIndices(body_text: string, current_highlights: LocalHighlightsObject): HighlightLocation[] {
+  let locs = findHighlightIndices(body_text, current_highlights);
+  locs.sort((a, b) => {
+    const a_len = a.end - a.start;
+    const b_len = b.end - b.start;
+    return b_len - a_len;
+  })
+  return removeHighlightOverlaps(locs);
 }
 
-function removeHighlightOverlapsImpl(locations: HighlightLocation[]): HighlightLocation[] {
+export function removeHighlightOverlaps(locations: HighlightLocation[]): HighlightLocation[] {
   // Split overlapping highlights
   let split_locations = new Array<HighlightLocation>();
   if (locations.length === 0) return split_locations;

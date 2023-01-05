@@ -1,7 +1,7 @@
 /// <reference lib="dom" />
 /// <reference lib="dom.iterable" />
 import { storage, runtime } from 'webextension-polyfill';
-import { Action, LocalHighlightsObject, HighlightLocation, Position, local_id_prefix } from './common';
+import { Color, Action, LocalHighlightsObject, HighlightLocation, Position, local_id_prefix } from './common';
 import { findHighlightIndices, removeHighlightOverlaps } from './highlight';
 import './hho.css';
 import { getPosition } from './storage';
@@ -9,8 +9,6 @@ console.log("==== LOAD 'content_script.js' TD ====")
 
 type ContextMenuElem = HTMLDivElement;
 enum ContextMenuState { none, create, modify }
-// Histre colors
-enum Color { yellow, orange, green, blue, purple, red };
 
 const isDev = true;
 

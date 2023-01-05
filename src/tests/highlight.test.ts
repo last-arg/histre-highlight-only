@@ -4,11 +4,15 @@ import { LocalHighlightsObject } from "../common";
 import { findHighlightIndices, removeHighlightOverlaps } from "../highlight";
 import { test_local, test_data } from "./test_data";
 
-// TODO: check out https://github.com/lusito/mockzilla-webextension
-// 
+// TODO: vitest instead of bun:test?
 // TODO: If I want to use bun for testing node DOM have to wait or find library
 // that works with 'bun wiptest'. Issue: https://github.com/oven-sh/bun/issues/198
-// Libraries: jsdom domino 
+// Libraries: 
+// - jsdom 
+// - domino 
+// - linkedom: works with 'bun wiptest'
+
+// TODO: check out https://github.com/lusito/mockzilla-webextension
 
 function expectRanges(input: any[], expect: any[]): void {
   if (input.length !== expect.length) {

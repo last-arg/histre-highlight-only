@@ -86,3 +86,10 @@ export type ValidToken = z.infer<typeof localAuthSchema>;
 
 export type Position = "top" | "bottom";
 
+export function isEmptyObject(object: Object) {
+  for (const _ in object) {
+    return false;
+  }
+  return true;
+}
+

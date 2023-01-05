@@ -1,10 +1,11 @@
 /// <reference lib="dom" />
 /// <reference lib="dom.iterable" />
 import { storage, runtime } from 'webextension-polyfill';
-import { Color, Action, LocalHighlightsObject, HighlightLocation, Position, local_id_prefix } from './common';
+import { Color, Action, LocalHighlightsObject, Position, local_id_prefix, isEmptyObject } from './common';
 import { findHighlightIndices, removeHighlightOverlaps } from './highlight';
 import './hho.css';
 import { getPosition } from './storage';
+import { createMarkElement, renderLocalHighlights } from './common_dom';
 console.log("==== LOAD 'content_script.js' TD ====")
 
 type ContextMenuElem = HTMLDivElement;
@@ -214,17 +215,18 @@ const global = {
   menu: new ContextMenu(),
 };
 
-// Wrapping selected text with <mark>.
-// Selection doesn't start or end at edges of nodes.
-// Selection can contain children elements.
-const mark_elem = document.createElement("mark");
-mark_elem.classList.add("hho-mark");
-
-function createMarkElement(id: string, color: string | undefined) {
-  const elem = mark_elem.cloneNode(true) as Element;
-  elem.setAttribute("data-hho-color", color || "yellow");
-  elem.setAttribute("data-hho-id", id);
-  return elem;
+async function getLocalHighlights(current_url: string): Promise<LocalHighlightsObject | undefined> {
+    const local = await storage.local.get({highlights_add: {[current_url]: undefined}});
+    if (local.highlights_add[current_url] === undefined) { 
+        console.info(`No highlights for ${current_url}`);
+        return; 
+    }
+    const current_highlights = local.highlights_add[current_url].highlights as LocalHighlightsObject;
+    if (isEmptyObject(current_highlights)) { 
+        console.info(`Found url ${current_url} doesn't contain any highlights`);
+        return; 
+    }
+    return current_highlights;
 }
 
 function containsNonWhiteSpace(node: Node): number {
@@ -241,9 +243,7 @@ function highlightSelectedText(sel_obj: Selection, color: string, local_id: stri
   let end_container: Node | null = r.endContainer;
 
   if (end_container == start_container) {
-    const new_mark = mark_elem.cloneNode(true) as Element;
-    new_mark.setAttribute("data-hho-id", local_id);
-    new_mark.setAttribute("data-hho-color", color);
+    const new_mark = createMarkElement(local_id, color);
     r.surroundContents(new_mark);
     return;
   }
@@ -306,9 +306,7 @@ function highlightSelectedText(sel_obj: Selection, color: string, local_id: stri
   let tmp_range = document.createRange();
   for (let node of valid_nodes) {
     tmp_range.selectNode(node);
-    const new_mark = mark_elem.cloneNode(true) as Element;
-    new_mark.classList.add(local_id);
-    new_mark.setAttribute("data-hho-color", color);
+    const new_mark = createMarkElement(local_id, color);
     tmp_range.surroundContents(new_mark);
   }
 }
@@ -361,6 +359,7 @@ function selectionChange() {
     return;
   }
   const selection_str = win_selection.toString();
+  console.log(selection_str)
   if (selection_str.length <= MIN_SELECTION_LEN || win_selection.anchorNode === null) {
     if (selection_str.length === 0) {
       document.removeEventListener("selectionchange", selectionChangeListener);
@@ -402,13 +401,6 @@ function startSelection() {
   }, {once: true})
 }
 
-function isEmptyObject(object: Object) {
-  for (const _ in object) {
-    return false;
-  }
-  return true;
-}
-
 function removeHighlights(hl_id?: string) {
   let hl_selector = ".hho-mark";
   if (hl_id) {
@@ -421,107 +413,6 @@ function removeHighlights(hl_id?: string) {
     m.replaceWith(text)
   }
   document.body.normalize();
-}
-
-function highlightDOM(ranges: HighlightLocation[], current_entries: any) {
-  const indices = ranges;
-  const iter = document.createNodeIterator(document.body, NodeFilter.SHOW_TEXT, null);
-  let current_node;
-  let total_start = 0;
-  let total_end = 0;
-  const range = document.createRange();
-
-  for (const hl_loc of indices) {
-    if (hl_loc.start >= total_end) {
-      while (current_node = iter.nextNode()) {
-        total_start = total_end;
-        total_end += current_node.textContent?.length || 0;
-        if (hl_loc.start < total_end) {
-          break;
-        }
-      }
-    }
-    if (!current_node) break;
-
-    // TODO: I think this should be done in findHighlightIndices or removeHighlightOverlaps
-    if (hl_loc.start > hl_loc.end) {
-      continue;
-    }
-    const node_start = hl_loc.start - total_start;
-    total_start += node_start;
-    let hl_node = (current_node as Text).splitText(node_start);
-    iter.nextNode();
-    const color = current_entries[hl_loc.index][1].color;
-    const hl_id = current_entries[hl_loc.index][0];
-
-    if (hl_loc.end > total_end) {
-      range.selectNode(hl_node);
-      range.surroundContents(createMarkElement(hl_id, color));
-      total_end = total_start + (hl_node.textContent?.length || 0);
-
-      while (current_node = iter.nextNode()) {
-        total_start = total_end;
-        total_end += current_node.textContent?.length || 0;
-        if (hl_loc.end <= total_end) {
-          const len = total_end - hl_loc.end;
-          total_end = total_start + len;
-          (current_node as Text).splitText(len);
-          range.selectNode(current_node);
-          range.surroundContents(createMarkElement(hl_id, color));
-
-          // skip new nodes made by splitText and surroundContents
-          iter.nextNode();
-          break;
-        }
-
-        range.selectNode(current_node);
-        range.surroundContents(createMarkElement(hl_id, color));
-      }
-    } else {
-      const len = hl_loc.end - hl_loc.start;
-      if (len >= 0) {
-        total_end = total_start + len;
-        (hl_node as Text).splitText(len);
-        range.selectNode(hl_node);
-        range.surroundContents(createMarkElement(hl_id, color));
-        iter.nextNode();
-      }
-    }
-
-    console.assert(total_start <= total_end, "Start index is large than end index");
-  }
-}
-
-async function renderLocalHighlights(current_url: string) {
-  console.log("==== renderLocalHighlights() ====")
-  const body_text = document.body.textContent
-  if (body_text === null) { return; }
-
-  const local = await storage.local.get({highlights_add: {[current_url]: undefined}});
-  if (local.highlights_add[current_url] === undefined) { 
-    console.info(`No highlights for ${current_url}`);
-    return; 
-  }
-  const current_highlights = local.highlights_add[current_url].highlights as LocalHighlightsObject;
-  if (isEmptyObject(current_highlights)) { 
-    console.info(`Found url ${current_url} doesn't contain any highlights`);
-    return; 
-  }
-  const current_entries = Object.entries(current_highlights);
-
-  console.time("Iter all text nodes")
-  const iter = document.createNodeIterator(document.body, NodeFilter.SHOW_TEXT, null);
-  while (iter.nextNode()) {}
-  console.timeEnd("Iter all text nodes")
-
-  console.time("Generate ranges")
-  const overlapping_indices = findHighlightIndices(body_text, current_highlights);
-  const indices = removeHighlightOverlaps(overlapping_indices);
-  console.timeEnd("Generate ranges")
-
-  console.time("Highlight DOM")
-  highlightDOM(indices, current_entries)
-  console.timeEnd("Highlight DOM")
 }
 
 // TODO: Find if removed highlight was covering other highlights
@@ -605,9 +496,7 @@ function removeHighlightFromDom(highlights: LocalHighlightsObject, elems: NodeLi
 
         const r = document.createRange();
         r.selectNode(fill_text_node);
-        const new_mark = mark_elem.cloneNode(true) as Element;
-        new_mark.setAttribute("data-hho-id", curr_id);
-        new_mark.setAttribute("data-hho-color", color!);
+        const new_mark = createMarkElement(curr_id, color);
         r.surroundContents(new_mark)
         fill_text_node = text_end;
         fill_len = fill_len - used_fill_len;
@@ -616,12 +505,25 @@ function removeHighlightFromDom(highlights: LocalHighlightsObject, elems: NodeLi
   }
 }
 
+async function getAndRenderLocalHighlights(url: string) {
+    const body_text = document.body.textContent
+    if (body_text === null) { 
+        console.warn("Didn't find 'document.body'. Nothing to highlight.");
+        return; 
+    }
+
+    const local_highlights = await getLocalHighlights(url);
+    if (local_highlights) {
+      renderLocalHighlights(body_text, local_highlights);
+    }
+}
+
 function init() {
   const url = window.location.href;
   if(document.readyState === 'loading') {
-    document.addEventListener("DOMContentLoaded", () => renderLocalHighlights(url));
+    document.addEventListener("DOMContentLoaded", () => getAndRenderLocalHighlights(url));
   } else {
-    renderLocalHighlights(url)
+    getAndRenderLocalHighlights(url)
   }  
   document.addEventListener("selectstart", startSelection);
   document.addEventListener("click", (e: Event) => {
@@ -654,6 +556,28 @@ async function test() {
   const console_expect = (expect: any, got: any) => console.assert(expect === got, `\n  Expected: ${expect}\n  Got: ${got}`);
   console.log("==== Running tests ====")
   if (window.location.href === "http://localhost:8080/highlights.html") {
+    const iter = document.createNodeIterator(document.body, NodeFilter.SHOW_TEXT, null);
+    let node;
+    let total = 0;
+    while (node = iter.nextNode()) {
+      console.log("TEXT", `"${node.textContent}"`)
+      // console.log(node)
+      if (node.textContent[0] !== "\n") {
+        total += node.textContent.length;
+      }
+    }
+
+    const r = document.createRange();
+    r.selectNodeContents(document.body)
+    const s = window.getSelection();
+    s!.addRange(r)
+    const all_text = s.toString();
+    s!.removeAllRanges();
+    console.log("body", document.body.textContent.length)
+    console.log("select_text", all_text.length)
+    console.log("total", total)
+    console.log(document.body.innerText.length)
+
       // Setup
       const test_highlights = {
         "1": { text: "et iure velit", color: "yellow"},
@@ -666,10 +590,12 @@ async function test() {
         "8": { text: " qui ", color: "orange"},
         "9": { text: "Aliquam", color: "yellow"},
         "10": { text: "Aliquam illum", color: "blue"},
+        "11": { text: "ex.\n\nSecond", color: "yellow"},
 
       };
       removeHighlights();
-      const overlapping_indices = findHighlightIndices(document.body.textContent!, test_highlights);
+      // const overlapping_indices = findHighlightIndices(document.body.textContent!, test_highlights);
+      const overlapping_indices = findHighlightIndices(all_text, test_highlights);
       const indices = removeHighlightOverlaps(overlapping_indices);
       const current_entries = Object.entries(test_highlights);
       highlightDOM(indices, current_entries)

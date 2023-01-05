@@ -36,6 +36,7 @@ export function highlightDOM(ranges: HighlightLocation[], current_entries: any) 
     if (!current_node) break;
 
     // TODO: I think this should be done in findHighlightIndices or removeHighlightOverlaps
+    // Can this even happen?
     if (hl_loc.start > hl_loc.end) {
       continue;
     }
@@ -49,13 +50,16 @@ export function highlightDOM(ranges: HighlightLocation[], current_entries: any) 
     if (hl_loc.end > total_end) {
       range.selectNode(hl_node);
       range.surroundContents(createMarkElement(hl_id, color));
+      iter.nextNode();
       total_end = total_start + (hl_node.textContent?.length || 0);
 
       while (current_node = iter.nextNode()) {
         total_start = total_end;
-        total_end += current_node.textContent?.length || 0;
+        const node_text_len = current_node.textContent?.length || 0;
+        total_end += node_text_len;
         if (hl_loc.end <= total_end) {
-          const len = total_end - hl_loc.end;
+          // End of highlight
+          const len = node_text_len - (total_end - hl_loc.end);
           total_end = total_start + len;
           (current_node as Text).splitText(len);
           range.selectNode(current_node);
@@ -66,8 +70,10 @@ export function highlightDOM(ranges: HighlightLocation[], current_entries: any) 
           break;
         }
 
+        // middle of highlight
         range.selectNode(current_node);
         range.surroundContents(createMarkElement(hl_id, color));
+        iter.nextNode();
       }
     } else {
       const len = hl_loc.end - hl_loc.start;

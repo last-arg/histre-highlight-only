@@ -32,9 +32,12 @@ export function findHighlightIndices(body_text: string, current_highlights: Loca
 export function getHighlightIndices(body_text: string, current_highlights: LocalHighlightsObject): HighlightLocation[] {
   let locs = findHighlightIndices(body_text, current_highlights);
   locs.sort((a, b) => {
-    const a_len = a.end - a.start;
-    const b_len = b.end - b.start;
-    return b_len - a_len;
+    if (a.start === b.start) {
+      const a_len = a.end - a.start;
+      const b_len = b.end - b.start;
+      return b_len - a_len;
+    }
+    return a.start - b.start;
   })
   return removeHighlightOverlaps(locs);
 }
@@ -135,7 +138,7 @@ export function removeHighlightOverlaps(locations: HighlightLocation[]): Highlig
     }
 
     for (const s of splices) {
-      const partial_locations = removeHighlightOverlapsImpl(inner_positions.splice(0, s));
+      const partial_locations = removeHighlightOverlaps(inner_positions.splice(0, s));
       const new_start = partial_locations[partial_locations.length - 1].end;
       const new_end = inner_positions.length > 0 ? inner_positions[0].start : curr.end;
       split_locations.push(...partial_locations, {
@@ -144,7 +147,7 @@ export function removeHighlightOverlaps(locations: HighlightLocation[]): Highlig
         index: curr.index,
       })
     }
-    const partial_locations = removeHighlightOverlapsImpl(inner_positions.splice(0));
+    const partial_locations = removeHighlightOverlaps(inner_positions.splice(0));
     split_locations.push(...partial_locations);
 
     const last_split = split_locations[split_locations.length - 1];

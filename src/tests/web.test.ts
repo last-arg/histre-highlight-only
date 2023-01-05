@@ -6,6 +6,11 @@ import { highlightDOM } from "../common_dom";
 
 const {$mol_assert_ok: assert_ok, $mol_assert_equal: assert_equal, $mol_assert_like: assert_like} = $;
 
+function setAndGetBody(inner: string): string {
+    document.body.innerHTML = inner;
+    return document.body.textContent!;
+}
+
 const simple: LocalHighlightsObject = {
       "local-1": { 
         "text": "onl",
@@ -42,7 +47,7 @@ const with_child: LocalHighlightsObject = {
 
 const TEST_SUITE: (() => Promise<void> | void)[] = [
     function testHighlightDOMSimple() {
-        const body_text = document.body.textContent!;
+        const body_text = setAndGetBody(`<p id="only-text">only text inside this element</p>`);
         const locations = findHighlightIndices(body_text, simple);
         let no_change = removeHighlightOverlaps(locations);
         assert_like(locations, no_change);
@@ -63,7 +68,9 @@ const TEST_SUITE: (() => Promise<void> | void)[] = [
         }
     },
     function testHighlightDOMWithChild() {
-        const body_text = document.body.textContent!;
+        const body_text = setAndGetBody(`
+    <p id="with-child">parent start (<span>child elem</span>) parent middle (<span>another child</span>) parent end</p>
+        `);
         let locations = findHighlightIndices(body_text, with_child);
         let no_change = removeHighlightOverlaps(locations);
         assert_like(locations, no_change);
@@ -104,4 +111,4 @@ async function runTests() {
     console.info("All tests passed")
 }
 
-runTests();
+document.addEventListener("DOMContentLoaded", runTests);

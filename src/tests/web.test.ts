@@ -1,7 +1,7 @@
 // import { findHighlightIndices, removeHighlightOverlaps } from "../highlight";
 import $ from "./assert";
 import { LocalHighlightsObject } from "../common";
-import { findHighlightIndices, removeHighlightOverlaps } from "../highlight";
+import { findHighlightIndices, getHighlightIndices, removeHighlightOverlaps } from "../highlight";
 import { highlightDOM } from "../common_dom";
 
 const {$mol_assert_ok: assert_ok, $mol_assert_equal: assert_equal, $mol_assert_like: assert_like} = $;
@@ -98,6 +98,55 @@ const TEST_SUITE: (() => Promise<void> | void)[] = [
         }
         assert_equal(7, total_marks);
     },
+    function testHighlightOverlapSimple() {
+        const hls: LocalHighlightsObject = {
+            "local-1": {
+                "text": "text inside",
+                "color": "blue"
+            },
+            "local-4": {
+                "text": "inside",
+                "color": "red"
+            },
+            "local-2": {
+                "text": "inside this",
+                "color": "yellow"
+            },
+            "local-3": {
+                "text": "inside",
+                "color": "green"
+           },
+            "local-0": {
+                "text": "element",
+                "color": "orange"
+            },
+        };
+        const expect: Record<string, string[]> = {
+            "local-1": ["text " ],
+            "local-4": ["" ],
+            "local-2": ["", " this"],
+            "local-3": ["inside" ],
+            "local-0": ["element" ],
+        }
+
+        const body_text = setAndGetBody(`<p id="overlap-simple">only text inside this element</p>`);
+        let locations = getHighlightIndices(body_text, hls);
+        const highlight_ids = Object.entries(hls);
+        highlightDOM(locations, highlight_ids);
+        let total_marks = 0;
+        for (const [hl_key, hl_value] of highlight_ids) {
+            const dom_hl = document.querySelectorAll(`#overlap-simple [data-hho-id="${hl_key}"]`);
+            const hl_expect = expect[hl_key];
+            let i = 0;
+            for (const el of dom_hl) {
+                assert_equal(hl_value.color, el.getAttribute("data-hho-color"));
+                assert_equal(hl_expect[i], el.textContent);
+                i += 1;
+                total_marks += 1;
+            }
+        }
+        assert_equal(6, total_marks);
+    }
 ];
 
 async function runTests() {

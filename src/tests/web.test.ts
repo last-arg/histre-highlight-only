@@ -1,7 +1,7 @@
 // import { findHighlightIndices, removeHighlightOverlaps } from "../highlight";
 import $ from "./assert";
 import { LocalHighlightsObject } from "../common";
-import { findHighlightIndices, getHighlightIndices, removeHighlightOverlaps } from "../highlight";
+import { getHighlightIndices } from "../highlight";
 import { highlightDOM } from "../common_dom";
 
 const {$mol_assert_ok: assert_ok, $mol_assert_equal: assert_equal, $mol_assert_like: assert_like} = $;
@@ -48,9 +48,7 @@ const with_child: LocalHighlightsObject = {
 const TEST_SUITE: (() => Promise<void> | void)[] = [
     function testHighlightDOMSimple() {
         const body_text = setAndGetBody(`<p id="only-text">only text inside this element</p>`);
-        const locations = findHighlightIndices(body_text, simple);
-        let no_change = removeHighlightOverlaps(locations);
-        assert_like(locations, no_change);
+        let locations = getHighlightIndices(body_text, simple);
         const highlight_ids = Object.entries(simple);
         highlightDOM(locations, highlight_ids);
 
@@ -71,9 +69,7 @@ const TEST_SUITE: (() => Promise<void> | void)[] = [
         const body_text = setAndGetBody(`
     <p id="with-child">parent start (<span>child elem</span>) parent middle (<span>another child</span>) parent end</p>
         `);
-        let locations = findHighlightIndices(body_text, with_child);
-        let no_change = removeHighlightOverlaps(locations);
-        assert_like(locations, no_change);
+        let locations = getHighlightIndices(body_text, with_child);
         let i = 0;
         for (const hl of Object.values(with_child)) {
             const loc = locations[i];

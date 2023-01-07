@@ -142,8 +142,50 @@ const TEST_SUITE: (() => Promise<void> | void)[] = [
             }
         }
         assert_equal(6, total_marks);
+    },
+
+    function testHighlightOverlapAdvanced() {
+        const hls = {
+            "local-3": {
+                "text": "text (inside",
+                "color": "green"
+           },
+            "local-2": {
+                "text": "ide) this",
+                "color": "yellow"
+           },
+            // TODO: maybe change overlapping rules
+            "local-1": {
+                "text": "si",
+                "color": "red"
+           },
+
+        };
+        const body_text = setAndGetBody(`
+    <p id="overlap-simple">
+        only text (<span>inside</span>) this element
+    </p>`
+        );
+        let locations = getHighlightIndices(body_text, hls);
+        const highlight_ids = Object.entries(hls);
+        highlightDOM(locations, highlight_ids);
+        console.log(locations);
     }
+
 ];
+
+function tmp() {
+    const hls = {
+        "1": { text: "t ov", color: "yellow" },
+        "3": { text: "ve", color: "blue" },
+        "2": { text: "erl", color: "red" },
+    };
+    const body_text = setAndGetBody(`<p>test overlap</p>`);
+    let locations = getHighlightIndices(body_text, hls);
+    highlightDOM(locations, Object.entries(hls))
+}
+tmp()
+
 
 async function runTests() {
     console.info("Run tests")
@@ -156,4 +198,4 @@ async function runTests() {
     console.info("All tests passed")
 }
 
-document.addEventListener("DOMContentLoaded", runTests);
+// document.addEventListener("DOMContentLoaded", runTests);

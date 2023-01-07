@@ -42,131 +42,62 @@ export function getHighlightIndices(body_text: string, current_highlights: Local
   return removeHighlightOverlaps(locs);
 }
 
+// hello middle world
+//     o middle
+//         ddle wor
+//        id
+// [{start: 4, end: 12, index: 0}, 
+//  {start: 7, end: 9, index: 1},
+//  {start: 8, end: 16, index: 2}]
+//   ||
+//   V
+// [{start: 4, end: 7, index: 0}, 
+//  {start: 7, end: 8, index: 1}, {start: 8, end: 8, index: 2}, 
+//  {start: 8, end: 9, index: 1}, {start: 9, end: 16, index: 2}]
 export function removeHighlightOverlaps(locations: HighlightLocation[]): HighlightLocation[] {
   // Split overlapping highlights
   let split_locations = new Array<HighlightLocation>();
   if (locations.length === 0) return split_locations;
   const end = locations.length;
+  let last_end = locations[0].start;
   for (let index = 0; index < end; index += 1) {
     const curr = locations[index];
     let next_index = index + 1; 
+    const curr_start = Math.max(curr.start, last_end);
+    console.log("start", curr_start);
 
     if (next_index >= locations.length) {
-      split_locations.push({start: curr.start, end: curr.end, index: curr.index});
+      split_locations.push({start: curr_start, end: curr.end, index: curr.index});
+      last_end = curr.end;
       break;
     }
     let next_range = locations[next_index];
 
     // This probably happens in most cases
     if (next_range.start >= curr.end) { 
-      split_locations.push({start: curr.start, end: curr.end, index: curr.index});
+      split_locations.push({start: curr_start, end: curr.end, index: curr.index});
+      last_end = curr.end;
       continue; 
     }
 
-    // next_range.start is inside current range
-    split_locations.push({start: curr.start, end: next_range.start, index: curr.index});
+    split_locations.push({start: curr_start, end: next_range.start, index: curr.index});
 
-    if (next_range.end >= curr.end) {
-      continue;
-    }
-
-    // next_range ends inside current range
-
-    // See if more ranges start inside current range
-    const inner_positions = [next_range];
+    let inside_curr = [next_range];
     next_index += 1;
-    for (;next_index < end; next_index += 1) {
-      const tmp_inner = locations[next_index];
-      if (tmp_inner.start >= curr.end) { break; }
-      inner_positions.push(tmp_inner);
-    }
-
-    // Exclude continuous inner_positions that overlap current highglight to
-    // the end or beyond end.
-    let inner_pos_length = inner_positions.length;
-    let end_index = next_range.end;
-    for (let index = 1; index < inner_positions.length; index += 1) {
-      const inner = inner_positions[index];
-      if (inner.start <= end_index) {
-        end_index = inner.end;
-      } else {
-        inner_pos_length = index + 1;
-        end_index = inner.end;
+    for ( ; next_index < end; next_index += 1) {
+      const range = locations[next_index];
+      if (range.start >= curr.end) {
+        break;
       }
+      inside_curr.push({start: range.start, end: range.end, index: range.index});
     }
-    if (inner_pos_length === 0) {
-      continue;
-    }
-    const ignore_pos = inner_positions.splice(inner_pos_length)
-    // inner_positions.length = inner_pos_length;
-    // Change outer loop index to skip already added items
-    index += inner_pos_length;
 
-    if (inner_positions.length === 1) {
-      // Inner highlight goes beyond current highlight end. Start next 
-      // outer loop with inner_loc.
-      // if (inner_pos.end > loc.end) { continue; }
+    if (inside_curr.length === 1) {
       split_locations.push({start: next_range.start, end: next_range.end, index: next_range.index});
-
-      // Make sure highlight end is 'visible'
-      if (curr.end > next_range.end) {
-        split_locations.push({start: next_range.end, end: curr.end, index: curr.index});
-      }
-      // Make sure to skip this inner highlight on next outer loop
-      continue;
-    }
-
-    // Have several inner higlights. These inner highlights might themselves overlap.
-
-    let splices = [];
-    let count = 1;
-    let max_end = inner_positions[0].end;
-    // NOTE: inner_positions length is larger than 1
-    for (let i = 1; i < inner_positions.length; i += 1) {
-      const curr = inner_positions[i];
-      if (curr.start <= max_end) {
-        max_end = Math.max(max_end, curr.end);
-        count += 1;
-        continue;
-      }
-      splices.push(count);
-      max_end = curr.end;
-      count = 1;
-    }
-    if (splices.length === 0) {
-      splices.push(inner_positions.length)
-    }
-
-    for (const s of splices) {
-      const partial_locations = removeHighlightOverlaps(inner_positions.splice(0, s));
-      const new_start = partial_locations[partial_locations.length - 1].end;
-      const new_end = inner_positions.length > 0 ? inner_positions[0].start : curr.end;
-      split_locations.push(...partial_locations, {
-        start: new_start,
-        end: new_end,
-        index: curr.index,
-      })
-    }
-    const partial_locations = removeHighlightOverlaps(inner_positions.splice(0));
-    split_locations.push(...partial_locations);
-
-    const last_split = split_locations[split_locations.length - 1];
-
-    if (curr.end > last_split.end) {
-      const end_range = {
-        start: last_split.end,
-        end: curr.end,
-        index: curr.index,
-      }
-      if (ignore_pos.length === 0) {
-        split_locations.push(end_range);
-      } else if (ignore_pos[0].start > last_split.end) {
-        end_range.end = ignore_pos[0].start,
-        split_locations.push(end_range);
-      }
+      last_end = next_range.end;
+      index += 1;
     }
   }
-
   return split_locations;
 }
 

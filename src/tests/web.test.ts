@@ -178,9 +178,15 @@ function tmp() {
     const hls = {
         "1": { text: "t ov", color: "yellow" },
         "3": { text: "ve", color: "blue" },
-        "2": { text: "erl", color: "red" },
+        "2": { text: "erla", color: "red" },
+        "4": { text: "erl", color: "purple" },
+
+        
     };
-    const body_text = setAndGetBody(`<p>test overlap</p>`);
+    const body_text = setAndGetBody(`
+        <p>test overlap</p>
+        <p>abcdefghijklmnopqrstuvwxyz</p>
+    `);
     let locations = getHighlightIndices(body_text, hls);
     highlightDOM(locations, Object.entries(hls))
 }

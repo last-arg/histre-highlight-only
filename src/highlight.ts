@@ -56,6 +56,7 @@ export function getHighlightIndices(body_text: string, current_highlights: Local
 //  {start: 8, end: 9, index: 1}, {start: 9, end: 16, index: 2}]
 export function removeHighlightOverlaps(locations: HighlightLocation[]): HighlightLocation[] {
   // Split overlapping highlights
+  console.log(locations)
   let split_locations = new Array<HighlightLocation>();
   if (locations.length === 0) return split_locations;
   const end = locations.length;
@@ -82,22 +83,44 @@ export function removeHighlightOverlaps(locations: HighlightLocation[]): Highlig
 
     split_locations.push({start: curr_start, end: next_range.start, index: curr.index});
 
-    let inside_curr = [next_range];
+    let inside_curr = [[next_range]];
     next_index += 1;
+    console.log("rest", locations.slice(next_index))
+    let inside_end = next_range.end;
     for ( ; next_index < end; next_index += 1) {
       const range = locations[next_index];
-      if (range.start >= curr.end) {
-        break;
+      console.log("range", range);
+      if (range.start > inside_end) {
+        if (range.start >= curr.end) {
+          break;
+        }
+        inside_curr.push([]);
       }
-      inside_curr.push({start: range.start, end: range.end, index: range.index});
+      inside_curr[inside_curr.length - 1].push({start: range.start, end: range.end, index: range.index});
     }
 
-    if (inside_curr.length === 1) {
-      split_locations.push({start: next_range.start, end: next_range.end, index: next_range.index});
-      last_end = next_range.end;
-      index += 1;
+    console.log("inside", inside_curr)
+    console.log(index, next_index);
+    index = next_index - 1;
+
+    for (let i = 0; i < inside_curr.length; i+=1) {
+      const inside = inside_curr[i];
+      console.log("input", inside)
+      const r = removeHighlightOverlaps(inside);
+      split_locations = split_locations.concat(r);
+      const last = r[r.length - 1];
+      const inside_next = i + 1;
+      if (last.end < curr.end) {
+        if (inside_next < inside_curr.length) {
+          const next = inside_curr[inside_next][0];
+          split_locations.push({start: last.end, end: next.start, index: curr.index});
+        } else {
+          split_locations.push({start: last.end, end: curr.end, index: curr.index});
+        }
+      }
     }
   }
+  console.log("return", split_locations)
   return split_locations;
 }
 

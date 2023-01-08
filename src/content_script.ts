@@ -75,7 +75,6 @@ class ContextMenu {
     style.type = "text/css";
     // Cache busting for dev mode
     const css_version = isDev ? Date.now().toString() : "";
-    // TODO: style remove button
     style.href = browser.runtime.getURL("./dist/assets/hho.style.css?v=" + css_version);
     container.appendChild(style)
 

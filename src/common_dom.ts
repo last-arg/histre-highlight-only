@@ -35,11 +35,6 @@ export function highlightDOM(ranges: HighlightLocation[], current_entries: any) 
     }
     if (!current_node) break;
 
-    // TODO: I think this should be done in findHighlightIndices or removeHighlightOverlaps
-    // Can this even happen?
-    if (hl_loc.start > hl_loc.end) {
-      continue;
-    }
     const node_start = hl_loc.start - total_start;
     total_start += node_start;
     let hl_node = (current_node as Text).splitText(node_start);

@@ -181,6 +181,7 @@ const TEST_SUITE = {
                 "color": "yellow"
            },
             // TODO: maybe change overlapping rules
+            // Want to show whole 'si' because next highlight is longer
             "local-1": {
                 "text": "si",
                 "color": "red"

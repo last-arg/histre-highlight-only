@@ -46,6 +46,31 @@ const with_child: LocalHighlightsObject = {
 };
 
 const TEST_SUITE: (() => Promise<void> | void)[] = [
+    function testRemoveOverlaps() {
+        const hls = {
+            "1": { text: "t ov", color: "yellow" },
+            "3": { text: "ve", color: "blue" },
+            "2": { text: "erlapi", color: "red" },
+            "4": { text: "erl", color: "purple" },
+            "5": { text: "p", color: "green" },
+        };
+        const body_text = setAndGetBody(`
+            <p>test overlapi</p>
+        `);
+
+        let locations = getHighlightIndices(body_text, hls);
+        const expected = [
+          { "start": 16, "end": 19, "index": 0 },
+          { "start": 19, "end": 20, "index": 2 },
+          { "start": 20, "end": 20, "index": 1 },
+          { "start": 20, "end": 23, "index": 3 },
+          { "start": 23, "end": 24, "index": 1 },
+          { "start": 24, "end": 25, "index": 4 },
+          { "start": 25, "end": 26, "index": 1 }
+        ]
+        assert_like(locations, expected)
+        // highlightDOM(locations, Object.entries(hls))
+    },
     function testHighlightDOMSimple() {
         const body_text = setAndGetBody(`<p id="only-text">only text inside this element</p>`);
         let locations = getHighlightIndices(body_text, simple);
@@ -174,25 +199,6 @@ const TEST_SUITE: (() => Promise<void> | void)[] = [
 
 ];
 
-function tmp() {
-    const hls = {
-        "1": { text: "t ov", color: "yellow" },
-        "3": { text: "ve", color: "blue" },
-        "2": { text: "erla", color: "red" },
-        "4": { text: "erl", color: "purple" },
-
-        
-    };
-    const body_text = setAndGetBody(`
-        <p>test overlap</p>
-        <p>abcdefghijklmnopqrstuvwxyz</p>
-    `);
-    let locations = getHighlightIndices(body_text, hls);
-    highlightDOM(locations, Object.entries(hls))
-}
-tmp()
-
-
 async function runTests() {
     console.info("Run tests")
     for (const func of TEST_SUITE) {
@@ -204,4 +210,4 @@ async function runTests() {
     console.info("All tests passed")
 }
 
-// document.addEventListener("DOMContentLoaded", runTests);
+document.addEventListener("DOMContentLoaded", runTests);

@@ -42,30 +42,16 @@ export function getHighlightIndices(body_text: string, current_highlights: Local
   return removeHighlightOverlaps(locs);
 }
 
-// hello middle world
-//     o middle
-//         ddle wor
-//        id
-// [{start: 4, end: 12, index: 0}, 
-//  {start: 7, end: 9, index: 1},
-//  {start: 8, end: 16, index: 2}]
-//   ||
-//   V
-// [{start: 4, end: 7, index: 0}, 
-//  {start: 7, end: 8, index: 1}, {start: 8, end: 8, index: 2}, 
-//  {start: 8, end: 9, index: 1}, {start: 9, end: 16, index: 2}]
 export function removeHighlightOverlaps(locations: HighlightLocation[]): HighlightLocation[] {
   // Split overlapping highlights
-  console.log(locations)
+  if (locations.length <= 1) return locations;
   let split_locations = new Array<HighlightLocation>();
-  if (locations.length === 0) return split_locations;
   const end = locations.length;
   let last_end = locations[0].start;
   for (let index = 0; index < end; index += 1) {
     const curr = locations[index];
     let next_index = index + 1; 
     const curr_start = Math.max(curr.start, last_end);
-    console.log("start", curr_start);
 
     if (next_index >= locations.length) {
       split_locations.push({start: curr_start, end: curr.end, index: curr.index});
@@ -83,44 +69,39 @@ export function removeHighlightOverlaps(locations: HighlightLocation[]): Highlig
 
     split_locations.push({start: curr_start, end: next_range.start, index: curr.index});
 
-    let inside_curr = [[next_range]];
+    let inside_curr = [next_range];
     next_index += 1;
-    console.log("rest", locations.slice(next_index))
-    let inside_end = next_range.end;
+    let max_end = Math.max(next_range.end, curr.end)
     for ( ; next_index < end; next_index += 1) {
       const range = locations[next_index];
-      console.log("range", range);
-      if (range.start > inside_end) {
-        if (range.start >= curr.end) {
-          break;
-        }
-        inside_curr.push([]);
+      if (range.start >= max_end) {
+        break;
       }
-      inside_curr[inside_curr.length - 1].push({start: range.start, end: range.end, index: range.index});
+      inside_curr.push({start: range.start, end: range.end, index: range.index});
+      max_end = Math.max(max_end, range.end);
     }
 
-    console.log("inside", inside_curr)
-    console.log(index, next_index);
     index = next_index - 1;
 
-    for (let i = 0; i < inside_curr.length; i+=1) {
-      const inside = inside_curr[i];
-      console.log("input", inside)
-      const r = removeHighlightOverlaps(inside);
-      split_locations = split_locations.concat(r);
-      const last = r[r.length - 1];
-      const inside_next = i + 1;
-      if (last.end < curr.end) {
-        if (inside_next < inside_curr.length) {
-          const next = inside_curr[inside_next][0];
-          split_locations.push({start: last.end, end: next.start, index: curr.index});
-        } else {
-          split_locations.push({start: last.end, end: curr.end, index: curr.index});
-        }
+    const no_overlaps = removeHighlightOverlaps(inside_curr);
+    let slice_start = 0;
+    for (let i = 1; i < no_overlaps.length; i += 1) {
+      const range = no_overlaps[i];
+      const prev_end = no_overlaps[i - 1].end;
+      // Have a gap
+      if (range.start > prev_end) {
+        Array.prototype.push.apply(split_locations, no_overlaps.slice(slice_start, i));
+        split_locations.push({start: prev_end, end: range.start, index: curr.index});
+        slice_start = i;
       }
     }
+    Array.prototype.push.apply(split_locations, no_overlaps.slice(slice_start))
+    last_end = no_overlaps[no_overlaps.length - 1].end;
+    if (curr.end > last_end) {
+      split_locations.push({start: last_end, end: curr.end, index: curr.index});
+      last_end = curr.end
+    }
   }
-  console.log("return", split_locations)
   return split_locations;
 }
 

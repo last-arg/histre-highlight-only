@@ -77,7 +77,7 @@ export function removeHighlightOverlaps(locations: HighlightLocation[]): Highlig
       if (range.start >= max_end) {
         break;
       }
-      inside_curr.push({start: range.start, end: range.end, index: range.index});
+      inside_curr.push(range);
       max_end = Math.max(max_end, range.end);
     }
 

@@ -22,8 +22,8 @@ getLocalUser().then((data) => {
 })
 
 const settings_form = document.querySelector("#settings")!;
-const selection = act<Position>({ origin: "selection", location: "tc" });
-const renderSettings = selection.subscribe((sel) => {
+const settings = act<Position>({ origin: "selection", location: "tc" });
+const renderSettings = settings.subscribe((sel) => {
     const input_origin = settings_form.querySelector<HTMLInputElement>("#position-" + sel.origin)!;
     input_origin.checked = true;
     const input_location = settings_form.querySelector<HTMLInputElement>("#position-" + sel.location)!;
@@ -31,7 +31,7 @@ const renderSettings = selection.subscribe((sel) => {
 })
 getPosition().then((pos) => {
   if (pos) {
-    selection(pos);
+    settings(pos);
   }
 });
 

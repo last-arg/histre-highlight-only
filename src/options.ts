@@ -1,31 +1,42 @@
 import { runtime } from "webextension-polyfill";
-import { localUserSchema, Action, Position, PositionLocation, PositionOrigin } from "./common";
+import { localUserSchema, Action, Position, PositionLocation, PositionOrigin, UserData } from "./common";
 import { getLocalUser, getPosition, setPosition } from "./storage";
+import { reactive } from "./core";
+import { act } from "@artalar/act";
+
+const user_form = document.querySelector("#user")!;
+const user = reactive<UserData | undefined>(undefined);
+const renderUser = reactive(() => {
+  console.log("render user")
+  if (user.value) {
+    user_form.querySelector<HTMLInputElement>("#username")!.value = user.value.username;
+    user_form.querySelector<HTMLInputElement>("#password")!.value = user.value.password;
+  }
+})
+getLocalUser().then((data) => {
+  console.log("update user");
+  if (data) {
+    user.set(data);
+    renderUser.get();
+  }
+})
+
+const settings_form = document.querySelector("#settings")!;
+const selection = act<Position>({ origin: "selection", location: "tc" });
+const renderSettings = selection.subscribe((sel) => {
+    const input_origin = settings_form.querySelector<HTMLInputElement>("#position-" + sel.origin)!;
+    input_origin.checked = true;
+    const input_location = settings_form.querySelector<HTMLInputElement>("#position-" + sel.location)!;
+    input_location.checked = true
+})
+getPosition().then((pos) => {
+  if (pos) {
+    selection(pos);
+  }
+});
+
 
 function init() {
-  const user_form = document.querySelector("#user")!;
-  const settings_form = document.querySelector("#settings")!;
-
-  getLocalUser().then((data) => {
-    if (data) {
-      user_form.querySelector<HTMLInputElement>("#username")!.value = data.username;
-      user_form.querySelector<HTMLInputElement>("#password")!.value = data.password;
-    }
-  });
-
-  getPosition().then((pos) => {
-    let origin = "selection";
-    let location = "tc";
-    if (pos) {
-      origin = pos.origin;
-      location = pos.location;
-    }
-    const input_origin = settings_form.querySelector<HTMLInputElement>("#position-" + origin)!;
-    input_origin.checked = true;
-    const input_location = settings_form.querySelector<HTMLInputElement>("#position-" + location)!;
-    input_location.checked = true
-  });
-
   user_form.addEventListener("submit", async (e) => {
     e.preventDefault();
     const form_elem = e.target as HTMLFormElement;

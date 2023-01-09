@@ -5,8 +5,10 @@
   "description": "Save highlighted text using Histre API",
   "license": "MIT",
   "dependencies": {
+    "@artalar/act": "^1.0.6",
     "@types/webextension-polyfill": "^0.9.0",
     "node-html-parser": "^6.1.1",
+    "reactively-root": "github:modderme123/reactively#main",
     "typescript": "^4.7.4",
     "webextension-polyfill": "^0.10.0",
     "zod": "^3.19.1"

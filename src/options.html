@@ -1,50 +1,225 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="x-ua-compatible" content="ie=edge">
-  <title>Test text selection</title>
+    <meta charset="UTF-8">
+    <title>Popup page</title>
 </head>
-<body>
-  <style>
-    .selection {
-      max-width: 400px;
-      margin: 0 auto;
-      margin-top: 40px;
-    }
+<style>
+:root {
+  --step--2: clamp(0.78rem, calc(0.74rem + 0.19vw), 0.88rem);
+  --step--1: clamp(0.94rem, calc(0.87rem + 0.32vw), 1.10rem);
+  --step-0: clamp(1.13rem, calc(1.03rem + 0.49vw), 1.38rem);
+  --step-1: clamp(1.35rem, calc(1.21rem + 0.72vw), 1.72rem);
+  --step-2: clamp(1.62rem, calc(1.41rem + 1.03vw), 2.15rem);
+  --step-3: clamp(1.94rem, calc(1.65rem + 1.45vw), 2.69rem);
+  --step-4: clamp(2.33rem, calc(1.93rem + 2.00vw), 3.36rem);
+  --step-5: clamp(2.80rem, calc(2.25rem + 2.73vw), 4.20rem);
 
-    .selection > div {
-      margin-top: 20px;
-      padding: 1em;
-      background: #eee;
-    }
-  </style>
-  <div class="selection">
+  --space-3xs: clamp(0.31rem, calc(0.29rem + 0.12vw), 0.38rem);
+  --space-2xs: clamp(0.56rem, calc(0.51rem + 0.24vw), 0.69rem);
+  --space-xs: clamp(0.88rem, calc(0.80rem + 0.37vw), 1.06rem);
+  --space-s: clamp(1.13rem, calc(1.03rem + 0.49vw), 1.38rem);
+  --space-m: clamp(1.69rem, calc(1.54rem + 0.73vw), 2.06rem);
+  --space-l: clamp(2.25rem, calc(2.05rem + 0.98vw), 2.75rem);
+  --space-xl: clamp(3.38rem, calc(3.08rem + 1.46vw), 4.13rem);
+  --space-2xl: clamp(4.50rem, calc(4.11rem + 1.95vw), 5.50rem);
+  --space-3xl: clamp(6.75rem, calc(6.16rem + 2.93vw), 8.25rem);
+
+  --font-base: Inter,Segoe UI,Roboto,Helvetica Neue,Arial,sans-serif;
+}
+
+*,
+:after,
+:before {
+  box-sizing: border-box;
+}
+
+button,
+input,
+select,
+textarea {
+ font:inherit
+}
+
+body {
+  margin: 0;
+  text-rendering: optimizeSpeed;
+  line-height: 1.5;
+  font-family: var(--font-base);
+  font-size: var(--step-0);
+}
+
+h1,
+p {
+  margin: 0;
+}
+
+fieldset {
+  padding: 0;
+}
+
+h1 {
+  line-height: 1.1;
+  font-size: var(--step-1);
+  max-width: 20ch;
+}
+
+button {
+  padding: var(--space-2xs);
+  background: #9aeffd;
+  border-width: 0;
+  border-radius: 2px;
+}
+
+button:hover {
+  background: #66e9ff;
+}
+
+#user label {
+  display: block;
+}
+
+input[type="text"],
+input[type="password"] {
+  width: 100%;
+  padding-inline: var(--space-3xs);
+}
+
+fieldset {
+  border: none;
+}
+
+.radio-inputs {
+  background: white;
+  border-radius: 2px;
+  padding: var(--space-3xs);
+}
+
+.radio-inputs > div {
+  display: flex;
+}
+
+.radio label {
+  margin-left: var(--space-2xs)
+}
+
+form {
+  background: #f7f7f7;
+  width: 100%;
+  max-width: 21rem;
+  margin-inline: auto;
+  padding: var(--space-xs);
+}
+
+.stack > * + * {
+  margin-top: 1em;
+}
+
+.feedback > p {
+  display: none;
+  padding-inline: var(--space-2xs);
+  padding-block: var(--space-3xs);
+}
+
+.saved {
+  background: #e9ffe4;
+  border: 1px solid #b8dfb7;
+  color: #196417;
+}
+
+.failed {
+  background: #ffe4e4;
+  border: 1px solid #ffc7c7;
+  color: #641717;
+}
+
+.feedback[data-state="saved"] > .saved,
+.feedback[data-state="failed"] > .failed {
+  display: block;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+</style>
+<body>
+  <form id="user" class="stack">
+    <h1>Histre user data</h1>
     <div>
-      <p>
-        Level 1. Longer <span>lines</span> for easier selection
-      </p>
-      <div>
-        <p>Level 2. Longer <span>lines</span> for easier selection</p>
-      </div>
-      <div>
-        <div>
-          <p>Level 3. Longer lines for easier selection</p>
-        </div>
-      </div>
+      <label for="username">Username</label>
+      <input type="text" id="username" name="username">
     </div>
     <div>
-      <p>Level 1. Longer lines for easier selection</p>
-      <div>
-        <p>Level 2. Longer lines for easier selection</p>
-        <div>
-          <p>Level 3. Longer lines for easier selection</p>
+      <label for="password">Password</label>
+      <input type="password" id="password" name="password">
+    </div>
+    <button>Save user data</button>
+    <div class="feedback" data-state="none">
+      <p class="saved">Saved.</p>
+      <p class="failed">Saving failed. Make sure username and/or password is correct.</p>
+    </div>
+  </form>
+  <form id="settings" class="stack">
+    <h1>Settings</h1>
+    <fieldset>
+      <legend class="sr-only">Action menu position origin</legend>
+      <p aria-hidden="true">Action menu position origin</p>
+      <div class="radio-inputs">
+        <div class="radio">
+          <input type="radio" id="position-selection" name="position-origin" checked value="selection">
+          <label for="position-selection">Selection</label>
+        </div>
+        <div class="radio">
+          <input type="radio" id="position-viewport" name="position-origin" value="viewport">
+          <label for="position-viewport">Viewport (screen)</label>
         </div>
       </div>
+    </fieldset>
+    <fieldset>
+      <legend class="sr-only">Action menu position</legend>
+      <p aria-hidden="true">Action menu position</p>
+      <div class="radio-inputs">
+        <div class="radio">
+          <input type="radio" id="position-tl" name="position" value="tl">
+          <label for="position-tl">Top left</label>
+        </div>
+        <div class="radio">
+          <input type="radio" id="position-tc" name="position" checked value="tc">
+          <label for="position-tc">Top center</label>
+        </div>
+        <div class="radio">
+          <input type="radio" id="position-tr" name="position" value="tr">
+          <label for="position-tr">Top right</label>
+        </div>
+
+        <div class="radio">
+          <input type="radio" id="position-bl" name="position" value="left">
+          <label for="position-bl">Bottom left</label>
+        </div>
+        <div class="radio">
+          <input type="radio" id="position-bc" name="position" value="bc">
+          <label for="position-bc">Bottom center</label>
+        </div>
+        <div class="radio">
+          <input type="radio" id="position-br" name="position" value="br">
+          <label for="position-br">Bottom right</label>
+        </div>
+      </div>
+    </fieldset>
+    <button>Save settings</button>
+    <div class="feedback" data-state="none">
+      <p class="saved">Saved.</p>
+      <p class="failed">Saving failed.</p>
     </div>
-  </div>
+  </form>
+  <script type="module" src="./options.ts"></script>
 </body>
 </html>
-
-

@@ -28,8 +28,8 @@ export async function getManifest() {
     },
     options_ui: {
       page: './dist/options.html',
-      open_in_tab: true,
-      chrome_style: false,
+      // open_in_tab: true,
+      browser_style: true,
     },
     background: {
       page: './dist/background.html',

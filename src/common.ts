@@ -84,7 +84,13 @@ export const localAuthSchema = z.object({
 })
 export type ValidToken = z.infer<typeof localAuthSchema>;
 
-export type Position = "top" | "bottom";
+export type PositionLocation = "tr" | "tc" | "tl" | "br" | "bc" | "bl";
+export type PositionOrigin = "selection" | "viewport";
+
+export interface Position {
+  origin: PositionOrigin,
+  location: PositionLocation,
+}
 
 export function isEmptyObject(object: Object) {
   for (const _ in object) {

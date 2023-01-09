@@ -46,8 +46,8 @@ function init() {
       return;
     }
     const form_data = new FormData(form_elem);
-    const user = localUserSchema.safeParse({username: form_data.get("username"), password: form_data.get("password")});
-    if (!user.success) {
+    const form_user = localUserSchema.safeParse({username: form_data.get("username"), password: form_data.get("password")});
+    if (!form_user.success) {
       console.error("Failed to save. Make sure username and/or password is correct.");
       user_feedback.dataset.state = "failed";
       return;
@@ -55,12 +55,13 @@ function init() {
 
     const is_saved = await runtime.sendMessage(
       "addon@histre-highlight-only.com", 
-      { action: Action.UpdateUser , data: user.data },
+      { action: Action.UpdateUser , data: form_user.data },
     )
 
     if (is_saved) {
       console.log("New username and password saved")
       user_feedback.dataset.state = "saved";
+      user.set(form_user.data);
     } else {
       console.error("Failed to save. Make sure username and/or password is correct.");
       user_feedback.dataset.state = "failed";

@@ -7,14 +7,12 @@ import { act } from "@artalar/act";
 const user_form = document.querySelector("#user")!;
 const user = reactive<UserData | undefined>(undefined);
 const renderUser = reactive(() => {
-  console.log("render user")
   if (user.value) {
     user_form.querySelector<HTMLInputElement>("#username")!.value = user.value.username;
     user_form.querySelector<HTMLInputElement>("#password")!.value = user.value.password;
   }
 })
 getLocalUser().then((data) => {
-  console.log("update user");
   if (data) {
     user.set(data);
     renderUser.get();
@@ -34,7 +32,6 @@ getPosition().then((pos) => {
     settings(pos);
   }
 });
-
 
 function init() {
   user_form.addEventListener("submit", async (e) => {
@@ -95,14 +92,15 @@ function init() {
       return;
     }
     setPosition(new_pos);
+    settings(new_pos);
 
     // TODO: background script should be handling update of tabs
     // runtime.sendMessage reciever/handler will also contain tab id
     // Send position change to other tabs
-    const tabs = await browser.tabs.query({})
+    const tabs = await browser.tabs.query({});
     for (const tab of tabs) {
-      if (tab.id) {
-        browser.tabs.sendMessage(tab.id, {pos: new_pos})
+      if (tab.id && tab.url?.startsWith("http")) {
+          browser.tabs.sendMessage(tab.id, {pos: new_pos})
       }
     }
     return;

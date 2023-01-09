@@ -80,7 +80,6 @@ function init() {
     if (!form_elem) {
       return;
     }
-    let curr_pos = await getPosition();
     const form_data = new FormData(form_elem);
     let new_pos: Position = {
       location: form_data.get("position") as PositionLocation,
@@ -90,7 +89,9 @@ function init() {
       return;
     }
     settings_feedback.dataset.state = "saved";
-    if (curr_pos === new_pos) {
+    if (settings.value.origin === new_pos.origin 
+      && settings.value.location === new_pos.location
+    ) {
       return;
     }
     setPosition(new_pos);

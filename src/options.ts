@@ -2,7 +2,6 @@ import { runtime } from "webextension-polyfill";
 import { localUserSchema, Action, Position, PositionLocation, PositionOrigin, UserData } from "./common";
 import { getLocalUser, getPosition, setPosition } from "./storage";
 import { reactive } from "./core";
-import { act } from "@artalar/act";
 
 const user_form = document.querySelector("#user")!;
 const user = reactive<UserData | undefined>(undefined);
@@ -20,16 +19,19 @@ getLocalUser().then((data) => {
 })
 
 const settings_form = document.querySelector("#settings")!;
-const settings = act<Position>({ origin: "selection", location: "tc" });
-const renderSettings = settings.subscribe((sel) => {
-    const input_origin = settings_form.querySelector<HTMLInputElement>("#position-" + sel.origin)!;
+const settings = reactive<Position>({ origin: "selection", location: "tc" });
+const renderSettings = reactive(() => {
+    console.log("render settings")
+    const input_origin = settings_form.querySelector<HTMLInputElement>("#position-" + settings.value.origin)!;
     input_origin.checked = true;
-    const input_location = settings_form.querySelector<HTMLInputElement>("#position-" + sel.location)!;
+    const input_location = settings_form.querySelector<HTMLInputElement>("#position-" + settings.value.location)!;
     input_location.checked = true
 })
 getPosition().then((pos) => {
   if (pos) {
-    settings(pos);
+    console.log("pos")
+    settings.set(pos);
+    renderSettings.get();
   }
 });
 
@@ -92,7 +94,8 @@ function init() {
       return;
     }
     setPosition(new_pos);
-    settings(new_pos);
+    settings.set(new_pos);
+    renderSettings.get()
 
     // TODO: background script should be handling update of tabs
     // runtime.sendMessage reciever/handler will also contain tab id

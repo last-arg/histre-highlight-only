@@ -1,11 +1,12 @@
 /// <reference lib="dom" />
 /// <reference lib="dom.iterable" />
 import { storage, runtime } from 'webextension-polyfill';
-import { Color, Action, LocalHighlightsObject, Position, local_id_prefix, isEmptyObject } from './common';
+import { Color, Action, LocalHighlightsObject, Position, local_id_prefix, isEmptyObject, UserSettings } from './common';
 import { findHighlightIndices, removeHighlightOverlaps } from './highlight';
 import './hho.css';
 import { getSettings } from './storage';
 import { createMarkElement, renderLocalHighlights } from './common_dom';
+import { settings_default } from './config';
 console.log("==== LOAD 'content_script.js' TD ====")
 
 type ContextMenuElem = HTMLDivElement;
@@ -19,7 +20,7 @@ class ContextMenu {
   elem: ContextMenuElem;
   state: ContextMenuState = ContextMenuState.none;
   highlight_id: string | null = null;
-  pos: Position = "top";
+  settings: UserSettings = settings_default;
 
   constructor() {
     this.elem = ContextMenu.renderContextMenu();
@@ -39,7 +40,7 @@ class ContextMenu {
       case ContextMenuState.create: {
         console.assert(arg, "Context menu state 'create' requires second function argument 'arg'")
         const rect = this.elem.getBoundingClientRect();
-        const new_pos = selectionNewPosition(arg as Selection, rect, this.pos);
+        const new_pos = selectionNewPosition(arg as Selection, rect, this.settings as UserSettings);
         this.elem.style.top = `${new_pos.top}px`;
         this.elem.style.left = `${new_pos.left}px`;
         this.elem.setAttribute("aria-hidden", "false");
@@ -310,12 +311,13 @@ function highlightSelectedText(sel_obj: Selection, color: string, local_id: stri
   }
 }
 
-function selectionNewPosition(selection: Selection, context_menu_rect: DOMRect, settings: Settings) {
+function selectionNewPosition(selection: Selection, context_menu_rect: DOMRect, settings: UserSettings) {
   const box = selection.getRangeAt(0).getBoundingClientRect();
   const body_rect = document.body.getBoundingClientRect();
   let top = 0;
   const margin = 10;
   // TODO: handle all settings values
+  console.log(settings)
   if (pos === "top") {
     top = box.top + window.pageYOffset - context_menu_rect.height - margin;
   } else if (pos === "bottom") {

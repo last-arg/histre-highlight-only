@@ -2,7 +2,7 @@ import { runtime } from "webextension-polyfill";
 import { localUserSchema, Action, UserSettings, Position, Origin, UserData } from "./common";
 import { getLocalUser, getSettings } from "./storage";
 import { reactive } from "reactively-root/packages/core/src/core";
-import { ext_id } from "./config";
+import { ext_id, settings_default } from "./config";
 
 const user_form = document.querySelector("#user")!;
 const user = reactive<UserData | undefined>(undefined);
@@ -20,7 +20,7 @@ getLocalUser().then((data) => {
 })
 
 const settings_form = document.querySelector("#settings")!;
-const settings = reactive<UserSettings>({ origin: "selection", location: "tc" });
+const settings = reactive<UserSettings>(settings_default);
 const renderSettings = reactive(() => {
     console.log("render settings")
     const input_origin = settings_form.querySelector<HTMLInputElement>("#position-" + settings.value.origin)!;
@@ -28,6 +28,7 @@ const renderSettings = reactive(() => {
     const input_location = settings_form.querySelector<HTMLInputElement>("#position-" + settings.value.location)!;
     input_location.checked = true
 })
+
 getSettings().then((pos) => {
   if (pos) {
     console.log("pos")

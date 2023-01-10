@@ -2,12 +2,13 @@ import fs from 'fs'
 import type { Manifest } from 'webextension-polyfill'
 import type PkgType from '../package.json'
 import { isDev, port, r } from '../scripts/utils'
+import { ext_id } from './config';
 
 // TODO: make icon.svg into square
 
 // Base on 'https://github.com/antfu/vitesse-webext/'
-export async function getManifest() {
-  const raw_json = await fs.promises.readFile(r('package.json'));
+export function getManifest() {
+  const raw_json = fs.readFileSync(r('package.json'));
   let buf = raw_json; 
   // Make it work with 'bun run'
   if (!Buffer.isBuffer(raw_json)) {
@@ -53,7 +54,7 @@ export async function getManifest() {
     ],
     browser_specific_settings: {
       gecko: {
-        id: "addon@histre-highlight-only.com"
+        id: ext_id
       }
     },
   }

@@ -2,6 +2,7 @@ import { runtime } from "webextension-polyfill";
 import { localUserSchema, Action, Position, PositionLocation, PositionOrigin, UserData } from "./common";
 import { getLocalUser, getPosition, setPosition } from "./storage";
 import { reactive } from "./core";
+import { ext_id } from "./config";
 
 const user_form = document.querySelector("#user")!;
 const user = reactive<UserData | undefined>(undefined);
@@ -53,7 +54,7 @@ function init() {
     }
 
     const is_saved = await runtime.sendMessage(
-      "addon@histre-highlight-only.com", 
+      ext_id, 
       { action: Action.UpdateUser , data: form_user.data },
     )
 
@@ -94,7 +95,10 @@ function init() {
     ) {
       return;
     }
+    // TODO?: save settings (position) in background script?
+    // This would also signal to update other tabs settings info 
     setPosition(new_pos);
+
     settings.set(new_pos);
     renderSettings.get()
 

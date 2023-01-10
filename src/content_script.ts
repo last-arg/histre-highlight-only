@@ -29,6 +29,7 @@ class ContextMenu {
     getSettings().then((settings) => { 
       if (settings) {
         this.settings.set(settings);
+        this.updateMenuOrigin();
       }
     })
   }
@@ -119,6 +120,7 @@ class ContextMenu {
     }
 
     container.setAttribute("data-hho-state", ContextMenuState[ContextMenuState.none]);
+    container.setAttribute("data-hho-state", settings_default.origin);
     document.body.appendChild(container)
     return document.querySelector(".hho-context-menu") as ContextMenuElem;
   }

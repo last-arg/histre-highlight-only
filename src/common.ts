@@ -85,12 +85,12 @@ export const localAuthSchema = z.object({
 })
 export type ValidToken = z.infer<typeof localAuthSchema>;
 
-export type PositionLocation = "tr" | "tc" | "tl" | "br" | "bc" | "bl";
-export type PositionOrigin = "selection" | "viewport";
+export type Position = "tr" | "tc" | "tl" | "br" | "bc" | "bl";
+export type Origin = "selection" | "viewport";
 
 export interface UserSettings {
-  origin: PositionOrigin,
-  location: PositionLocation,
+  origin: Origin,
+  location: Position,
 }
 
 export function isEmptyObject(object: Object) {

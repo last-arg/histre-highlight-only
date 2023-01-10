@@ -1,6 +1,6 @@
 import { runtime } from "webextension-polyfill";
-import { localUserSchema, Action, UserSettings, PositionLocation, PositionOrigin, UserData } from "./common";
-import { getLocalUser, getPosition } from "./storage";
+import { localUserSchema, Action, UserSettings, Position, Origin, UserData } from "./common";
+import { getLocalUser, getSettings } from "./storage";
 import { reactive } from "reactively-root/packages/core/src/core";
 import { ext_id } from "./config";
 
@@ -28,7 +28,7 @@ const renderSettings = reactive(() => {
     const input_location = settings_form.querySelector<HTMLInputElement>("#position-" + settings.value.location)!;
     input_location.checked = true
 })
-getPosition().then((pos) => {
+getSettings().then((pos) => {
   if (pos) {
     console.log("pos")
     settings.set(pos);
@@ -82,8 +82,8 @@ function init() {
     }
     const form_data = new FormData(form_elem);
     let new_pos: UserSettings = {
-      location: form_data.get("position") as PositionLocation,
-      origin: form_data.get("position-origin") as PositionOrigin,
+      location: form_data.get("position") as Position,
+      origin: form_data.get("position-origin") as Origin,
     };
     if (!new_pos.location || !new_pos.origin) {
       return;

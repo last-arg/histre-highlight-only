@@ -4,7 +4,7 @@ import { storage, runtime } from 'webextension-polyfill';
 import { Color, Action, LocalHighlightsObject, Position, local_id_prefix, isEmptyObject } from './common';
 import { findHighlightIndices, removeHighlightOverlaps } from './highlight';
 import './hho.css';
-import { getPosition } from './storage';
+import { getSettings } from './storage';
 import { createMarkElement, renderLocalHighlights } from './common_dom';
 console.log("==== LOAD 'content_script.js' TD ====")
 
@@ -24,7 +24,7 @@ class ContextMenu {
   constructor() {
     this.elem = ContextMenu.renderContextMenu();
     document.addEventListener("click", ContextMenu.handleClick(this));
-    getPosition().then((pos) => { this.pos = pos || "top"; })
+    getSettings().then((pos) => { this.pos = pos || "top"; })
   }
 
   isState(state: ContextMenuState) { return this.state === state; }
@@ -310,11 +310,12 @@ function highlightSelectedText(sel_obj: Selection, color: string, local_id: stri
   }
 }
 
-function selectionNewPosition(selection: Selection, context_menu_rect: DOMRect, pos: Position) {
+function selectionNewPosition(selection: Selection, context_menu_rect: DOMRect, settings: Settings) {
   const box = selection.getRangeAt(0).getBoundingClientRect();
   const body_rect = document.body.getBoundingClientRect();
   let top = 0;
   const margin = 10;
+  // TODO: handle all settings values
   if (pos === "top") {
     top = box.top + window.pageYOffset - context_menu_rect.height - margin;
   } else if (pos === "bottom") {

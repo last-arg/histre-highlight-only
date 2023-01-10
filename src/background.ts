@@ -7,7 +7,7 @@ import { z } from 'zod';
 
 // Test import
 import { test_local } from "./tests/test_data";
-import { getLocalAuthData, getLocalUser, setLocalAuthData, setLocalUser, setPosition } from './storage';
+import { getLocalAuthData, getLocalUser, setLocalAuthData, setLocalUser, setSettings } from './storage';
 
 const addDataSchema = z.object({
   highlight_id: z.string(),
@@ -246,7 +246,7 @@ browser.runtime.onMessage.addListener((msg: Message, sender: Runtime.MessageSend
     case Action.UpdateSettings: {
       return new Promise(async (resolve) => {
         const settings = msg.data as UserSettings;
-        await setPosition(settings)
+        await setSettings(settings)
         const tabs = await browser.tabs.query({});
         for (const tab of tabs) {
           if (tab.id && tab.url?.startsWith("http")) {

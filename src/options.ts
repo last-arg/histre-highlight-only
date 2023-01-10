@@ -1,7 +1,7 @@
 import { runtime } from "webextension-polyfill";
 import { localUserSchema, Action, UserSettings, PositionLocation, PositionOrigin, UserData } from "./common";
 import { getLocalUser, getPosition } from "./storage";
-import { reactive } from "./core";
+import { reactive } from "reactively-root/packages/core/src/core";
 import { ext_id } from "./config";
 
 const user_form = document.querySelector("#user")!;

@@ -13,9 +13,18 @@ TODO: style remove button
   box-shadow: 0px 0px 8px hsla(0, 0%, 0%, 40%);
   border-radius: 3px;
   border: 1px solid black;
+  contain: unset; /* In case some site has this set */
+}
+
+.hho-context-menu[data-origin=viewport] {
+  position: fixed;
+}
+
+.hho-context-menu[data-origin=selection] {
   top: 0;
   left: 0;
-  contain: unset; /* In case some site has this set */
+  bottom: auto !important;
+  right: auto !important;
 }
 
 .hho-context-menu[aria-hidden="false"] {

@@ -25,7 +25,11 @@ class ContextMenu {
   constructor() {
     this.elem = ContextMenu.renderContextMenu();
     document.addEventListener("click", ContextMenu.handleClick(this));
-    getSettings().then((pos) => { this.pos = pos || "top"; })
+    getSettings().then((settings) => { 
+      if (settings) {
+        this.settings = settings 
+      }
+    })
   }
 
   isState(state: ContextMenuState) { return this.state === state; }
@@ -41,8 +45,12 @@ class ContextMenu {
         console.assert(arg, "Context menu state 'create' requires second function argument 'arg'")
         const rect = this.elem.getBoundingClientRect();
         const new_pos = selectionNewPosition(arg as Selection, rect, this.settings as UserSettings);
-        this.elem.style.top = `${new_pos.top}px`;
-        this.elem.style.left = `${new_pos.left}px`;
+        this.elem.setAttribute("style", "");
+        for (const key in new_pos) {
+          const value = new_pos[key];
+          // @ts-ignore
+          this.elem.style[key] = typeof value === "number" ? `${new_pos[key]}px` : value;
+        }
         this.elem.setAttribute("aria-hidden", "false");
         break;
       }
@@ -50,6 +58,7 @@ class ContextMenu {
         console.assert(arg, "Context menu state 'modify' requires second function argument 'arg'")
         const elem = arg as Element;
         this.highlight_id = elem.getAttribute("data-hho-id");
+        // TODO: fix setting context menu position
         const menu_rect = this.elem.getBoundingClientRect();
         const elem_rect = elem.getBoundingClientRect();
         const top = elem_rect.top + window.pageYOffset - menu_rect.height;
@@ -311,19 +320,44 @@ function highlightSelectedText(sel_obj: Selection, color: string, local_id: stri
   }
 }
 
-function selectionNewPosition(selection: Selection, context_menu_rect: DOMRect, settings: UserSettings) {
-  const box = selection.getRangeAt(0).getBoundingClientRect();
+type CssPosition = Record<string, number | string>;
+const viewport_positions: Record<string, CssPosition> = {
+  "tl": {top: 0, left: 0},
+  "tc": {top: 0, left: 0}, // left will be modified by fn
+  "tr": {top: 0, right: 0},
+  "bl": {bottom: 0, left: 0},
+  "bc": {bottom: 0, left: 0}, // left will be modified by fn
+  "br": {bottom: 0, right: 0},
+};
+
+function viewportPosition(loc: Position, menu_width: number): CssPosition {
+  let result = viewport_positions[loc];
+  if (loc === "tc" || loc === "bc") {
+      result.left = `calc(50% - ${menu_width / 2}px)`;
+  }
+  return result;
+}
+
+function selectionPosition(selection: Selection, context_menu_rect: DOMRect, settings: UserSettings): CssPosition {
   const body_rect = document.body.getBoundingClientRect();
+  const box = selection.getRangeAt(0).getBoundingClientRect();
   let top = 0;
+  let left = 0;
   const margin = 10;
-  // TODO: handle all settings values
-  console.log(settings)
-  if (pos === "top") {
+
+  if (settings.location[0] === "t") {
     top = box.top + window.pageYOffset - context_menu_rect.height - margin;
-  } else if (pos === "bottom") {
+  } else if (settings.location[0] === "b") {
     top = box.bottom + window.pageYOffset + margin;
   }
-  let left = box.left + window.pageXOffset + - body_rect.x + (box.width / 2) - (context_menu_rect.width / 2);
+  
+  if (settings.location[1] === "c") {
+    left = box.left + window.pageXOffset + - body_rect.x + (box.width / 2) - (context_menu_rect.width / 2);
+  } else if (settings.location[1] === "l") {
+    left = box.left + window.pageXOffset;
+  } else if (settings.location[1] === "r") {
+    left = box.right + window.pageXOffset - context_menu_rect.width;
+  }
 
   // Make sure context menu doesn't go out of bounds horizontally
   if (left < 0) {
@@ -332,7 +366,18 @@ function selectionNewPosition(selection: Selection, context_menu_rect: DOMRect, 
     left = body_rect.right - context_menu_rect.width - body_rect.x + window.pageXOffset;
   }
 
-  return { top: top, left: left };
+  return {top: top, left: left};
+}
+
+function selectionNewPosition(selection: Selection, context_menu_rect: DOMRect, settings: UserSettings): CssPosition {
+  switch (settings.origin) {
+    case "viewport": {
+      return viewportPosition(settings.location, context_menu_rect.width); 
+    }
+    case "selection": {
+      return selectionPosition(selection, context_menu_rect, settings); 
+    }
+  }
 }
 
 function debounce(f: any, delay: number) {
@@ -541,6 +586,8 @@ function init() {
   })
 
   runtime.onMessage.addListener((msg: {pos: Position}) => {
+    // TODO: msg to update context menu position
+    console.log("content_script recieved msg:", msg)
     if (global.menu.pos !== msg.pos) {
       global.menu.pos = msg.pos;
       const win_selection = window.getSelection();

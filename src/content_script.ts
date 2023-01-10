@@ -7,6 +7,7 @@ import './hho.css';
 import { getSettings } from './storage';
 import { createMarkElement, renderLocalHighlights } from './common_dom';
 import { settings_default } from './config';
+import { reactive } from 'reactively-root/packages/core/src/core';
 console.log("==== LOAD 'content_script.js' TD ====")
 
 type ContextMenuElem = HTMLDivElement;
@@ -20,19 +21,23 @@ class ContextMenu {
   elem: ContextMenuElem;
   state: ContextMenuState = ContextMenuState.none;
   highlight_id: string | null = null;
-  settings: UserSettings = settings_default;
+  settings = reactive(settings_default);
 
   constructor() {
     this.elem = ContextMenu.renderContextMenu();
     document.addEventListener("click", ContextMenu.handleClick(this));
     getSettings().then((settings) => { 
       if (settings) {
-        this.settings = settings 
+        this.settings.set(settings);
       }
     })
   }
 
   isState(state: ContextMenuState) { return this.state === state; }
+
+  updateMenuOrigin() {
+    this.elem.setAttribute("data-origin", this.settings.value.origin);
+  }
 
   update(state: ContextMenuState, arg?: Selection | Element) { 
     this.elem.setAttribute("data-hho-state", ContextMenuState[state]);
@@ -44,7 +49,7 @@ class ContextMenu {
       case ContextMenuState.create: {
         console.assert(arg, "Context menu state 'create' requires second function argument 'arg'")
         const rect = this.elem.getBoundingClientRect();
-        const new_pos = selectionNewPosition(arg as Selection, rect, this.settings as UserSettings);
+        const new_pos = selectionNewPosition(arg as Selection, rect, this.settings.value as UserSettings);
         this.elem.setAttribute("style", "");
         for (const key in new_pos) {
           const value = new_pos[key];
@@ -585,15 +590,13 @@ function init() {
     }
   })
 
-  runtime.onMessage.addListener((msg: {pos: Position}) => {
-    // TODO: msg to update context menu position
+  runtime.onMessage.addListener((msg: {settings: UserSettings}) => {
     console.log("content_script recieved msg:", msg)
-    if (global.menu.pos !== msg.pos) {
-      global.menu.pos = msg.pos;
-      const win_selection = window.getSelection();
-      if (global.menu.state !== ContextMenuState.none && win_selection) {
-        global.menu.update(global.menu.state, win_selection)
-      }
+    global.menu.settings.set(msg.settings);
+    global.menu.updateMenuOrigin();
+    const win_selection = window.getSelection();
+    if (global.menu.state !== ContextMenuState.none && win_selection) {
+      global.menu.update(global.menu.state, win_selection)
     }
   })
 

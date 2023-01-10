@@ -250,7 +250,7 @@ browser.runtime.onMessage.addListener((msg: Message, sender: Runtime.MessageSend
         const tabs = await browser.tabs.query({});
         for (const tab of tabs) {
           if (tab.id && tab.url?.startsWith("http")) {
-              browser.tabs.sendMessage(tab.id, {pos: settings})
+              browser.tabs.sendMessage(tab.id, {settings: settings})
           }
         }
         resolve(true);

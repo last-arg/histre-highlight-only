@@ -1,6 +1,6 @@
 import { runtime } from "webextension-polyfill";
-import { localUserSchema, Action, Position, PositionLocation, PositionOrigin, UserData } from "./common";
-import { getLocalUser, getPosition, setPosition } from "./storage";
+import { localUserSchema, Action, UserSettings, PositionLocation, PositionOrigin, UserData } from "./common";
+import { getLocalUser, getPosition } from "./storage";
 import { reactive } from "./core";
 import { ext_id } from "./config";
 
@@ -20,7 +20,7 @@ getLocalUser().then((data) => {
 })
 
 const settings_form = document.querySelector("#settings")!;
-const settings = reactive<Position>({ origin: "selection", location: "tc" });
+const settings = reactive<UserSettings>({ origin: "selection", location: "tc" });
 const renderSettings = reactive(() => {
     console.log("render settings")
     const input_origin = settings_form.querySelector<HTMLInputElement>("#position-" + settings.value.origin)!;
@@ -59,7 +59,6 @@ function init() {
     )
 
     if (is_saved) {
-      console.log("New username and password saved")
       user_feedback.dataset.state = "saved";
       user.set(form_user.data);
     } else {
@@ -82,7 +81,7 @@ function init() {
       return;
     }
     const form_data = new FormData(form_elem);
-    let new_pos: Position = {
+    let new_pos: UserSettings = {
       location: form_data.get("position") as PositionLocation,
       origin: form_data.get("position-origin") as PositionOrigin,
     };
@@ -95,23 +94,20 @@ function init() {
     ) {
       return;
     }
-    // TODO?: save settings (position) in background script?
-    // This would also signal to update other tabs settings info 
-    setPosition(new_pos);
 
-    settings.set(new_pos);
-    renderSettings.get()
+    const success = await runtime.sendMessage(
+      ext_id, 
+      { action: Action.UpdateSettings , data: new_pos },
+    )
 
-    // TODO: background script should be handling update of tabs
-    // runtime.sendMessage reciever/handler will also contain tab id
-    // Send position change to other tabs
-    const tabs = await browser.tabs.query({});
-    for (const tab of tabs) {
-      if (tab.id && tab.url?.startsWith("http")) {
-          browser.tabs.sendMessage(tab.id, {pos: new_pos})
-      }
+    if (success) {
+      settings_feedback.dataset.state = "saved";
+      settings.set(new_pos);
+      renderSettings.get()
+    } else {
+      console.error("Failed to save settings. Try again.");
+      settings_feedback.dataset.state = "failed";
     }
-    return;
   })
 }
 

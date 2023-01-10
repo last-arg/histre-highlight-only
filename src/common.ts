@@ -19,6 +19,7 @@ export enum Action {
   Remove,
   Modify,
   UpdateUser,
+  UpdateSettings,
 }
 
 export type DataCreate = { text: string, color: string, id: string }
@@ -29,7 +30,7 @@ export interface Message {
   action: Action,
   // Delete: highlight_id (might be local_id)
   // Save: text, title, color, local_id
-  data: DataCreate | DataModify | DataRemove | UserData,
+  data: DataCreate | DataModify | DataRemove | UserData | UserSettings,
 }
 
 export type HighlightId = string;
@@ -87,7 +88,7 @@ export type ValidToken = z.infer<typeof localAuthSchema>;
 export type PositionLocation = "tr" | "tc" | "tl" | "br" | "bc" | "bl";
 export type PositionOrigin = "selection" | "viewport";
 
-export interface Position {
+export interface UserSettings {
   origin: PositionOrigin,
   location: PositionLocation,
 }

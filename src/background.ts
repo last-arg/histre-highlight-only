@@ -1,5 +1,5 @@
 import { storage, Runtime } from 'webextension-polyfill';
-import { Message, Action, DataModify, DataRemove, DataCreate, local_id_prefix, HighlightAdd, HighlightUpdate, histreResponseSchema, UserData } from './common';
+import { Message, Action, DataModify, DataRemove, DataCreate, local_id_prefix, HighlightAdd, HighlightUpdate, histreResponseSchema, UserData, UserSettings } from './common';
 import { Histre, isValidResponse } from './histre';
 import { z } from 'zod';
 
@@ -7,7 +7,7 @@ import { z } from 'zod';
 
 // Test import
 import { test_local } from "./tests/test_data";
-import { getLocalAuthData, getLocalUser, setLocalAuthData, setLocalUser } from './storage';
+import { getLocalAuthData, getLocalUser, setLocalAuthData, setLocalUser, setPosition } from './storage';
 
 const addDataSchema = z.object({
   highlight_id: z.string(),
@@ -242,6 +242,19 @@ browser.runtime.onMessage.addListener((msg: Message, sender: Runtime.MessageSend
         histre.setHeaderAuthToken()
         resolve(true);
       });
+    }
+    case Action.UpdateSettings: {
+      return new Promise(async (resolve) => {
+        const settings = msg.data as UserSettings;
+        await setPosition(settings)
+        const tabs = await browser.tabs.query({});
+        for (const tab of tabs) {
+          if (tab.id && tab.url?.startsWith("http")) {
+              browser.tabs.sendMessage(tab.id, {pos: settings})
+          }
+        }
+        resolve(true);
+      })
     }
   }
 });

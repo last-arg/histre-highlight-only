@@ -2,10 +2,9 @@
 /// <reference lib="dom.iterable" />
 import { storage, runtime } from 'webextension-polyfill';
 import { Color, Action, LocalHighlightsObject, Position, local_id_prefix, isEmptyObject, UserSettings } from './common';
-import { findHighlightIndices, removeHighlightOverlaps } from './highlight';
 import './hho.css';
 import { getSettings } from './storage';
-import { createMarkElement, renderLocalHighlights } from './common_dom';
+import { createMarkElement, removeHighlightFromDom, renderLocalHighlights } from './common_dom';
 import { settings_default } from './config';
 import { reactive } from 'reactively-root/packages/core/src/core';
 console.log("==== LOAD 'content_script.js' TD ====")
@@ -472,20 +471,6 @@ function startSelection() {
   }, {once: true})
 }
 
-function removeHighlights(hl_id?: string) {
-  let hl_selector = ".hho-mark";
-  if (hl_id) {
-    hl_selector += `[data-hho-id="${hl_id}"]`;
-  }
-  const marks = document.querySelectorAll(hl_selector);
-  for (const m of marks) {
-    const text = m.textContent;
-    if (text === null) continue;
-    m.replaceWith(text)
-  }
-  document.body.normalize();
-}
-
 // TODO: Find if removed highlight was covering other highlights
 // Find all previous <mark> elements with class 'hho-mark'. The elements
 // have to be contiguous. Might find duplicates. Want last found elements,
@@ -496,84 +481,6 @@ async function removeHighlight(id: string, url: string) {
   const highlights: LocalHighlightsObject = local.highlights_add[url].highlights;
   const elems = document.querySelectorAll(`[data-hho-id="${id}"]`);
   removeHighlightFromDom(highlights, elems);
-}
-
-function removeHighlightFromDom(highlights: LocalHighlightsObject, elems: NodeListOf<Element>) {
-  // TODO: have to hold on to histre highlights and local highlights.
-  // Or get local highlight when needed?
-  for (const fill_elem of elems) {
-    let prev = fill_elem.previousSibling;
-    const prev_elems: [Element, number][] = [];
-    let total_len = 0;
-    while (prev) {
-      if (prev.nodeType === 3) {
-        const text_len = prev.textContent?.length || 0;
-        if (text_len === 0) {
-          prev = prev.previousSibling;
-          continue;
-        } else if (text_len > 0) {
-          break;
-        }
-      }
-      if (prev.nodeType === 1 && !(prev as Element).classList.contains("hho-mark")) {
-        break;
-      }
-
-      total_len += prev.textContent?.length || 0;
-      prev_elems.push([prev as Element, total_len]);
-      prev = prev.previousSibling;
-    }
-
-    if (prev_elems.length === 0) {
-      fill_elem.replaceWith(fill_elem.textContent!);
-      continue;
-    }
-
-    const filtered_elems = prev_elems.filter(([elem, _], elem_index, arr) => {
-      const id = elem.getAttribute("data-hho-id");
-      // TODO: also filter based on length?
-      const index = arr.findLastIndex(([el, _]) => el.getAttribute("data-hho-id") === id);
-      return elem_index === index;
-    })
-
-    let fill_len = fill_elem.textContent?.length || 0;
-    let fill_text_node: Node | undefined = undefined;
-    let used_fill_len = 0;
-    for (const [filter_elem, filter_len] of filtered_elems) {
-      const curr_id = filter_elem.getAttribute("data-hho-id")!;
-      const {text, color} = highlights[curr_id];
-      // TODO: make sure f_elem is start of highlight?  
-
-      const used_filter_len = filter_len + used_fill_len;
-      const total_len = used_filter_len + fill_len;
-      if (text.length >= total_len && fill_text_node === undefined) {
-        fill_elem.setAttribute("data-hho-id", curr_id);
-        fill_elem.setAttribute("data-hho-color", color!);
-        break;
-      } else if (text.length > used_filter_len) {
-        if (fill_text_node === undefined) {
-          fill_text_node = fill_elem.firstChild!;
-          fill_elem.replaceWith(fill_text_node);
-        }
-
-        let text_end = fill_text_node as Text;
-        let split_len = text.length - used_filter_len;
-        split_len = Math.min(split_len, fill_len)
-        if (split_len < total_len) {
-          text_end = (fill_text_node as Text).splitText(split_len);
-        }
-        console.assert(split_len === fill_text_node.textContent!.length, "Text node (text_start) length should match splitText offset (split_len)");
-        used_fill_len += split_len;
-
-        const r = document.createRange();
-        r.selectNode(fill_text_node);
-        const new_mark = createMarkElement(curr_id, color);
-        r.surroundContents(new_mark)
-        fill_text_node = text_end;
-        fill_len = fill_len - used_fill_len;
-      }
-    }
-  }
 }
 
 async function getAndRenderLocalHighlights(url: string) {
@@ -622,112 +529,3 @@ function init() {
 
 }
 init();
-
-test();
-async function test() {
-  const console_expect = (expect: any, got: any) => console.assert(expect === got, `\n  Expected: ${expect}\n  Got: ${got}`);
-  console.log("==== Running tests ====")
-  if (window.location.href === "http://localhost:8080/highlights.html") {
-    const iter = document.createNodeIterator(document.body, NodeFilter.SHOW_TEXT, null);
-    let node;
-    let total = 0;
-    while (node = iter.nextNode()) {
-      console.log("TEXT", `"${node.textContent}"`)
-      // console.log(node)
-      if (node.textContent[0] !== "\n") {
-        total += node.textContent.length;
-      }
-    }
-
-    const r = document.createRange();
-    r.selectNodeContents(document.body)
-    const s = window.getSelection();
-    s!.addRange(r)
-    const all_text = s.toString();
-    s!.removeAllRanges();
-    console.log("body", document.body.textContent.length)
-    console.log("select_text", all_text.length)
-    console.log("total", total)
-    console.log(document.body.innerText.length)
-
-      // Setup
-      const test_highlights = {
-        "1": { text: "et iure velit", color: "yellow"},
-        "2": { text: "iure", color: "blue"},
-        "3": { text: "Ut consequatur voluptatum con", color: "yellow"},
-        "4": { text: "consequatur voluptatum", color: "blue"},
-        "5": { text: "tatum conse", color: "green"},
-        "6": { text: "Dignissimos officiis qui odio", color: "yellow"},
-        "7": { text: "officiis", color: "blue"},
-        "8": { text: " qui ", color: "orange"},
-        "9": { text: "Aliquam", color: "yellow"},
-        "10": { text: "Aliquam illum", color: "blue"},
-        "11": { text: "ex.\n\nSecond", color: "yellow"},
-
-      };
-      removeHighlights();
-      // const overlapping_indices = findHighlightIndices(document.body.textContent!, test_highlights);
-      const overlapping_indices = findHighlightIndices(all_text, test_highlights);
-      const indices = removeHighlightOverlaps(overlapping_indices);
-      const current_entries = Object.entries(test_highlights);
-      highlightDOM(indices, current_entries)
-
-      // Tests
-      {
-        console.group(`Test highlight '${test_highlights["1"].text}'`);
-        const before_elems = document.querySelectorAll(`[data-hho-id="2"]`);
-        console_expect(1, before_elems.length)
-        console_expect(2, document.querySelectorAll(`[data-hho-id="1"]`).length);
-        removeHighlightFromDom(test_highlights, before_elems)
-        console_expect(0, document.querySelectorAll(`[data-hho-id="2"]`).length);
-        console_expect(3, document.querySelectorAll(`[data-hho-id="1"]`).length);
-        console.groupEnd()
-      }
-
-      {
-        console.group(`Test highlight '${test_highlights["3"].text}'`);
-        const before_elems = document.querySelectorAll(`[data-hho-id="5"]`);
-        console_expect(1, before_elems.length)
-        console_expect(1, document.querySelectorAll(`[data-hho-id="3"]`).length);
-        console_expect(1, document.querySelectorAll(`[data-hho-id="4"]`).length);
-        removeHighlightFromDom(test_highlights, before_elems)
-        console_expect(0, document.querySelectorAll(`[data-hho-id="5"]`).length)
-        console_expect(2, document.querySelectorAll(`[data-hho-id="3"]`).length);
-        console_expect(2, document.querySelectorAll(`[data-hho-id="4"]`).length);
-        console.groupEnd()
-      }
-
-      {
-        console.group(`Test highlight '${test_highlights["10"].text}'`);
-        const before_elems = document.querySelectorAll(`[data-hho-id="10"]`);
-        console_expect(1, before_elems.length)
-        console_expect(1, document.querySelectorAll(`[data-hho-id="9"]`).length);
-        removeHighlightFromDom(test_highlights, before_elems)
-        console_expect(0, document.querySelectorAll(`[data-hho-id="10"]`).length);
-        console_expect(2, document.querySelectorAll(`[data-hho-id="9"]`).length)
-        console.groupEnd()
-      }
-
-      {
-        console.group(`Test highlight '${test_highlights["8"].text}'`);
-        const before_elems = document.querySelectorAll(`[data-hho-id="8"]`);
-        console_expect(1, before_elems.length)
-        console_expect(2, document.querySelectorAll(`[data-hho-id="6"]`).length);
-        console_expect(1, document.querySelectorAll(`[data-hho-id="7"]`).length);
-        removeHighlightFromDom(test_highlights, before_elems)
-        console_expect(0, document.querySelectorAll(`[data-hho-id="8"]`).length);
-        console_expect(3, document.querySelectorAll(`[data-hho-id="6"]`).length);
-        console_expect(1, document.querySelectorAll(`[data-hho-id="7"]`).length)
-        console.groupEnd()
-      }
-
-      {
-        console.group(`Test highlight '${test_highlights["9"].text}'`);
-        const before_elems = document.querySelectorAll(`[data-hho-id="9"]`);
-        console_expect(2, before_elems.length)
-        removeHighlightFromDom(test_highlights, before_elems)
-        console_expect(0, document.querySelectorAll(`[data-hho-id="9"]`).length);
-        console.groupEnd()
-      }
-  }
-}

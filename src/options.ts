@@ -7,16 +7,16 @@ import { ext_id, settings_default } from "./config";
 const user_form = document.querySelector("#user")!;
 const user = reactive<UserData | undefined>(undefined);
 const renderUser = reactive(() => {
-  if (user.value) {
-    user_form.querySelector<HTMLInputElement>("#username")!.value = user.value.username;
-    user_form.querySelector<HTMLInputElement>("#password")!.value = user.value.password;
-  }
+    if (user.value) {
+        user_form.querySelector<HTMLInputElement>("#username")!.value = user.value.username;
+        user_form.querySelector<HTMLInputElement>("#password")!.value = user.value.password;
+    }
 })
 getLocalUser().then((data) => {
-  if (data) {
-    user.set(data);
-    renderUser.get();
-  }
+    if (data) {
+        user.set(data);
+        renderUser.get();
+    }
 })
 
 const settings_form = document.querySelector("#settings")!;
@@ -30,86 +30,78 @@ const renderSettings = reactive(() => {
 })
 
 getSettings().then((pos) => {
-  if (pos) {
-    console.log("pos")
-    settings.set(pos);
-    renderSettings.get();
-  }
+    if (pos) {
+        console.log("pos")
+        settings.set(pos);
+        renderSettings.get();
+    }
 });
 
-function init() {
-  user_form.addEventListener("submit", async (e) => {
+user_form.addEventListener("submit", async (e) => {
     e.preventDefault();
     const form_elem = e.target as HTMLFormElement;
     const user_feedback = form_elem.querySelector(".feedback")! as HTMLElement;
     user_feedback.dataset.state = "none";
     if (!form_elem) {
-      return;
+        return;
     }
     const form_data = new FormData(form_elem);
-    const form_user = localUserSchema.safeParse({username: form_data.get("username"), password: form_data.get("password")});
+    const form_user = localUserSchema.safeParse({ username: form_data.get("username"), password: form_data.get("password") });
     if (!form_user.success) {
-      console.error("Failed to save. Make sure username and/or password is correct.");
-      user_feedback.dataset.state = "failed";
-      return;
+        console.error("Failed to save. Make sure username and/or password is correct.");
+        user_feedback.dataset.state = "failed";
+        return;
     }
 
     const is_saved = await runtime.sendMessage(
-      ext_id, 
-      { action: Action.UpdateUser , data: form_user.data },
+        ext_id,
+        { action: Action.UpdateUser, data: form_user.data },
     )
 
     if (is_saved) {
-      user_feedback.dataset.state = "saved";
-      user.set(form_user.data);
+        user_feedback.dataset.state = "saved";
+        user.set(form_user.data);
     } else {
-      console.error("Failed to save. Make sure username and/or password is correct.");
-      user_feedback.dataset.state = "failed";
+        console.error("Failed to save. Make sure username and/or password is correct.");
+        user_feedback.dataset.state = "failed";
     }
     return;
-  });
+});
 
-  // setTimeout(() => {
-  //   user_form.querySelector("button")!.click()
-  // }, 1)
-
-  settings_form.addEventListener("submit", async (e) => {
+settings_form.addEventListener("submit", async (e) => {
     e.preventDefault();
     const form_elem = e.target as HTMLFormElement;
     const settings_feedback = form_elem.querySelector(".feedback")! as HTMLElement;
     settings_feedback.dataset.state = "none";
     if (!form_elem) {
-      return;
+        return;
     }
     const form_data = new FormData(form_elem);
     let new_pos: UserSettings = {
-      location: form_data.get("position") as Position,
-      origin: form_data.get("position-origin") as Origin,
+        location: form_data.get("position") as Position,
+        origin: form_data.get("position-origin") as Origin,
     };
     if (!new_pos.location || !new_pos.origin) {
-      return;
+        return;
     }
     settings_feedback.dataset.state = "saved";
-    if (settings.value.origin === new_pos.origin 
-      && settings.value.location === new_pos.location
+    if (settings.value.origin === new_pos.origin
+        && settings.value.location === new_pos.location
     ) {
-      return;
+        return;
     }
 
     const success = await runtime.sendMessage(
-      ext_id, 
-      { action: Action.UpdateSettings , data: new_pos },
+        ext_id,
+        { action: Action.UpdateSettings, data: new_pos },
     )
 
     if (success) {
-      settings_feedback.dataset.state = "saved";
-      settings.set(new_pos);
-      renderSettings.get()
+        settings_feedback.dataset.state = "saved";
+        settings.set(new_pos);
+        renderSettings.get()
     } else {
-      console.error("Failed to save settings. Try again.");
-      settings_feedback.dataset.state = "failed";
+        console.error("Failed to save settings. Try again.");
+        settings_feedback.dataset.state = "failed";
     }
-  })
-}
-
-init();
+})

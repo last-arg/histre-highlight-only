@@ -19,6 +19,7 @@ const MIN_SELECTION_LEN = 3;
 
 class ContextMenu {
   elem: ContextMenuElem;
+  modify_elem: Element | null = null;
   state: ContextMenuState = ContextMenuState.none;
   highlight_id: string | null = null;
   settings = reactive(settings_default);
@@ -61,17 +62,29 @@ class ContextMenu {
         break;
       }
       case ContextMenuState.modify: {
-        console.assert(arg, "Context menu state 'modify' requires second function argument 'arg'")
-        const elem = arg as Element;
+        const elem = (arg || this.modify_elem) as Element | null;
+        if (!elem) {
+          return;
+        }
+        this.modify_elem = elem;
         this.highlight_id = elem.getAttribute("data-hho-id");
-        // TODO: fix setting context menu position
-        const menu_rect = this.elem.getBoundingClientRect();
-        const elem_rect = elem.getBoundingClientRect();
-        const top = elem_rect.top + window.pageYOffset - menu_rect.height;
-        const body_rect = document.body.getBoundingClientRect();
-        const left = elem_rect.left + window.pageXOffset - body_rect.x + (elem_rect.width / 2) - (menu_rect.width / 2);
-        this.elem.style.top = `${top}px`;
-        this.elem.style.left = `${left}px`;
+        const rect = this.elem.getBoundingClientRect();
+        const settings = this.settings.value as UserSettings;
+        let new_pos: CssPosition | undefined = undefined;
+        if (settings.origin === "viewport") {
+          new_pos = viewportPosition(settings.location, rect.width);
+        } else if (settings.origin === "selection") {
+          new_pos = elemPosition(elem.getBoundingClientRect(), rect, settings);
+        }
+        if (!new_pos) {
+          return;
+        }
+        this.elem.setAttribute("style", "");
+        for (const key in new_pos) {
+          const value = new_pos[key];
+          // @ts-ignore
+          this.elem.style[key] = typeof value === "number" ? `${new_pos[key]}px` : value;
+        }
         this.elem.setAttribute("aria-hidden", "false");
         break;
       }
@@ -346,30 +359,34 @@ function viewportPosition(loc: Position, menu_width: number): CssPosition {
 }
 
 function selectionPosition(selection: Selection, context_menu_rect: DOMRect, settings: UserSettings): CssPosition {
-  const body_rect = document.body.getBoundingClientRect();
   const box = selection.getRangeAt(0).getBoundingClientRect();
+  return elemPosition(box, context_menu_rect, settings);
+}
+
+function elemPosition(elem_rect: DOMRect, context_menu_rect: DOMRect, settings: UserSettings): CssPosition {
+  const body_rect = document.body.getBoundingClientRect();
   let top = 0;
   let left = 0;
   const margin = 10;
 
   if (settings.location[0] === "t") {
-    top = box.top + window.pageYOffset - context_menu_rect.height - margin;
+    top = elem_rect.top + window.pageYOffset - context_menu_rect.height - margin;
   } else if (settings.location[0] === "b") {
-    top = box.bottom + window.pageYOffset + margin;
+    top = elem_rect.bottom + window.pageYOffset + margin;
   }
   
   if (settings.location[1] === "c") {
-    left = box.left + window.pageXOffset + - body_rect.x + (box.width / 2) - (context_menu_rect.width / 2);
+    left = elem_rect.left + window.pageXOffset + - body_rect.x + (elem_rect.width / 2) - (context_menu_rect.width / 2);
   } else if (settings.location[1] === "l") {
-    left = box.left + window.pageXOffset;
+    left = elem_rect.left + window.pageXOffset;
   } else if (settings.location[1] === "r") {
-    left = box.right + window.pageXOffset - context_menu_rect.width;
+    left = elem_rect.right + window.pageXOffset - context_menu_rect.width;
   }
 
   // Make sure context menu doesn't go out of bounds horizontally
   if (left < 0) {
     left = 0;
-  } else if ((box.left + (context_menu_rect.width)) > body_rect.right) {
+  } else if ((elem_rect.left + (context_menu_rect.width)) > body_rect.right) {
     left = body_rect.right - context_menu_rect.width - body_rect.x + window.pageXOffset;
   }
 
@@ -593,12 +610,13 @@ function init() {
   })
 
   runtime.onMessage.addListener((msg: {settings: UserSettings}) => {
-    console.log("content_script recieved msg:", msg)
     global.menu.settings.set(msg.settings);
     global.menu.updateMenuOrigin();
     const win_selection = window.getSelection();
-    if (global.menu.state !== ContextMenuState.none && win_selection) {
+    if (global.menu.isState(ContextMenuState.create) && win_selection) {
       global.menu.update(global.menu.state, win_selection)
+    } else if (global.menu.isState(ContextMenuState.modify)) {
+      global.menu.update(global.menu.state, undefined)
     }
   })
 

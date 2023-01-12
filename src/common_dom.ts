@@ -122,7 +122,6 @@ export function removeHighlights(hl_id?: string) {
 export function removeHighlightFromDom(highlights: LocalHighlightsObject, elems: NodeListOf<Element>) {
   // TODO: have to hold on to histre highlights and local highlights.
   // Or get local highlight when needed?
-  console.log("elems", elems)
   for (const fill_elem of elems) {
     const rem_text = fill_elem.textContent || "";
     const rem_len = rem_text.length;

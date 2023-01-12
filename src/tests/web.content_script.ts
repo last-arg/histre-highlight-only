@@ -68,6 +68,64 @@ const TEST_SUITE = {
             assert_equal(document.querySelectorAll(".hho-mark[data-hho-id='1']").length, 2);
             console.groupEnd();
         }
+    },
+
+    testRemoveOverlapBefore() {
+        const hls = {
+            "1": { text: "lo wo", color: "blue" },
+            "2": { text: "world", color: "green" },
+        }
+
+        // After is under before highlight
+        {
+            console.group("after is under")
+            body.innerHTML = `
+              <p>Hel${testMark("1", "lo ", "blue")}${testMark("2", "", "green")}${testMark("1", "wo", "blue")}${testMark("2", "rld", "green")}.</p>
+            `;
+            const all = document.querySelectorAll(".hho-mark");
+            assert_equal(all.length, 4);
+            const elems = document.querySelectorAll(".hho-mark[data-hho-id='1']");
+            assert_equal(elems.length, 2);
+            removeHighlightFromDom(hls, elems)
+            assert_equal(document.querySelectorAll(".hho-mark[data-hho-id='1']").length, 0);
+            assert_equal(document.querySelectorAll(".hho-mark[data-hho-id='2']").length, 3);
+            console.groupEnd();
+        }
+
+        // After is over before highlight
+        {
+            console.group("after is over")
+            body.innerHTML = `
+              <p>Hel${testMark("1", "lo ", "blue")}${testMark("2", "world", "green")}.</p>
+            `;
+            const all = document.querySelectorAll(".hho-mark");
+            assert_equal(all.length, 2);
+            const elems = document.querySelectorAll(".hho-mark[data-hho-id='1']");
+            assert_equal(elems.length, 1);
+            removeHighlightFromDom(hls, elems)
+            assert_equal(document.querySelectorAll(".hho-mark[data-hho-id='1']").length, 0);
+            assert_equal(document.querySelectorAll(".hho-mark[data-hho-id='2']").length, 1);
+            console.groupEnd();
+        }
+    },
+
+    testRemoveOverlapMiddle() {
+        const hls = {
+            "1": { text: "ello worl", color: "blue" },
+            "2": { text: "lo wo", color: "green" },
+        }
+
+        body.innerHTML = `
+          <p>H${testMark("1", "el", "blue")}${testMark("2", "lo wo", "green")}${testMark("1", "rl", "blue")}d.</p>
+        `;
+        const all = document.querySelectorAll(".hho-mark");
+        assert_equal(all.length, 3);
+        const elems = document.querySelectorAll(".hho-mark[data-hho-id='2']");
+        assert_equal(elems.length, 1);
+        removeHighlightFromDom(hls, elems)
+        assert_equal(document.querySelectorAll(".hho-mark[data-hho-id='2']").length, 0);
+        assert_equal(document.querySelectorAll(".hho-mark[data-hho-id='1']").length, 3);
+        console.groupEnd();
     }
 }
 

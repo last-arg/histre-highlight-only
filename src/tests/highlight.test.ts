@@ -11,6 +11,7 @@ import { test_local, test_data } from "./test_data";
 // - jsdom 
 // - domino 
 // - linkedom: works with 'bun wiptest'
+// - happy-dom
 
 // TODO: check out https://github.com/lusito/mockzilla-webextension
 

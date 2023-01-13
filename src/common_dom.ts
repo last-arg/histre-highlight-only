@@ -1,7 +1,7 @@
 // Wrapping selected text with <mark>.
 // Selection doesn't start or end at edges of nodes.
 
-import { HighlightLocation, LocalHighlight, LocalHighlightsObject } from "./common";
+import { HighlightLocation, HistreHighlight, LocalHighlight, LocalHighlightsObject } from "./common";
 import { findHighlightIndices, removeHighlightOverlaps } from "./highlight";
 
 // Selection can contain children elements.
@@ -15,7 +15,7 @@ export function createMarkElement(id: string, color: string | undefined): Elemen
   return elem;
 }
 
-export function highlightDOM(ranges: HighlightLocation[], current_entries: [string, LocalHighlight][]) {
+export function highlightDOM(ranges: HighlightLocation[], current_entries: Array<HistreHighlight>) {
   const indices = ranges;
   const iter = document.createNodeIterator(document.body, NodeFilter.SHOW_TEXT, null);
   let current_node;
@@ -39,12 +39,13 @@ export function highlightDOM(ranges: HighlightLocation[], current_entries: [stri
     total_start += node_start;
     let hl_node = (current_node as Text).splitText(node_start);
     iter.nextNode();
-    const color = current_entries[hl_loc.index][1].color;
-    const hl_id = current_entries[hl_loc.index][0];
+    const hl = current_entries[hl_loc.index];
+    const color = hl.color;
+    const hl_id = hl.item_id;
 
     if (hl_loc.end > total_end) {
       range.selectNode(hl_node);
-      range.surroundContents(createMarkElement(hl_id, color));
+      range.surroundContents(createMarkElement(hl_id.toString(), color));
       iter.nextNode();
       total_end = total_start + (hl_node.textContent?.length || 0);
 
@@ -58,7 +59,7 @@ export function highlightDOM(ranges: HighlightLocation[], current_entries: [stri
           total_end = total_start + len;
           (current_node as Text).splitText(len);
           range.selectNode(current_node);
-          range.surroundContents(createMarkElement(hl_id, color));
+          range.surroundContents(createMarkElement(hl_id.toString(), color));
 
           // skip new nodes made by splitText and surroundContents
           iter.nextNode();
@@ -67,7 +68,7 @@ export function highlightDOM(ranges: HighlightLocation[], current_entries: [stri
 
         // middle of highlight
         range.selectNode(current_node);
-        range.surroundContents(createMarkElement(hl_id, color));
+        range.surroundContents(createMarkElement(hl_id.toString(), color));
         iter.nextNode();
       }
     } else {
@@ -76,7 +77,7 @@ export function highlightDOM(ranges: HighlightLocation[], current_entries: [stri
         total_end = total_start + len;
         (hl_node as Text).splitText(len);
         range.selectNode(hl_node);
-        range.surroundContents(createMarkElement(hl_id, color));
+        range.surroundContents(createMarkElement(hl_id.toString(), color));
         iter.nextNode();
       }
     }
@@ -85,7 +86,7 @@ export function highlightDOM(ranges: HighlightLocation[], current_entries: [stri
   }
 }
 
-export function renderLocalHighlights(body_text: string, current_highlights: LocalHighlightsObject) {
+export function renderLocalHighlights(body_text: string, current_highlights: Array<HistreHighlight>) {
   console.log("==== renderLocalHighlights() ====")
 
   console.time("Iter all text nodes")
@@ -98,9 +99,8 @@ export function renderLocalHighlights(body_text: string, current_highlights: Loc
   const indices = removeHighlightOverlaps(overlapping_indices);
   console.timeEnd("Generate ranges")
 
-  const current_entries = Object.entries(current_highlights);
   console.time("Highlight DOM")
-  highlightDOM(indices, current_entries)
+  highlightDOM(indices, current_highlights)
   console.timeEnd("Highlight DOM")
 }
 

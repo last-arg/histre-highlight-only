@@ -1,6 +1,6 @@
 // import { findHighlightIndices, removeHighlightOverlaps } from "../highlight";
 import $ from "./assert";
-import { LocalHighlightsObject } from "../common";
+import { HistreHighlight, LocalHighlightsObject } from "../common";
 import { getHighlightIndices } from "../highlight";
 import { highlightDOM } from "../common_dom";
 
@@ -11,49 +11,56 @@ function setAndGetBody(inner: string): string {
     return document.body.textContent!;
 }
 
-const simple: LocalHighlightsObject = {
-      "local-1": { 
+const simple: Array<HistreHighlight> = [
+      { 
+        "item_id": "local-1", 
         "text": "onl",
         "color": "yellow"
       },
-      "local-2": { 
+      { 
+        "item_id": "local-2", 
         "text": "ext",
         "color": "green"
       },
-      "local-3": { 
+      { 
+        "item_id": "local-3", 
         "text": " ins",
         "color": "purple"
       },
-      "local-4": { 
+      { 
+        "item_id": "local-4", 
         "text": "element",
         "color": "blue"
       },
-}
+]
 
-const with_child: LocalHighlightsObject = {
-    "local-1": {
+const with_child: Array<HistreHighlight> = [
+    {
+        "item_id": "local-1",
         "text": "rt (child elem) pa",
         "color": "blue"
     },
-    "local-2": {
+    {
+        "item_id": "local-2",
         "text": "le (ano",
         "color": "green"
     },
-    "local-3": {
+    {
+        "item_id": "local-3",
         "text": "ild) par",
         "color": "yellow"
     },
-};
+];
 
 const TEST_SUITE = {
     testRemoveOverlaps() {
-        const hls = {
-            "1": { text: "t ov", color: "yellow" },
-            "3": { text: "ve", color: "blue" },
-            "2": { text: "erlapi", color: "red" },
-            "4": { text: "erl", color: "purple" },
-            "5": { text: "p", color: "green" },
-        };
+        const hls = [
+            { item_id: "1", text: "t ov", color: "yellow" },
+            { item_id: "3", text: "ve", color: "blue" },
+            { item_id: "2", text: "erlapi", color: "red" },
+            { item_id: "4", text: "erl", color: "purple" },
+            { item_id: "5", text: "p", color: "green" },
+        ];
         const body_text = setAndGetBody(`
             <p>test overlapi</p>
         `);
@@ -69,23 +76,22 @@ const TEST_SUITE = {
           { "start": 24, "end": 25, "index": 4 },
           { "start": 25, "end": 26, "index": 1 }
         ]
+        // TODO
         // assert_like(locations, expected)
-        highlightDOM(locations, Object.entries(hls))
+        highlightDOM(locations, hls)
     },
     testHighlightDOMSimple() {
         const body_text = setAndGetBody(`<p id="only-text">only text inside this element</p>`);
         let locations = getHighlightIndices(body_text, simple);
-        const highlight_ids = Object.entries(simple);
-        highlightDOM(locations, highlight_ids);
+        highlightDOM(locations, simple);
 
         const marks = document.querySelectorAll("#only-text .hho-mark");
         assert_equal(4, marks.length);
         let i = 0;
-        for (const key in simple) {
+        for (const hl of simple) {
             const elem = marks[i];
-            const hl = simple[key];
             assert_ok(elem.classList.contains("hho-mark"));
-            assert_equal(key, elem.getAttribute("data-hho-id"));
+            assert_equal(hl.item_id, elem.getAttribute("data-hho-id"));
             assert_equal(hl.color, elem.getAttribute("data-hho-color"));
             assert_equal(hl.text, elem.textContent);
             i += 1;
@@ -103,13 +109,11 @@ const TEST_SUITE = {
             assert_equal(hl.text, loc_text);
             i += 1;
         }
-        const highlight_ids = Object.entries(with_child);
-        highlightDOM(locations, highlight_ids);
+        highlightDOM(locations, with_child);
 
         let total_marks = 0;
-        for (const key in with_child) {
-            const hl = with_child[key];
-            const dom_hl = document.querySelectorAll(`#with-child [data-hho-id="${key}"]`);
+        for (const hl of with_child) {
+            const dom_hl = document.querySelectorAll(`#with-child [data-hho-id="${hl.item_id}"]`);
             let text = "";
             for (const el of dom_hl) {
                 text += el.textContent;
@@ -121,28 +125,33 @@ const TEST_SUITE = {
         assert_equal(7, total_marks);
     },
     testHighlightOverlapSimple() {
-        const hls: LocalHighlightsObject = {
-            "local-1": {
+        const hls: Array<HistreHighlight> = [
+            {
+                "item_id": "local-1", 
                 "text": "text inside",
                 "color": "blue"
             },
-            "local-4": {
+            {
+                "item_id": "local-4", 
                 "text": "inside",
                 "color": "red"
             },
-            "local-2": {
+            {
+                "item_id": "local-2", 
                 "text": "inside this",
                 "color": "yellow"
             },
-            "local-3": {
+            {
+                "item_id": "local-3", 
                 "text": "inside",
                 "color": "green"
            },
-            "local-0": {
+            {
+                "item_id": "local-0", 
                 "text": "element",
                 "color": "orange"
             },
-        };
+        ];
         const expect: Record<string, string[]> = {
             "local-1": ["text " ],
             "local-4": ["" ],
@@ -153,15 +162,14 @@ const TEST_SUITE = {
 
         const body_text = setAndGetBody(`<p id="overlap-simple">only text inside this element</p>`);
         let locations = getHighlightIndices(body_text, hls);
-        const highlight_ids = Object.entries(hls);
-        highlightDOM(locations, highlight_ids);
+        highlightDOM(locations, hls);
         let total_marks = 0;
-        for (const [hl_key, hl_value] of highlight_ids) {
-            const dom_hl = document.querySelectorAll(`#overlap-simple [data-hho-id="${hl_key}"]`);
-            const hl_expect = expect[hl_key];
+        for (const hl of hls) {
+            const dom_hl = document.querySelectorAll(`#overlap-simple [data-hho-id="${hl.item_id}"]`);
+            const hl_expect = expect[hl.item_id];
             let i = 0;
             for (const el of dom_hl) {
-                assert_equal(hl_value.color, el.getAttribute("data-hho-color"));
+                assert_equal(hl.color, el.getAttribute("data-hho-color"));
                 assert_equal(hl_expect[i], el.textContent);
                 i += 1;
                 total_marks += 1;
@@ -171,31 +179,33 @@ const TEST_SUITE = {
     },
 
     testHighlightOverlapAdvanced() {
-        const hls = {
-            "local-3": {
+        const hls = [
+            {
+                "item_id": "local-3", 
                 "text": "text (inside",
                 "color": "green"
            },
-            "local-2": {
+            {
+                "item_id": "local-2", 
                 "text": "ide) this",
                 "color": "yellow"
            },
             // TODO: maybe change overlapping rules
             // Want to show whole 'si' because next highlight is longer
-            "local-1": {
+            {
+                "item_id": "local-1", 
                 "text": "si",
                 "color": "red"
            },
 
-        };
+        ];
         const body_text = setAndGetBody(`
     <p id="overlap-simple">
         only text (<span>inside</span>) this element
     </p>`
         );
         let locations = getHighlightIndices(body_text, hls);
-        const highlight_ids = Object.entries(hls);
-        highlightDOM(locations, highlight_ids);
+        highlightDOM(locations, hls);
         console.log(locations);
     }
 };

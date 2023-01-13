@@ -116,6 +116,15 @@ let histre: Histre = new Histre();
   }
 })();
 
+async function addLocalHighlight(url: string, data: DataCreate, title: string) {
+  let local = await storage.local.get({highlights_add: {[url]: { highlights: [] }}});
+  if (local.highlights_add[url] === undefined) {
+  local.highlights_add[url] = { highlights: [] };
+  }
+  local.highlights_add[url].title = title;
+  local.highlights_add[url].highlights.push({ item_id: data.id, text: data.text, color: data.color });
+  await storage.local.set(local);
+}
 
 type SaveMessage = string;
 type MessageReturn = SaveMessage | Array<HistreHighlight> | boolean | undefined;
@@ -141,13 +150,7 @@ browser.runtime.onMessage.addListener((msg: Message, sender: Runtime.MessageSend
         })
 
         if (!result_id) {
-          let local = await storage.local.get({highlights_add: {[url]: { highlights: {} }}});
-          if (local.highlights_add[url] === undefined) {
-            local.highlights_add[url] = { highlights: {} };
-          }
-          local.highlights_add[url].title = title;
-          local.highlights_add[url].highlights[data.id] = { text: data.text, color: data.color };
-          await storage.local.set(local);
+          await addLocalHighlight(url, data, title);
         }
 
         resolve(result_id);
@@ -306,14 +309,14 @@ if (__DEV__) {
   // Add test user data
   const data = {
     ...test_local,
-    "http://localhost:8080/another.html": {
+    "http://localhost:5173/tests/web.histre.html": {
       title: "Page title",
-      highlights: {
-        "local-6nazstnm": { 
-          "text": "some text",
+      highlights: [{
+          "item_id": "local-6nazstnm", 
+          "text": "histre highlights",
           "color": "yellow" 
         },
-      }
+      ]
     }
   }
 

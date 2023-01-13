@@ -1,4 +1,4 @@
-import type { HighlightLocation, LocalHighlightsObject} from "./common";
+import type { HighlightLocation, HistreHighlight, LocalHighlightsObject} from "./common";
 
 // TODO?: try, consider
 // Could try to use Uint32Array to get more performance [start, end, index_to, ...]
@@ -9,12 +9,12 @@ import type { HighlightLocation, LocalHighlightsObject} from "./common";
 // Could turn {...} into a tuple (Uint32Array or [...])
 
 
-export function findHighlightIndices(body_text: string, current_highlights: LocalHighlightsObject): HighlightLocation[] {
+export function findHighlightIndices(body_text: string, current_highlights: Array<HistreHighlight>): HighlightLocation[] {
   console.assert(body_text !== null, "body_text can't be null");
   console.assert(body_text.length !== 0, "body_text can't be empty");
   let locations: HighlightLocation[] = [];
   // Find highlights
-  for (const [i, value] of Object.values(current_highlights).entries()) {
+  for (const [i, value] of current_highlights.entries()) {
     let current_index = body_text.indexOf(value.text, 0);
     while (current_index !== -1) {
       const end = current_index + value.text.length;
@@ -29,7 +29,7 @@ export function findHighlightIndices(body_text: string, current_highlights: Loca
   return locations;
 }
 
-export function getHighlightIndices(body_text: string, current_highlights: LocalHighlightsObject): HighlightLocation[] {
+export function getHighlightIndices(body_text: string, current_highlights: Array<HistreHighlight>): HighlightLocation[] {
   let locs = findHighlightIndices(body_text, current_highlights);
   locs.sort((a, b) => {
     if (a.start === b.start) {

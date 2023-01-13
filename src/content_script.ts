@@ -239,14 +239,14 @@ const global = {
   menu: new ContextMenu(),
 };
 
-async function getLocalHighlights(current_url: string): Promise<HistreHighlight | undefined> {
+async function getLocalHighlights(current_url: string): Promise<Array<HistreHighlight> | undefined> {
     const local = await storage.local.get({highlights_add: {[current_url]: undefined}});
   console.log(local);
     if (local.highlights_add[current_url] === undefined) { 
         console.info(`No highlights for ${current_url}`);
         return; 
     }
-    const current_highlights = local.highlights_add[current_url].highlights as LocalHighlightsObject;
+    const current_highlights = local.highlights_add[current_url].highlights as Array<HistreHighlight>;
     if (isEmptyObject(current_highlights)) { 
         console.info(`Found url ${current_url} doesn't contain any highlights`);
         return; 
@@ -492,6 +492,7 @@ async function getAndRenderLocalHighlights(url: string) {
     const histre_async = runtime.sendMessage(ext_id, { action: Action.GetHighlights });
 
     const local_highlights = await getLocalHighlights(url);
+    console.log("local hls", local_highlights);
     const highlights = await histre_async;
     // TODO: combine histre and local highlights
     console.log("histre hls", highlights);

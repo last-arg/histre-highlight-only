@@ -1,11 +1,11 @@
 /// <reference lib="dom" />
 /// <reference lib="dom.iterable" />
 import { storage, runtime } from 'webextension-polyfill';
-import { Color, Action, LocalHighlightsObject, Position, local_id_prefix, isEmptyObject, UserSettings } from './common';
+import { Color, Action, LocalHighlightsObject, Position, local_id_prefix, isEmptyObject, UserSettings, HistreHighlight } from './common';
 import './hho.css';
 import { getSettings } from './storage';
 import { createMarkElement, removeHighlightFromDom, renderLocalHighlights } from './common_dom';
-import { settings_default } from './config';
+import { settings_default, ext_id } from './config';
 import { reactive } from 'reactively-root/packages/core/src/core';
 console.log("==== LOAD 'content_script.js' TD ====")
 
@@ -156,8 +156,7 @@ class ContextMenu {
             sel_obj.removeAllRanges(); // This fires 'selectionchange' event
             const data = { text: sel_string, color: color, id: local_id };
             const result_id = await runtime.sendMessage(
-              "addon@histre-highlight-only.com", 
-              { action: Action.Create, data: data },
+              ext_id, { action: Action.Create, data: data },
             )
             if (!result_id) {
               // TODO: display failure somewhere, somehow?
@@ -169,9 +168,6 @@ class ContextMenu {
             for (const mark of marks) {
               mark.setAttribute("data-hho-id", result_id)
             }
-
-            // TODO: swap generated local id with histre id if histre id was returned
-
 
             // TODO?: save multiple selections/ranges?
             // Each selection/range would be separate highlight
@@ -243,8 +239,9 @@ const global = {
   menu: new ContextMenu(),
 };
 
-async function getLocalHighlights(current_url: string): Promise<LocalHighlightsObject | undefined> {
+async function getLocalHighlights(current_url: string): Promise<HistreHighlight | undefined> {
     const local = await storage.local.get({highlights_add: {[current_url]: undefined}});
+  console.log(local);
     if (local.highlights_add[current_url] === undefined) { 
         console.info(`No highlights for ${current_url}`);
         return; 
@@ -483,6 +480,8 @@ async function removeHighlight(id: string, url: string) {
   removeHighlightFromDom(highlights, elems);
 }
 
+// TODO: get and render histre highlights
+// Better to combine local and histre highlights. Have to traverse the DOM less.
 async function getAndRenderLocalHighlights(url: string) {
     const body_text = document.body.textContent
     if (body_text === null) { 
@@ -490,7 +489,12 @@ async function getAndRenderLocalHighlights(url: string) {
         return; 
     }
 
+    const histre_async = runtime.sendMessage(ext_id, { action: Action.GetHighlights });
+
     const local_highlights = await getLocalHighlights(url);
+    const highlights = await histre_async;
+    // TODO: combine histre and local highlights
+    console.log("histre hls", highlights);
     if (local_highlights) {
       renderLocalHighlights(body_text, local_highlights);
     }

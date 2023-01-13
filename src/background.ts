@@ -1,5 +1,5 @@
 import { storage, Runtime } from 'webextension-polyfill';
-import { Message, Action, DataModify, DataRemove, DataCreate, local_id_prefix, HighlightAdd, HighlightUpdate, histreResponseSchema, UserData, UserSettings } from './common';
+import { Message, Action, DataModify, DataRemove, DataCreate, local_id_prefix, HighlightAdd, HighlightUpdate, histreResponseSchema, UserData, UserSettings, getDataSchema, HistreHighlight } from './common';
 import { Histre, isValidResponse } from './histre';
 import { z } from 'zod';
 
@@ -118,7 +118,7 @@ let histre: Histre = new Histre();
 
 
 type SaveMessage = string;
-type MessageReturn = SaveMessage | boolean | undefined;
+type MessageReturn = SaveMessage | Array<HistreHighlight> | boolean | undefined;
 
 browser.runtime.onMessage.addListener((msg: Message, sender: Runtime.MessageSender): undefined | Promise<MessageReturn> => {
   switch (msg.action) {
@@ -256,8 +256,51 @@ browser.runtime.onMessage.addListener((msg: Message, sender: Runtime.MessageSend
         resolve(true);
       })
     }
+    case Action.GetHighlights: {
+      return new Promise(async (resolve) => {
+        if (sender.tab?.url === undefined) { 
+          resolve(undefined); 
+          return;
+        }
+        const highlights = await histreGetHighlights(histre, sender.tab.url);
+        resolve(highlights);
+      });
+    }
   }
 });
+
+async function histreGetHighlights(histre: Histre | undefined, url: string): Promise<Array<HistreHighlight> | undefined> {
+  if (histre === undefined) {
+    return undefined;
+  }
+
+  const resp = await histre.getHighlightByUrl(url);
+  if (!isValidResponse(resp)) {
+    return undefined;
+  }
+  const body = await resp.json();
+  const parsed = histreResponseSchema.safeParse(body);
+
+  if (!parsed.success) {
+    for (const issue of parsed.error.issues) {
+      console.error(`Failed to validate '${issue.path[0]}' field in Histre JSON response. Error: ${issue.message}`)
+    }
+    return undefined;
+  }
+  if (Histre.hasError(body)) {
+    return undefined;
+  }
+
+  const parsed_data = getDataSchema.safeParse(parsed.data.data);
+  if (!parsed_data.success) {
+    for (const issue of parsed_data.error.issues) {
+      console.error(`Failed to validate 'data.${issue.path[0]}' field in Histre JSON response. Error: ${issue.message}`)
+    }
+    return undefined;
+  }
+
+  return parsed_data.data;
+}
 
 if (__DEV__) {
   // Add test user data

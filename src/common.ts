@@ -20,6 +20,7 @@ export enum Action {
   Modify,
   UpdateUser,
   UpdateSettings,
+  GetHighlights,
 }
 
 export type DataCreate = { text: string, color: string, id: string }
@@ -47,6 +48,15 @@ export interface LocalHighlight {
 }
 
 export interface LocalHighlightsObject { [id: HighlightId]: LocalHighlight, }
+
+
+const histreHighlightSchema = z.object({
+  item_id: z.union([z.number(), z.string()]),
+  text: z.string(),
+  color: z.string(),
+});
+export type HistreHighlight = z.infer<typeof histreHighlightSchema>;
+export const getDataSchema = z.array(histreHighlightSchema);
 
 export interface HighlightAdd {
   url: string,

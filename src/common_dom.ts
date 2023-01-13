@@ -1,7 +1,7 @@
 // Wrapping selected text with <mark>.
 // Selection doesn't start or end at edges of nodes.
 
-import { HighlightLocation, HistreHighlight, LocalHighlight, LocalHighlightsObject } from "./common";
+import { HighlightLocation, HistreHighlight, LocalHighlightsObject } from "./common";
 import { findHighlightIndices, removeHighlightOverlaps } from "./highlight";
 
 // Selection can contain children elements.
@@ -118,9 +118,10 @@ export function removeHighlights(hl_id?: string) {
   document.body.normalize();
 }
 
-export function removeHighlightFromDom(highlights: LocalHighlightsObject, elems: NodeListOf<Element>) {
+export function removeHighlightFromDom(highlights: Array<HistreHighlight>, elems: NodeListOf<Element>) {
   // TODO: have to hold on to histre highlights and local highlights.
   // Or get local highlight when needed?
+  console.log("remove", highlights)
   for (const fill_elem of elems) {
     const rem_text = fill_elem.textContent || "";
     const rem_len = rem_text.length;
@@ -163,7 +164,8 @@ export function removeHighlightFromDom(highlights: LocalHighlightsObject, elems:
     }
 
     for (const [key, value] of prev_map) {
-      if (value === highlights[key].text.length) {
+      const hl = highlights.find(({item_id}) => item_id === key);
+      if (hl && value === hl.text.length) {
         prev_map.delete(key);
       }
     }
@@ -178,7 +180,7 @@ export function removeHighlightFromDom(highlights: LocalHighlightsObject, elems:
     let text_node = fill_elem.firstChild!;
     let slice_start = 0;
     for (const [prev_id, prev_len] of prev_map) {
-      const hl = highlights[prev_id];
+      const hl = highlights.find(({item_id}) => item_id === prev_id)!;
       const new_rem_len = hl.text.length - prev_len;
       if (childs.length === 0 && new_rem_len >= rem_len) {
         fill_elem.setAttribute("data-hho-id", prev_id)

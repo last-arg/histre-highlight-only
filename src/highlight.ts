@@ -1,4 +1,4 @@
-import type { HighlightLocation, HistreHighlight, LocalHighlightsObject} from "./common";
+import type { HighlightLocation, HistreHighlight } from "./common";
 
 // TODO?: try, consider
 // Could try to use Uint32Array to get more performance [start, end, index_to, ...]

@@ -11,10 +11,10 @@ const body = document.body;
 
 const TEST_SUITE = {
     testRemoveSimple() {
-        const hls = {
-            "1": { text: "e te", color: "blue" },
-            "2": { text: "lo wo", color: "green" },
-        }
+        const hls = [
+            { item_id: "1", text: "e te", color: "blue" },
+            { item_id: "2", text: "lo wo", color: "green" },
+        ]
         body.innerHTML = `
           <p>Som${testMark("1", "e te", "blue")}xt.</p>
           <p>Hel${testMark("2", "lo wo", "green")}rld.</p>
@@ -31,10 +31,10 @@ const TEST_SUITE = {
     },
 
     testRemoveOverlapAfter() {
-        const hls = {
-            "1": { text: "lo wo", color: "blue" },
-            "2": { text: "world", color: "green" },
-        }
+        const hls = [
+            { item_id: "1", text: "lo wo", color: "blue" },
+            { item_id: "2", text: "world", color: "green" },
+        ]
 
         // After is under before highlight
         {
@@ -69,10 +69,10 @@ const TEST_SUITE = {
     },
 
     testRemoveOverlapBefore() {
-        const hls = {
-            "1": { text: "lo wo", color: "blue" },
-            "2": { text: "world", color: "green" },
-        }
+        const hls = [
+            { item_id: "1", text: "lo wo", color: "blue" },
+            { item_id: "2", text: "world", color: "green" },
+        ]
 
         // After is under before highlight
         {
@@ -108,10 +108,10 @@ const TEST_SUITE = {
     },
 
     testRemoveOverlapMiddle() {
-        const hls = {
-            "1": { text: "ello worl", color: "blue" },
-            "2": { text: "lo wo", color: "green" },
-        }
+        const hls = [
+            { item_id: "1", text: "ello worl", color: "blue" },
+            { item_id: "2", text: "lo wo", color: "green" },
+        ]
 
         body.innerHTML = `
           <p>H${testMark("1", "el", "blue")}${testMark("2", "lo wo", "green")}${testMark("1", "rl", "blue")}d.</p>
@@ -125,7 +125,7 @@ const TEST_SUITE = {
         const entries = Array.from(document.querySelectorAll(".hho-mark[data-hho-id='1']").entries())
         assert_equal(entries.length, 3);
         const text = entries.reduce((acc, [_, val]) => acc + val.textContent, "");
-        assert_equal(text, hls["1"].text)
+        assert_equal(text, hls[0].text)
         console.groupEnd();
     }
 }

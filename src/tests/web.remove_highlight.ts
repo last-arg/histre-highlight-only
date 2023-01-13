@@ -122,7 +122,10 @@ const TEST_SUITE = {
         assert_equal(elems.length, 1);
         removeHighlightFromDom(hls, elems)
         assert_equal(document.querySelectorAll(".hho-mark[data-hho-id='2']").length, 0);
-        assert_equal(document.querySelectorAll(".hho-mark[data-hho-id='1']").length, 3);
+        const entries = Array.from(document.querySelectorAll(".hho-mark[data-hho-id='1']").entries())
+        assert_equal(entries.length, 3);
+        const text = entries.reduce((acc, [_, val]) => acc + val.textContent, "");
+        assert_equal(text, hls["1"].text)
         console.groupEnd();
     }
 }

@@ -1,7 +1,7 @@
 // Wrapping selected text with <mark>.
 // Selection doesn't start or end at edges of nodes.
 
-import { HighlightLocation, LocalHighlightsObject } from "./common";
+import { HighlightLocation, LocalHighlight, LocalHighlightsObject } from "./common";
 import { findHighlightIndices, removeHighlightOverlaps } from "./highlight";
 
 // Selection can contain children elements.
@@ -15,7 +15,7 @@ export function createMarkElement(id: string, color: string | undefined): Elemen
   return elem;
 }
 
-export function highlightDOM(ranges: HighlightLocation[], current_entries: any) {
+export function highlightDOM(ranges: HighlightLocation[], current_entries: [string, LocalHighlight][]) {
   const indices = ranges;
   const iter = document.createNodeIterator(document.body, NodeFilter.SHOW_TEXT, null);
   let current_node;
@@ -88,8 +88,6 @@ export function highlightDOM(ranges: HighlightLocation[], current_entries: any) 
 export function renderLocalHighlights(body_text: string, current_highlights: LocalHighlightsObject) {
   console.log("==== renderLocalHighlights() ====")
 
-  const current_entries = Object.entries(current_highlights);
-
   console.time("Iter all text nodes")
   const iter = document.createNodeIterator(document.body, NodeFilter.SHOW_TEXT, null);
   while (iter.nextNode()) {}
@@ -100,6 +98,7 @@ export function renderLocalHighlights(body_text: string, current_highlights: Loc
   const indices = removeHighlightOverlaps(overlapping_indices);
   console.timeEnd("Generate ranges")
 
+  const current_entries = Object.entries(current_highlights);
   console.time("Highlight DOM")
   highlightDOM(indices, current_entries)
   console.timeEnd("Highlight DOM")

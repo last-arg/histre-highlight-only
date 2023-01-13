@@ -1,8 +1,8 @@
 // Wrapping selected text with <mark>.
 // Selection doesn't start or end at edges of nodes.
 
-import { HighlightLocation, HistreHighlight, LocalHighlightsObject } from "./common";
-import { findHighlightIndices, removeHighlightOverlaps } from "./highlight";
+import { HighlightLocation, HistreHighlight } from "./common";
+import { getHighlightIndices } from "./highlight";
 
 // Selection can contain children elements.
 const mark_elem = document.createElement("mark");
@@ -95,8 +95,7 @@ export function renderLocalHighlights(body_text: string, current_highlights: Arr
   console.timeEnd("Iter all text nodes")
 
   console.time("Generate ranges")
-  const overlapping_indices = findHighlightIndices(body_text, current_highlights);
-  const indices = removeHighlightOverlaps(overlapping_indices);
+  const indices = getHighlightIndices(body_text, current_highlights);
   console.timeEnd("Generate ranges")
 
   console.time("Highlight DOM")
@@ -121,7 +120,6 @@ export function removeHighlights(hl_id?: string) {
 export function removeHighlightFromDom(highlights: Array<HistreHighlight>, elems: NodeListOf<Element>) {
   // TODO: have to hold on to histre highlights and local highlights.
   // Or get local highlight when needed?
-  console.log("remove", highlights)
   for (const fill_elem of elems) {
     const rem_text = fill_elem.textContent || "";
     const rem_len = rem_text.length;

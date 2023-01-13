@@ -1,7 +1,7 @@
 /// <reference lib="dom" />
 /// <reference lib="dom.iterable" />
 import { storage, runtime } from 'webextension-polyfill';
-import { Color, Action, LocalHighlightsObject, Position, local_id_prefix, isEmptyObject, UserSettings, HistreHighlight } from './common';
+import { Color, Action, Position, local_id_prefix, isEmptyObject, UserSettings, HistreHighlight } from './common';
 import './hho.css';
 import { getSettings } from './storage';
 import { createMarkElement, removeHighlightFromDom, renderLocalHighlights } from './common_dom';
@@ -241,7 +241,6 @@ const global = {
 
 async function getLocalHighlights(current_url: string): Promise<Array<HistreHighlight> | undefined> {
     const local = await storage.local.get({highlights_add: {[current_url]: undefined}});
-  console.log(local);
     if (local.highlights_add[current_url] === undefined) { 
         console.info(`No highlights for ${current_url}`);
         return; 
@@ -468,14 +467,12 @@ function startSelection() {
   }, {once: true})
 }
 
-// TODO: Find if removed highlight was covering other highlights
-// Find all previous <mark> elements with class 'hho-mark'. The elements
-// have to be contiguous. Might find duplicates. Want last found elements,
-// those elements will be where highlight begins.
 async function removeHighlight(id: string, url: string) {
+  // TODO: different ids for local and histre highlights ids
+  // 'local' start with prefix 'local-'
+  // 'histre' ids are numbers
   const local = await storage.local.get({highlights_add: {[url]: undefined}});
-  console.log(local)
-  const highlights: LocalHighlightsObject = local.highlights_add[url].highlights;
+  const highlights = local.highlights_add[url].highlights;
   const elems = document.querySelectorAll(`[data-hho-id="${id}"]`);
   removeHighlightFromDom(highlights, elems);
 }
@@ -492,12 +489,14 @@ async function getAndRenderLocalHighlights(url: string) {
     const histre_async = runtime.sendMessage(ext_id, { action: Action.GetHighlights });
 
     const local_highlights = await getLocalHighlights(url);
-    console.log("local hls", local_highlights);
-    const highlights = await histre_async;
-    // TODO: combine histre and local highlights
-    console.log("histre hls", highlights);
+    const highlights = (await histre_async) || [];
     if (local_highlights) {
-      renderLocalHighlights(body_text, local_highlights);
+      for (const local of local_highlights) {
+        highlights.push(local)
+      }
+    }
+    if (local_highlights) {
+      renderLocalHighlights(body_text, highlights);
     }
 }
 

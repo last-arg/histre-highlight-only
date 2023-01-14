@@ -1,6 +1,6 @@
 // import { findHighlightIndices, removeHighlightOverlaps } from "../highlight";
 import $ from "./assert";
-import { HistreHighlight, LocalHighlightsObject } from "../common";
+import { HistreHighlight } from "../common";
 import { getHighlightIndices } from "../highlight";
 import { highlightDOM } from "../common_dom";
 
@@ -55,11 +55,11 @@ const with_child: Array<HistreHighlight> = [
 const TEST_SUITE = {
     testRemoveOverlaps() {
         const hls = [
-            { item_id: "1", text: "t ov", color: "yellow" },
-            { item_id: "3", text: "ve", color: "blue" },
-            { item_id: "2", text: "erlapi", color: "red" },
-            { item_id: "4", text: "erl", color: "purple" },
-            { item_id: "5", text: "p", color: "green" },
+            { highlight_id: "1", text: "t ov", color: "yellow" },
+            { highlight_id: "3", text: "ve", color: "blue" },
+            { highlight_id: "2", text: "erlapi", color: "red" },
+            { highlight_id: "4", text: "erl", color: "purple" },
+            { highlight_id: "5", text: "p", color: "green" },
         ];
         const body_text = setAndGetBody(`
             <p>test overlapi</p>
@@ -69,16 +69,15 @@ const TEST_SUITE = {
         // console.log(locations)
         const expected = [
           { "start": 16, "end": 19, "index": 0 },
-          { "start": 19, "end": 20, "index": 2 },
-          { "start": 20, "end": 20, "index": 1 },
+          { "start": 19, "end": 20, "index": 1 },
+          { "start": 20, "end": 20, "index": 2 },
           { "start": 20, "end": 23, "index": 3 },
-          { "start": 23, "end": 24, "index": 1 },
+          { "start": 23, "end": 24, "index": 2 },
           { "start": 24, "end": 25, "index": 4 },
-          { "start": 25, "end": 26, "index": 1 }
+          { "start": 25, "end": 26, "index": 2 }
         ]
-        // TODO
-        // assert_like(locations, expected)
         highlightDOM(locations, hls)
+        assert_like(locations, expected)
     },
     testHighlightDOMSimple() {
         const body_text = setAndGetBody(`<p id="only-text">only text inside this element</p>`);
@@ -181,19 +180,19 @@ const TEST_SUITE = {
     testHighlightOverlapAdvanced() {
         const hls = [
             {
-                "item_id": "local-3", 
+                "highlight_id": "local-3", 
                 "text": "text (inside",
                 "color": "green"
            },
             {
-                "item_id": "local-2", 
+                "highlight_id": "local-2", 
                 "text": "ide) this",
                 "color": "yellow"
            },
             // TODO: maybe change overlapping rules
             // Want to show whole 'si' because next highlight is longer
             {
-                "item_id": "local-1", 
+                "highlight_id": "local-1", 
                 "text": "si",
                 "color": "red"
            },

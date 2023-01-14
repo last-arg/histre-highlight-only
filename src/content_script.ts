@@ -81,8 +81,7 @@ class ContextMenu {
         this.elem.setAttribute("style", "");
         for (const key in new_pos) {
           const value = new_pos[key];
-          // @ts-ignore
-          this.elem.style[key] = typeof value === "number" ? `${new_pos[key]}px` : value;
+          this.elem.style[key as any] = typeof value === "number" ? `${new_pos[key]}px` : value;
         }
         this.elem.setAttribute("aria-hidden", "false");
         break;

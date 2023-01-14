@@ -1,5 +1,5 @@
 import { storage, Runtime } from 'webextension-polyfill';
-import { Message, Action, DataModify, DataRemove, DataCreate, local_id_prefix, HighlightAdd, HighlightUpdate, histreResponseSchema, UserData, UserSettings, getDataSchema, HistreHighlight } from './common';
+import { Message, Action, DataModify, DataRemove, DataCreate, local_id_prefix, HighlightAdd, HighlightUpdate, histreResponseSchema, UserData, UserSettings, getDataSchema, HistreHighlight, randomString } from './common';
 import { Histre, isValidResponse } from './histre';
 import { z } from 'zod';
 
@@ -122,7 +122,7 @@ async function addLocalHighlight(url: string, data: DataCreate, title: string) {
   local.highlights_add[url] = { highlights: [] };
   }
   local.highlights_add[url].title = title;
-  local.highlights_add[url].highlights.push({ item_id: data.id, text: data.text, color: data.color });
+  local.highlights_add[url].highlights.push({ highlight_id: data.id, text: data.text, color: data.color });
   await storage.local.set(local);
 }
 
@@ -194,22 +194,39 @@ browser.runtime.onMessage.addListener((msg: Message, sender: Runtime.MessageSend
     case Action.Remove: {
       return new Promise(async (resolve) => {
         const data = msg.data as DataRemove;
-        const is_local_id = data.id.startsWith(local_id_prefix);
+        let hl_id: string | undefined = data.id;
+        const is_local_id = hl_id.startsWith(local_id_prefix);
 
-        let added_to_histre = false;
-        if (!is_local_id) {
-          added_to_histre = await histreRemoveHighlight(histre, data.id);
-          if (added_to_histre) {
-            resolve(true)
-            return;
-          }
-        } else {
+        if (is_local_id) {
           if (sender.tab?.url) {
             const url = sender.tab.url;
             let local = await storage.local.get({highlights_add: {}});
-            delete local.highlights_add[url].highlights[data.id];
+            delete local.highlights_add[url].highlights[hl_id];
             await storage.local.set(local);
             resolve(true); 
+            return;
+          }
+        } else if (data.id.startsWith("histre")) {
+          // NOTE: if histre highlight, have to re-add it to get its ID.
+          // Then I can use the ID to delete the highlight. 
+          if (sender.tab?.url) {
+            const data = msg.data as DataCreate;
+            const url = sender.tab.url;
+            const title = sender.tab?.title || "";
+
+            hl_id = await histreAddHighlight(histre, {
+               url: url,
+               title: title,
+               text: data.text,
+            })
+          }
+        }
+
+        let added_to_histre = false;
+        if (hl_id) {
+          added_to_histre = await histreRemoveHighlight(histre, hl_id);
+          if (added_to_histre) {
+            resolve(true)
             return;
           }
         }
@@ -266,6 +283,14 @@ browser.runtime.onMessage.addListener((msg: Message, sender: Runtime.MessageSend
           return;
         }
         const highlights = await histreGetHighlights(histre, sender.tab.url);
+        if (highlights) {
+          // NOTE: histre API doesn't return highlight_id field. Have to make
+          // my own.
+          for (const index in highlights) {
+            let histre_id = `histre-${randomString()}`;
+            highlights[index].highlight_id = histre_id;
+          }
+        }
         resolve(highlights);
       });
     }
@@ -312,7 +337,7 @@ if (__DEV__) {
     "http://localhost:5173/tests/web.histre.html": {
       title: "Page title",
       highlights: [{
-          "item_id": "local-6nazstnm", 
+          "highlight_id": "local-6nazstnm", 
           "text": "histre highlights",
           "color": "yellow" 
         },

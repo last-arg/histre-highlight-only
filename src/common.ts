@@ -25,7 +25,7 @@ export enum Action {
 
 export type DataCreate = { text: string, color: string, id: string }
 export type DataModify = { id: string, color: string }
-export type DataRemove = { id: string }
+export type DataRemove = { id: string, text?: string }
 
 export interface Message {
   action: Action,
@@ -51,7 +51,7 @@ export interface LocalHighlightsObject { [id: HighlightId]: LocalHighlight, }
 
 
 const histreHighlightSchema = z.object({
-  highlight_id: z.union([z.number(), z.string()]),
+  highlight_id: z.union([z.number(), z.string(), z.undefined()]),
   text: z.string(),
   color: z.string(),
 });
@@ -108,5 +108,9 @@ export function isEmptyObject(object: Object) {
     return false;
   }
   return true;
+}
+
+export function randomString() {
+  return Math.random().toString(36).substring(2,10)
 }
 

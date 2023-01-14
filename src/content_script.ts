@@ -1,7 +1,7 @@
 /// <reference lib="dom" />
 /// <reference lib="dom.iterable" />
 import { storage, runtime } from 'webextension-polyfill';
-import { Color, Action, Position, local_id_prefix, isEmptyObject, UserSettings, HistreHighlight } from './common';
+import { Color, Action, Position, local_id_prefix, isEmptyObject, UserSettings, HistreHighlight, randomString } from './common';
 import './hho.css';
 import { getSettings } from './storage';
 import { createMarkElement, removeHighlightFromDom, renderLocalHighlights } from './common_dom';
@@ -204,9 +204,20 @@ class ContextMenu {
               return;
             }
 
+            let text = undefined;
+            let hl_index = -1;
+            if (id.startsWith("histre")) {
+              hl_index = global.histre_highlights.findIndex(({highlight_id}) => id === highlight_id);
+              if (hl_index !== -1) {
+                text = global.histre_highlights[hl_index].text;
+              } else {
+                console.error(`Failed to delete histre higlight. Could not find histre highlight with id ${id}`);
+                return;
+              }
+            }
             const result = await runtime.sendMessage(
               "addon@histre-highlight-only.com", 
-              { action: Action.Remove , data: {id: id} },
+              { action: Action.Remove , data: {id: id, text: text} },
             )
 
             if (!result) {
@@ -214,7 +225,9 @@ class ContextMenu {
               return;
             }
 
-          console.log("remove highlights", id);
+            if (hl_index !== -1) { 
+              global.histre_highlights.splice(hl_index, 1);
+            }
             removeHighlight(id, document.location.href);
           }
           break;
@@ -225,12 +238,9 @@ class ContextMenu {
   }
 }
 
-function randomString() {
-  return Math.random().toString(36).substring(2,10)
-}
-
 const global = {
   menu: new ContextMenu(),
+  histre_highlights: [] as Array<HistreHighlight>,
 };
 
 async function getLocalHighlights(current_url: string): Promise<Array<HistreHighlight> | undefined> {
@@ -483,7 +493,8 @@ async function getAndRenderLocalHighlights(url: string) {
     const histre_async = runtime.sendMessage(ext_id, { action: Action.GetHighlights });
 
     const local_highlights = await getLocalHighlights(url);
-    const highlights = (await histre_async) || [];
+    const highlights: Array<HistreHighlight> = (await histre_async) || [];
+    global.histre_highlights = highlights;
     if (local_highlights) {
       for (const local of local_highlights) {
         highlights.push(local)

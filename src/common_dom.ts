@@ -41,7 +41,7 @@ export function highlightDOM(ranges: HighlightLocation[], current_entries: Array
     iter.nextNode();
     const hl = current_entries[hl_loc.index];
     const color = hl.color;
-    const hl_id = hl.highlight_id;
+    const hl_id = hl.highlight_id!;
 
     if (hl_loc.end > total_end) {
       range.selectNode(hl_node);
@@ -118,8 +118,6 @@ export function removeHighlights(hl_id?: string) {
 }
 
 export function removeHighlightFromDom(highlights: Array<HistreHighlight>, elems: NodeListOf<Element>) {
-  // TODO: have to hold on to histre highlights and local highlights.
-  // Or get local highlight when needed?
   for (const fill_elem of elems) {
     const rem_text = fill_elem.textContent || "";
     const rem_len = rem_text.length;

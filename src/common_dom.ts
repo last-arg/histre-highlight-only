@@ -41,7 +41,7 @@ export function highlightDOM(ranges: HighlightLocation[], current_entries: Array
     iter.nextNode();
     const hl = current_entries[hl_loc.index];
     const color = hl.color;
-    const hl_id = hl.item_id;
+    const hl_id = hl.highlight_id;
 
     if (hl_loc.end > total_end) {
       range.selectNode(hl_node);
@@ -162,7 +162,7 @@ export function removeHighlightFromDom(highlights: Array<HistreHighlight>, elems
     }
 
     for (const [key, value] of prev_map) {
-      const hl = highlights.find(({item_id}) => item_id === key);
+      const hl = highlights.find(({highlight_id: item_id}) => item_id === key);
       if (hl && value === hl.text.length) {
         prev_map.delete(key);
       }
@@ -178,7 +178,7 @@ export function removeHighlightFromDom(highlights: Array<HistreHighlight>, elems
     let text_node = fill_elem.firstChild!;
     let slice_start = 0;
     for (const [prev_id, prev_len] of prev_map) {
-      const hl = highlights.find(({item_id}) => item_id === prev_id)!;
+      const hl = highlights.find(({highlight_id: item_id}) => item_id === prev_id)!;
       const new_rem_len = hl.text.length - prev_len;
       if (childs.length === 0 && new_rem_len >= rem_len) {
         fill_elem.setAttribute("data-hho-id", prev_id)

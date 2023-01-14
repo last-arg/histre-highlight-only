@@ -51,7 +51,7 @@ export interface LocalHighlightsObject { [id: HighlightId]: LocalHighlight, }
 
 
 const histreHighlightSchema = z.object({
-  item_id: z.union([z.number(), z.string()]),
+  highlight_id: z.union([z.number(), z.string()]),
   text: z.string(),
   color: z.string(),
 });

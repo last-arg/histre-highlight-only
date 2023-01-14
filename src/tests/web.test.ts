@@ -13,22 +13,22 @@ function setAndGetBody(inner: string): string {
 
 const simple: Array<HistreHighlight> = [
       { 
-        "item_id": "local-1", 
+        "highlight_id": "local-1", 
         "text": "onl",
         "color": "yellow"
       },
       { 
-        "item_id": "local-2", 
+        "highlight_id": "local-2", 
         "text": "ext",
         "color": "green"
       },
       { 
-        "item_id": "local-3", 
+        "highlight_id": "local-3", 
         "text": " ins",
         "color": "purple"
       },
       { 
-        "item_id": "local-4", 
+        "highlight_id": "local-4", 
         "text": "element",
         "color": "blue"
       },
@@ -36,17 +36,17 @@ const simple: Array<HistreHighlight> = [
 
 const with_child: Array<HistreHighlight> = [
     {
-        "item_id": "local-1",
+        "highlight_id": "local-1",
         "text": "rt (child elem) pa",
         "color": "blue"
     },
     {
-        "item_id": "local-2",
+        "highlight_id": "local-2",
         "text": "le (ano",
         "color": "green"
     },
     {
-        "item_id": "local-3",
+        "highlight_id": "local-3",
         "text": "ild) par",
         "color": "yellow"
     },
@@ -91,7 +91,7 @@ const TEST_SUITE = {
         for (const hl of simple) {
             const elem = marks[i];
             assert_ok(elem.classList.contains("hho-mark"));
-            assert_equal(hl.item_id, elem.getAttribute("data-hho-id"));
+            assert_equal(hl.highlight_id, elem.getAttribute("data-hho-id"));
             assert_equal(hl.color, elem.getAttribute("data-hho-color"));
             assert_equal(hl.text, elem.textContent);
             i += 1;
@@ -113,7 +113,7 @@ const TEST_SUITE = {
 
         let total_marks = 0;
         for (const hl of with_child) {
-            const dom_hl = document.querySelectorAll(`#with-child [data-hho-id="${hl.item_id}"]`);
+            const dom_hl = document.querySelectorAll(`#with-child [data-hho-id="${hl.highlight_id}"]`);
             let text = "";
             for (const el of dom_hl) {
                 text += el.textContent;
@@ -127,27 +127,27 @@ const TEST_SUITE = {
     testHighlightOverlapSimple() {
         const hls: Array<HistreHighlight> = [
             {
-                "item_id": "local-1", 
+                "highlight_id": "local-1", 
                 "text": "text inside",
                 "color": "blue"
             },
             {
-                "item_id": "local-4", 
+                "highlight_id": "local-4", 
                 "text": "inside",
                 "color": "red"
             },
             {
-                "item_id": "local-2", 
+                "highlight_id": "local-2", 
                 "text": "inside this",
                 "color": "yellow"
             },
             {
-                "item_id": "local-3", 
+                "highlight_id": "local-3", 
                 "text": "inside",
                 "color": "green"
            },
             {
-                "item_id": "local-0", 
+                "highlight_id": "local-0", 
                 "text": "element",
                 "color": "orange"
             },
@@ -165,8 +165,8 @@ const TEST_SUITE = {
         highlightDOM(locations, hls);
         let total_marks = 0;
         for (const hl of hls) {
-            const dom_hl = document.querySelectorAll(`#overlap-simple [data-hho-id="${hl.item_id}"]`);
-            const hl_expect = expect[hl.item_id];
+            const dom_hl = document.querySelectorAll(`#overlap-simple [data-hho-id="${hl.highlight_id}"]`);
+            const hl_expect = expect[hl.highlight_id];
             let i = 0;
             for (const el of dom_hl) {
                 assert_equal(hl.color, el.getAttribute("data-hho-color"));

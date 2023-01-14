@@ -204,23 +204,18 @@ class ContextMenu {
               return;
             }
 
-            // const result = await runtime.sendMessage(
-            //   "addon@histre-highlight-only.com", 
-            //   { action: Action.Remove , data: {id: id} },
-            // )
+            const result = await runtime.sendMessage(
+              "addon@histre-highlight-only.com", 
+              { action: Action.Remove , data: {id: id} },
+            )
 
-            // if (!result) {
-            //   console.error(`Failed to remove highlight '${id}'`)
-            //   return;
-            // }
+            if (!result) {
+              console.error(`Failed to remove highlight '${id}'`)
+              return;
+            }
 
-            // TODO: check if any highlight is revealed under removed highlight
-            // Get all highlight DOM elements to be deleted
-            // Find if removed highlight has any other highlights 
-            const elems = document.querySelectorAll(`[data-hho-id="${id}"]`);
-            console.log(elems)
-
-            // removeHighlights(id)
+          console.log("remove highlights", id);
+            removeHighlight(id, document.location.href);
           }
           break;
         }

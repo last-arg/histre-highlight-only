@@ -98,7 +98,7 @@ let histre: Histre = new Histre();
 
 (async function initHistre() {
   if (__DEV__ && __user__?.username) {
-    setLocalUser(__user__)
+    await setLocalUser(__user__)
   }
 
   const user_data = await getLocalUser(); 
@@ -241,7 +241,7 @@ browser.runtime.onMessage.addListener((msg: Message, sender: Runtime.MessageSend
           return;
         }
         histre.setUser(user)
-        histre.updateTokens()
+        await histre.updateTokens()
         histre.setHeaderAuthToken()
         resolve(true);
       });

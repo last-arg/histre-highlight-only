@@ -10,7 +10,7 @@ export class Histre {
   };
   headers: any = { 
     "Host": "histre.com",
-    "Content-Type": "application/json" 
+    "Content-Type": "application/json",
   };
   user?: UserData = undefined;
   tokens?: ValidToken = undefined;

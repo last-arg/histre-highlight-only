@@ -472,18 +472,13 @@ function startSelection() {
 }
 
 async function removeHighlight(id: string, url: string) {
-  // TODO: different ids for local and histre highlights ids
-  // 'local' start with prefix 'local-'
-  // 'histre' ids are numbers
   const local = await storage.local.get({highlights_add: {[url]: undefined}});
   const highlights = local.highlights_add[url].highlights;
   const elems = document.querySelectorAll(`[data-hho-id="${id}"]`);
   removeHighlightFromDom(highlights, elems);
 }
 
-// TODO: get and render histre highlights
-// Better to combine local and histre highlights. Have to traverse the DOM less.
-async function getAndRenderLocalHighlights(url: string) {
+async function getAndRenderHighlights(url: string) {
     const body_text = document.body.textContent
     if (body_text === null) { 
         console.warn("Didn't find 'document.body'. Nothing to highlight.");
@@ -508,9 +503,9 @@ async function getAndRenderLocalHighlights(url: string) {
 function init() {
   const url = window.location.href;
   if(document.readyState === 'loading') {
-    document.addEventListener("DOMContentLoaded", () => getAndRenderLocalHighlights(url));
+    document.addEventListener("DOMContentLoaded", () => getAndRenderHighlights(url));
   } else {
-    getAndRenderLocalHighlights(url)
+    getAndRenderHighlights(url)
   }  
   document.addEventListener("selectstart", startSelection);
   document.addEventListener("click", (e: Event) => {

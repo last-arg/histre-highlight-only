@@ -2,12 +2,12 @@ import { storage, Runtime } from 'webextension-polyfill';
 import { Message, Action, DataModify, DataRemove, DataCreate, local_id_prefix, HighlightAdd, HighlightUpdate, histreResponseSchema, UserData, UserSettings, getDataSchema, HistreHighlight, randomString } from './common';
 import { Histre, isValidResponse } from './histre';
 import { z } from 'zod';
-
-// TODO: When to add locally saved highlight to Histre?
+import { getLocalAuthData, getLocalUser, setLocalAuthData, setLocalUser, setSettings } from './storage';
 
 // Test import
 import { test_local } from "./tests/test_data";
-import { getLocalAuthData, getLocalUser, setLocalAuthData, setLocalUser, setSettings } from './storage';
+
+// TODO: When to add locally saved highlight to Histre?
 
 const addDataSchema = z.object({
   highlight_id: z.string(),

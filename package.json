@@ -5,7 +5,7 @@
   "description": "Save highlighted text using Histre API",
   "license": "MIT",
   "dependencies": {
-    "@artalar/act": "^1.0.6",
+    "@artalar/act": "^3.0.0",
     "@types/webextension-polyfill": "^0.9.0",
     "node-html-parser": "^6.1.1",
     "reactively-root": "github:modderme123/reactively#main",

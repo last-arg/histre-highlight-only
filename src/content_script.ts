@@ -6,7 +6,7 @@ import './hho.css';
 import { getSettings } from './storage';
 import { createMarkElement, removeHighlightFromDom, renderLocalHighlights } from './common_dom';
 import { settings_default, ext_id } from './config';
-import { reactive } from 'reactively-root/packages/core/src/core';
+import {act} from '@artalar/act';
 console.log("==== LOAD 'content_script.js' TD ====")
 
 type ContextMenuElem = HTMLDivElement;
@@ -21,14 +21,14 @@ class ContextMenu {
   modify_elem: Element | null = null;
   state: ContextMenuState = ContextMenuState.none;
   highlight_id: string | null = null;
-  settings = reactive(settings_default);
+  settings = act(settings_default);
 
   constructor() {
     this.elem = ContextMenu.renderContextMenu();
     document.addEventListener("click", ContextMenu.handleClick(this));
     getSettings().then((settings) => { 
       if (settings) {
-        this.settings.set(settings);
+        this.settings(settings);
         this.updateMenuOrigin();
       }
     })
@@ -36,9 +36,10 @@ class ContextMenu {
 
   isState(state: ContextMenuState) { return this.state === state; }
 
-  updateMenuOrigin() {
-    this.elem.setAttribute("data-origin", this.settings.value.origin);
-  }
+  updateMenuOrigin = act(() => {
+    console.log("updatemenuorigin:", this.settings().origin)
+    this.elem.setAttribute("data-origin", this.settings().origin);
+  })
 
   update(state: ContextMenuState, arg?: Selection | Element) { 
     this.elem.setAttribute("data-hho-state", ContextMenuState[state]);
@@ -50,7 +51,7 @@ class ContextMenu {
       case ContextMenuState.create: {
         console.assert(arg, "Context menu state 'create' requires second function argument 'arg'")
         const rect = this.elem.getBoundingClientRect();
-        const new_pos = selectionNewPosition(arg as Selection, rect, this.settings.value as UserSettings);
+        const new_pos = selectionNewPosition(arg as Selection, rect, this.settings() as UserSettings);
         this.elem.setAttribute("style", "");
         for (const key in new_pos) {
           const value = new_pos[key];
@@ -68,7 +69,7 @@ class ContextMenu {
         this.modify_elem = elem;
         this.highlight_id = elem.getAttribute("data-hho-id");
         const rect = this.elem.getBoundingClientRect();
-        const settings = this.settings.value as UserSettings;
+        const settings = this.settings() as UserSettings;
         let new_pos: CssPosition | undefined = undefined;
         if (settings.origin === "viewport") {
           new_pos = viewportPosition(settings.location, rect.width);
@@ -521,7 +522,7 @@ function init() {
   })
 
   runtime.onMessage.addListener((msg: {settings: UserSettings}) => {
-    global.menu.settings.set(msg.settings);
+    global.menu.settings(msg.settings);
     global.menu.updateMenuOrigin();
     const win_selection = window.getSelection();
     if (global.menu.isState(ContextMenuState.create) && win_selection) {

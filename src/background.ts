@@ -8,6 +8,7 @@ import { getLocalAuthData, getLocalUser, setLocalAuthData, setLocalUser, setSett
 import { test_local } from "./tests/test_data";
 
 // TODO: When to add locally saved highlight to Histre?
+// It is going to be somekind of interval
 
 const addDataSchema = z.object({
   highlight_id: z.string(),

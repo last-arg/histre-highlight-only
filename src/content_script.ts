@@ -1,11 +1,11 @@
 /// <reference lib="dom" />
 /// <reference lib="dom.iterable" />
-import { storage, runtime } from 'webextension-polyfill';
+// import { storage, runtime } from 'webextension-polyfill';
 import { Color, Action, Position, local_id_prefix, isEmptyObject, UserSettings, HistreHighlight, randomString } from './common';
-import './hho.css';
 import { getSettings } from './storage';
 import { createMarkElement, removeHighlightFromDom, renderLocalHighlights } from './common_dom';
 import { settings_default, ext_id } from './config';
+import {runtime, storage} from 'webextension-polyfill';
 import {act} from '@artalar/act';
 console.log("==== LOAD 'content_script.js' TD ====")
 
@@ -92,19 +92,11 @@ class ContextMenu {
   }
 
   static renderContextMenu() {
-    document.querySelector(".hho-context-menu")?.remove();
+    // document.querySelector(".hho-context-menu")?.remove();
     const container = document.createElement("div");
     container.classList.add("hho-context-menu");
     container.style.top = "0";
     container.style.left = "0";
-
-    const style = document.createElement("link");
-    style.rel = "stylesheet";
-    style.type = "text/css";
-    // Cache busting for dev mode
-    const css_version = isDev ? Date.now().toString() : "";
-    style.href = browser.runtime.getURL("./dist/assets/hho.style.css?v=" + css_version);
-    container.appendChild(style)
 
     const base_button = document.createElement("button");
     base_button.type = "button";

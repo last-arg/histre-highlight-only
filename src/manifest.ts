@@ -41,14 +41,19 @@ export function getManifest() {
       'tabs',
       'storage',
       'activeTab',
+      "contentscripts",
+      "<all_urls>",
+      "scripting"
     ],
     content_scripts: [{
-      matches: ['http://*/*', 'https://*/*'],
-      js: ['./dist/assets/content_script.js'],
+      // matches: ['http://*/*', 'https://*/*'],
+      matches: ["<all_urls>"],
+      js: ['dist/assets/content_script.js'],
+      css: ['dist/assets/hho.style.css'],
     }],
     web_accessible_resources: [
-      './dist/assets/content_script.js',
-      './dist/assets/hho.style.css'
+      '/dist/assets/content_script.js',
+      '/dist/assets/hho.style.css'
     ],
     browser_specific_settings: {
       gecko: {

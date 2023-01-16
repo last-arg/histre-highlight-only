@@ -1,5 +1,5 @@
-import { storage } from 'webextension-polyfill';
 import { localAuthSchema, localUserSchema, UserData, UserSettings, ValidToken } from "./common";
+const {storage} = browser;
 
 export async function getLocalAuthData(): Promise<ValidToken | undefined> {
   const data = await storage.local.get(

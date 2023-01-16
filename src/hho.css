@@ -1,6 +1,5 @@
 /*
 TODO: use !important incase something overwrites on site?
-TODO: style remove button
 */
 .hho-context-menu {
   padding: 10px;
@@ -77,10 +76,34 @@ TODO: style remove button
 
 .hho-btn-remove {
   display: none;
+  outline: 10px solid #f9f9f9;
+  background: white;
+  width: 25px;
+  height: 25px;
+  border-radius: 50% !important;
+  border: none;
+  margin-left: 20px;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
 }
 
 .hho-context-menu[data-hho-state="modify"] .hho-btn-remove {
-  display: block;
+  display: flex;
+}
+
+.hho-btn-remove img {
+  opacity: .8;
+  width: 1.7em;
+  height: 1.7em;
+}
+
+.hho-btn-remove:hover {
+  background: #f9f9f9;
+}
+
+.hho-btn-remove:hover img {
+  opacity: 1;
 }
 
 .sr-only {

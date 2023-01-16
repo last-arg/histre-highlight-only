@@ -4,8 +4,6 @@ import type PkgType from '../package.json'
 import { isDev, port, r } from '../scripts/utils'
 import { ext_id } from './config';
 
-// TODO: make icon.svg into square
-
 // Base on 'https://github.com/antfu/vitesse-webext/'
 export function getManifest() {
   const raw_json = fs.readFileSync(r('package.json'));

@@ -1,39 +1,41 @@
 import { runtime } from "webextension-polyfill";
 import { localUserSchema, Action, UserSettings, Position, Origin, UserData } from "./common";
 import { getLocalUser, getSettings } from "./storage";
-import { reactive } from "reactively-root/packages/core/src/core";
 import { ext_id, settings_default } from "./config";
+import { act } from "@artalar/act";
 
 const user_form = document.querySelector("#user")!;
-const user = reactive<UserData | undefined>(undefined);
-const renderUser = reactive(() => {
-    if (user.value) {
-        user_form.querySelector<HTMLInputElement>("#username")!.value = user.value.username;
-        user_form.querySelector<HTMLInputElement>("#password")!.value = user.value.password;
+const user = act<UserData | undefined>(undefined);
+// const user = reactive<UserData | undefined>(undefined);
+const renderUser = act(() => {
+    const u = user();
+    if (u) {
+        user_form.querySelector<HTMLInputElement>("#username")!.value = u.username;
+        user_form.querySelector<HTMLInputElement>("#password")!.value = u.password;
     }
 })
 getLocalUser().then((data) => {
     if (data) {
-        user.set(data);
-        renderUser.get();
+        user(data);
+        renderUser();
     }
 })
 
 const settings_form = document.querySelector("#settings")!;
-const settings = reactive<UserSettings>(settings_default);
-const renderSettings = reactive(() => {
-    console.log("render settings")
-    const input_origin = settings_form.querySelector<HTMLInputElement>("#position-" + settings.value.origin)!;
+const settings = act<UserSettings>(settings_default);
+const renderSettings = act(() => {
+    const s = settings();
+    const input_origin = settings_form.querySelector<HTMLInputElement>("#position-" + s.origin)!;
     input_origin.checked = true;
-    const input_location = settings_form.querySelector<HTMLInputElement>("#position-" + settings.value.location)!;
+    const input_location = settings_form.querySelector<HTMLInputElement>("#position-" + s.location)!;
     input_location.checked = true
 })
 
 getSettings().then((pos) => {
     if (pos) {
         console.log("pos")
-        settings.set(pos);
-        renderSettings.get();
+        settings(pos);
+        renderSettings();
     }
 });
 
@@ -60,7 +62,7 @@ user_form.addEventListener("submit", async (e) => {
 
     if (is_saved) {
         user_feedback.dataset.state = "saved";
-        user.set(form_user.data);
+        user(form_user.data);
     } else {
         console.error("Failed to save. Make sure username and/or password is correct.");
         user_feedback.dataset.state = "failed";
@@ -85,8 +87,8 @@ settings_form.addEventListener("submit", async (e) => {
         return;
     }
     settings_feedback.dataset.state = "saved";
-    if (settings.value.origin === new_pos.origin
-        && settings.value.location === new_pos.location
+    if (settings().origin === new_pos.origin
+        && settings().location === new_pos.location
     ) {
         return;
     }
@@ -98,8 +100,8 @@ settings_form.addEventListener("submit", async (e) => {
 
     if (success) {
         settings_feedback.dataset.state = "saved";
-        settings.set(new_pos);
-        renderSettings.get()
+        settings(new_pos);
+        renderSettings()
     } else {
         console.error("Failed to save settings. Try again.");
         settings_feedback.dataset.state = "failed";

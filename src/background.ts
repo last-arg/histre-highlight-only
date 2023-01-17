@@ -1,7 +1,7 @@
 import { Message, Action, DataModify, DataRemove, DataCreate, local_id_prefix, HighlightAdd, HighlightUpdate, histreResponseSchema, UserData, UserSettings, getDataSchema, HistreHighlight, randomString, addDataSchema } from './common';
 import { Histre, isValidResponse } from './histre';
 import { getLocalAuthData, getLocalUser, setLocalAuthData, setLocalUser, setSettings } from './storage';
-import {storage, Runtime} from 'webextension-polyfill';
+import type { Runtime } from 'webextension-polyfill';
 
 async function histreAddHighlight(histre: Histre | undefined, hl: HighlightAdd): Promise<string | undefined> {
   if (histre === undefined) {
@@ -112,14 +112,13 @@ let histre: Histre = new Histre();
 let sync_timeout: number = 0;
 
 async function syncLocalToHistre() {
-  console.log("run localHighlightsToHistre()");
   if (!navigator.onLine) {
     console.warn("Can't sync local changes to Histre with no internet connection.");
     return;
   }
 
   let no_local_highlights = true;
-  const local = await storage.local.get(["highlights_remove", "highlights_add", "highlights_update"]);
+  const local = await browser.storage.local.get(["highlights_remove", "highlights_add", "highlights_update"]);
   if (local.highlights_add) {
     for (const url in local.highlights_add) {
       const hl_info = local.highlights_add[url];
@@ -192,7 +191,7 @@ async function syncLocalToHistre() {
     }
   }
 
-  await storage.local.set(local);
+  await browser.storage.local.set(local);
   if (no_local_highlights) {
     clearTimeout(sync_timeout);
   } else {
@@ -207,13 +206,13 @@ function startSyncInterval() {
 }
 
 async function addLocalHighlight(url: string, data: DataCreate, title: string) {
-  let local = await storage.local.get({highlights_add: {[url]: { highlights: [] }}});
+  let local = await browser.storage.local.get({highlights_add: {[url]: { highlights: [] }}});
   if (local.highlights_add[url] === undefined) {
     local.highlights_add[url] = { highlights: [] };
   }
   local.highlights_add[url].title = title;
   local.highlights_add[url].highlights.push({ highlight_id: data.id, text: data.text, color: data.color });
-  await storage.local.set(local);
+  await browser.storage.local.set(local);
 }
 
 type SaveMessage = string;
@@ -262,9 +261,9 @@ browser.runtime.onMessage.addListener((msg: Message, sender: Runtime.MessageSend
         } else {
           if (sender.tab?.url) {
             const url = sender.tab.url;
-            let local = await storage.local.get({highlights_add: {}});
+            let local = await browser.storage.local.get({highlights_add: {}});
             local.highlights_add[url].highlights[data.id].color = data.color;
-            await storage.local.set(local);
+            await browser.storage.local.set(local);
             resolve(true); 
             return;
           }
@@ -272,9 +271,9 @@ browser.runtime.onMessage.addListener((msg: Message, sender: Runtime.MessageSend
 
         // Is histre highlight but request failed
         if (!added_to_histre) {
-          let local = await storage.local.get({highlights_update: {}});
+          let local = await browser.storage.local.get({highlights_update: {}});
           local.highlights_update[data.id] = data.color;
-          await storage.local.set(local);
+          await browser.storage.local.set(local);
           startSyncInterval();
           resolve(true)
           return;
@@ -292,9 +291,9 @@ browser.runtime.onMessage.addListener((msg: Message, sender: Runtime.MessageSend
         if (is_local_id) {
           if (sender.tab?.url) {
             const url = sender.tab.url;
-            let local = await storage.local.get({highlights_add: {}});
+            let local = await browser.storage.local.get({highlights_add: {}});
             delete local.highlights_add[url].highlights[hl_id];
-            await storage.local.set(local);
+            await browser.storage.local.set(local);
             resolve(true); 
             return;
           }
@@ -324,9 +323,9 @@ browser.runtime.onMessage.addListener((msg: Message, sender: Runtime.MessageSend
         }
 
         if (!added_to_histre) {
-          let local = await storage.local.get({highlights_remove: []});
+          let local = await browser.storage.local.get({highlights_remove: []});
           local.highlights_remove.push(data.id);
-          await storage.local.set(local);
+          await browser.storage.local.set(local);
           startSyncInterval();
           resolve(true);
           return;

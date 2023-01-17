@@ -2,7 +2,7 @@ import { localUserSchema, Action, UserSettings, Position, Origin, UserData } fro
 import { getLocalUser, getSettings } from "./storage";
 import { ext_id, settings_default } from "./config";
 import { act } from "@artalar/act";
-const {runtime} = browser;
+import {runtime} from "webextension-polyfill";
 
 const user_form = document.querySelector("#user")!;
 const user = act<UserData | undefined>(undefined);

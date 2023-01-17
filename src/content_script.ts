@@ -4,9 +4,11 @@ import { Color, Action, Position, local_id_prefix, isEmptyObject, UserSettings, 
 import { getSettings } from './storage';
 import { createMarkElement, removeHighlightFromDom, renderLocalHighlights } from './common_dom';
 import { settings_default, ext_id } from './config';
-import {runtime, storage} from 'webextension-polyfill';
 import {act} from '@artalar/act';
+import './hho.css';
+// import browser from 'webextension-polyfill';
 console.log("==== LOAD 'content_script.js' TD ====")
+    // console.log(browser.storage)
 
 type ContextMenuElem = HTMLDivElement;
 enum ContextMenuState { none, create, modify }
@@ -153,7 +155,7 @@ class ContextMenu {
             highlightSelectedText(sel_obj, color, local_id);
             sel_obj.removeAllRanges(); // This fires 'selectionchange' event
             const data = { text: sel_string, color: color, id: local_id };
-            const result_id = await runtime.sendMessage(
+            const result_id = await browser.runtime.sendMessage(
               ext_id, { action: Action.Create, data: data },
             )
             if (!result_id) {
@@ -188,7 +190,7 @@ class ContextMenu {
               hl.setAttribute("data-hho-color", color)
             }
 
-            const result = await runtime.sendMessage(
+            const result = await browser.runtime.sendMessage(
               "addon@histre-highlight-only.com", 
               { action: Action.Modify , data: {id: id, color: color} },
             )
@@ -214,7 +216,7 @@ class ContextMenu {
                 return;
               }
             }
-            const result = await runtime.sendMessage(
+            const result = await browser.runtime.sendMessage(
               "addon@histre-highlight-only.com", 
               { action: Action.Remove , data: {id: id, text: text} },
             )
@@ -243,7 +245,7 @@ const global = {
 };
 
 async function getLocalHighlights(current_url: string): Promise<Array<HistreHighlight> | undefined> {
-    const local = await storage.local.get({highlights_add: {[current_url]: undefined}});
+    const local = await browser.storage.local.get(["highlights_add"]);
     if (local.highlights_add[current_url] === undefined) { 
         console.info(`No highlights for ${current_url}`);
         return; 
@@ -471,7 +473,7 @@ function startSelection() {
 }
 
 async function removeHighlight(id: string, url: string) {
-  const local = await storage.local.get({highlights_add: {[url]: undefined}});
+  const local = await browser.storage.local.get({highlights_add: {[url]: undefined}});
   const highlights = local.highlights_add[url].highlights;
   const elems = document.querySelectorAll(`[data-hho-id="${id}"]`);
   removeHighlightFromDom(highlights, elems);
@@ -484,7 +486,7 @@ async function getAndRenderHighlights(url: string) {
         return; 
     }
 
-    const histre_async = runtime.sendMessage(ext_id, { action: Action.GetHighlights });
+    const histre_async = browser.runtime.sendMessage(ext_id, { action: Action.GetHighlights });
 
     const local_highlights = await getLocalHighlights(url);
     const highlights: Array<HistreHighlight> = (await histre_async) || [];
@@ -500,6 +502,7 @@ async function getAndRenderHighlights(url: string) {
 }
 
 function init() {
+  console.log("init")
   const url = window.location.href;
   if(document.readyState === 'loading') {
     document.addEventListener("DOMContentLoaded", () => getAndRenderHighlights(url));
@@ -519,7 +522,7 @@ function init() {
     }
   })
 
-  runtime.onMessage.addListener((msg: {settings: UserSettings}) => {
+  browser.runtime.onMessage.addListener((msg: {settings: UserSettings}) => {
     global.menu.settings(msg.settings);
     global.menu.updateMenuOrigin();
     const win_selection = window.getSelection();

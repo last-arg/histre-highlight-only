@@ -123,6 +123,11 @@ let histre: Histre = new Histre();
 // Interval is active if there is somthing in storage.local.
 // Interval is activated when something is saved to storage.local (if not active).
 async function localHighlightsToHistre() {
+  if (!navigator.onLine) {
+    console.warn("Can't sync local changes to Histre with no internet connection.");
+    return;
+  }
+
   let no_local_highlights = true;
   const local = await storage.local.get(["highlights_remove", "highlights_add", "highlights_update"]);
   if (local.highlights_add) {

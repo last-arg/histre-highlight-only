@@ -1,6 +1,5 @@
 /// <reference lib="dom" />
 /// <reference lib="dom.iterable" />
-// import { storage, runtime } from 'webextension-polyfill';
 import { Color, Action, Position, local_id_prefix, isEmptyObject, UserSettings, HistreHighlight, randomString } from './common';
 import { getSettings } from './storage';
 import { createMarkElement, removeHighlightFromDom, renderLocalHighlights } from './common_dom';

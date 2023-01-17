@@ -4,6 +4,11 @@ export const local_id_prefix = "local";
 
 export enum Color { yellow, orange, green, blue, purple, red };
 
+export const addDataSchema = z.object({
+  highlight_id: z.string(),
+  highlight_link: z.string(),
+})
+
 export const histreResponseSchema = z.object({
   data: z.unknown().nullable(),
   details: z.unknown().nullable(),

@@ -1,13 +1,7 @@
-import { Message, Action, DataModify, DataRemove, DataCreate, local_id_prefix, HighlightAdd, HighlightUpdate, histreResponseSchema, UserData, UserSettings, getDataSchema, HistreHighlight, randomString } from './common';
+import { Message, Action, DataModify, DataRemove, DataCreate, local_id_prefix, HighlightAdd, HighlightUpdate, histreResponseSchema, UserData, UserSettings, getDataSchema, HistreHighlight, randomString, addDataSchema } from './common';
 import { Histre, isValidResponse } from './histre';
-import { z } from 'zod';
 import { getLocalAuthData, getLocalUser, setLocalAuthData, setLocalUser, setSettings } from './storage';
 import {storage, Runtime} from 'webextension-polyfill';
-
-const addDataSchema = z.object({
-  highlight_id: z.string(),
-  highlight_link: z.string(),
-})
 
 async function histreAddHighlight(histre: Histre | undefined, hl: HighlightAdd): Promise<string | undefined> {
   if (histre === undefined) {

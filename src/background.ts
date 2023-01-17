@@ -192,8 +192,7 @@ async function syncLocalToHistre() {
     }
   }
 
-  // TODO: uncomment
-  // await storage.local.set(local);
+  await storage.local.set(local);
   if (no_local_highlights) {
     clearTimeout(sync_timeout);
   } else {

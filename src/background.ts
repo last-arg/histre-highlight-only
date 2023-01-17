@@ -209,7 +209,7 @@ async function syncLocalToHistre() {
 
 function startSyncInterval() {
   if (sync_timeout === 0) {
-    sync_timeout = window.setInterval(syncLocalToHistre, 2000);
+    sync_timeout = window.setInterval(syncLocalToHistre, 5 * 60 * 1000);
   }
 }
 

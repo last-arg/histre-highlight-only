@@ -4,9 +4,6 @@ import { z } from 'zod';
 import { getLocalAuthData, getLocalUser, setLocalAuthData, setLocalUser, setSettings } from './storage';
 import {storage, Runtime} from 'webextension-polyfill';
 
-// Test import
-import { test_local } from "./tests/test_data";
-
 const addDataSchema = z.object({
   highlight_id: z.string(),
   highlight_link: z.string(),
@@ -421,47 +418,4 @@ async function histreGetHighlights(histre: Histre | undefined, url: string): Pro
   }
 
   return parsed_data.data;
-}
-
-if (__DEV__) {
-  // Add test user data
-  const data = {
-    ...test_local,
-    "http://localhost:5173/tests/web.histre.html": {
-      title: "Page title",
-      highlights: [{
-          "highlight_id": "local-6nazstnm", 
-          "text": "histre highlights",
-          "color": "yellow" 
-        },
-      ]
-    }
-  }
-
-  storage.local.set({highlights_add: data});
-
-  const test_popup = false;
-  if (test_popup) {
-    // For faster debugging popup.html
-    browser.tabs.query({currentWindow: true})
-    .then(async (tabs) => {
-      const root_url = browser.runtime.getURL("/");
-      const popup_url = root_url + "dist/popup.html";
-
-      let has_popup_tab = false;
-      // browser.tabs.reload won't ever fire because when web extension
-      // is reloaded popup.html tab is also closed.
-      for (const tab of tabs) {
-        if (tab.url == popup_url) {
-          browser.tabs.reload(tab.id)
-          has_popup_tab = true;
-          break;
-        }
-      }
-
-      if (!has_popup_tab) {
-        browser.tabs.create({ url: popup_url, active: false});
-      }
-    })
-  }
 }

@@ -114,12 +114,15 @@ let histre: Histre = new Histre();
     histre.setHeaderAuthToken()
   }
 
-  // TODO: When to add locally saved highlight to Histre?
-  // It is going to be somekind of interval
-  // Interval is active if there is somthing in storage.local.
-  // Interval is activated when something is saved to storage.local (if not active).
-
   // Add local highlights to histre
+  localHighlightsToHistre();
+})();
+
+// TODO: When to add locally saved highlight to Histre?
+// It is going to be somekind of interval
+// Interval is active if there is somthing in storage.local.
+// Interval is activated when something is saved to storage.local (if not active).
+async function localHighlightsToHistre() {
   let no_local_highlights = true;
   const local = await storage.local.get(["highlights_remove", "highlights_add", "highlights_update"]);
   if (local.highlights_add) {
@@ -142,6 +145,7 @@ let histre: Histre = new Histre();
       const resps = await Promise.all(reqs);
       for (const resp of resps) {
         if (typeof resp === "object") {
+          console.warn(`Failed to add local highlight to Histre.`, resp);
           failed.push(resp);
         }
       }
@@ -153,19 +157,38 @@ let histre: Histre = new Histre();
         delete local.highlights_add[url];
       }
     }
+  }
 
-    console.log(local.highlights_add);
+  // TODO: highlights_remove
+  if (local.highlights_remove) {
+    const reqs: Promise<Awaited<ReturnType<typeof histreRemoveHighlight>> | boolean>[] = [];
+    for (const hl_id in local.highlights_remove) {
+      reqs.push(histreRemoveHighlight(histre, hl_id));
+    }
+    const failed: HighlightAdd[] = [];
+    const resps = await Promise.all(reqs);
+    for (const resp of resps) {
+      if (typeof resp === "string") {
+        console.warn(`Failed to remove local highlight form Histre.`, resp);
+        failed.push(resp);
+      }
+    }
 
-    // TODO: save highlight_add to storage
+    if (failed.length > 1) {
+      local.highlights_remove.higlights = failed;
+      no_local_highlights = false;
+    } else {
+      local.highlights_remove = undefined;
+    }
   }
 
   // TODO: highlights_update
-  // TODO: highlights_remove
 
+  // await storage.local.set(local);
   if (!no_local_highlights) {
     // TODO: setup interval
   }
-})();
+}
 
 async function addLocalHighlight(url: string, data: DataCreate, title: string) {
   let local = await storage.local.get({highlights_add: {[url]: { highlights: [] }}});

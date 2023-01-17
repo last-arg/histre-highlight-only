@@ -159,13 +159,12 @@ async function localHighlightsToHistre() {
     }
   }
 
-  // TODO: highlights_remove
   if (local.highlights_remove) {
-    const reqs: Promise<Awaited<ReturnType<typeof histreRemoveHighlight>> | boolean>[] = [];
-    for (const hl_id in local.highlights_remove) {
-      reqs.push(histreRemoveHighlight(histre, hl_id));
+    const reqs: Promise<Awaited<ReturnType<typeof histreRemoveHighlight> | string>>[] = [];
+    for (const hl_id of local.highlights_remove) {
+      reqs.push(histreRemoveHighlight(histre, hl_id).catch((_) => hl_id));
     }
-    const failed: HighlightAdd[] = [];
+    const failed: string[] = [];
     const resps = await Promise.all(reqs);
     for (const resp of resps) {
       if (typeof resp === "string") {
@@ -182,8 +181,23 @@ async function localHighlightsToHistre() {
     }
   }
 
-  // TODO: highlights_update
+  if (local.highlights_update) {
+    const reqs: Promise<Awaited<ReturnType<typeof histreUpdateHighlight> | string>>[] = [];
+    for (const hl_id in local.highlights_update) {
+      const color = local.highlights_update[hl_id];
+      reqs.push(histreUpdateHighlight(histre, { highlight_id: hl_id, color: color }).catch((_) => hl_id));
+    }
+    const resps = await Promise.all(reqs);
+    for (const resp of resps) {
+      if (typeof resp === "string") {
+        console.warn(`Failed to update local highlight in Histre.`, resp);
+        delete local.highlights_remove[resp];
+        no_local_highlights = false;
+      }
+    }
+  }
 
+  // TODO: uncomment
   // await storage.local.set(local);
   if (!no_local_highlights) {
     // TODO: setup interval

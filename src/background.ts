@@ -112,14 +112,13 @@ let histre: Histre = new Histre();
   }
 
   // Add local highlights to histre
-  localHighlightsToHistre();
+  syncLocalToHistre();
 })();
 
-// TODO: When to add locally saved highlight to Histre?
-// It is going to be somekind of interval
-// Interval is active if there is somthing in storage.local.
-// Interval is activated when something is saved to storage.local (if not active).
-async function localHighlightsToHistre() {
+let sync_timeout: number = 0;
+
+async function syncLocalToHistre() {
+  console.log("run localHighlightsToHistre()");
   if (!navigator.onLine) {
     console.warn("Can't sync local changes to Histre with no internet connection.");
     return;
@@ -201,15 +200,23 @@ async function localHighlightsToHistre() {
 
   // TODO: uncomment
   // await storage.local.set(local);
-  if (!no_local_highlights) {
-    // TODO: setup interval
+  if (no_local_highlights) {
+    clearTimeout(sync_timeout);
+  } else {
+    startSyncInterval();
+  }
+}
+
+function startSyncInterval() {
+  if (sync_timeout === 0) {
+    sync_timeout = window.setInterval(syncLocalToHistre, 2000);
   }
 }
 
 async function addLocalHighlight(url: string, data: DataCreate, title: string) {
   let local = await storage.local.get({highlights_add: {[url]: { highlights: [] }}});
   if (local.highlights_add[url] === undefined) {
-  local.highlights_add[url] = { highlights: [] };
+    local.highlights_add[url] = { highlights: [] };
   }
   local.highlights_add[url].title = title;
   local.highlights_add[url].highlights.push({ highlight_id: data.id, text: data.text, color: data.color });

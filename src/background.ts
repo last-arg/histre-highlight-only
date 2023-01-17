@@ -7,9 +7,6 @@ import {storage, Runtime} from 'webextension-polyfill';
 // Test import
 import { test_local } from "./tests/test_data";
 
-// TODO: When to add locally saved highlight to Histre?
-// It is going to be somekind of interval
-
 const addDataSchema = z.object({
   highlight_id: z.string(),
   highlight_link: z.string(),
@@ -97,11 +94,12 @@ async function histreRemoveHighlight(histre: Histre | undefined, hl_id: string):
 
 let histre: Histre = new Histre(); 
 
-(async function initHistre() {
+(async function init() {
   if (__DEV__ && __user__?.username) {
     await setLocalUser(__user__)
   }
 
+  // Authenticate histre
   const user_data = await getLocalUser(); 
   if (user_data) {
     const token_data = await getLocalAuthData();
@@ -114,6 +112,58 @@ let histre: Histre = new Histre();
       await setLocalAuthData(token)
     }
     histre.setHeaderAuthToken()
+  }
+
+  // TODO: When to add locally saved highlight to Histre?
+  // It is going to be somekind of interval
+  // Interval is active if there is somthing in storage.local.
+  // Interval is activated when something is saved to storage.local (if not active).
+
+  // Add local highlights to histre
+  let no_local_highlights = true;
+  const local = await storage.local.get(["highlights_remove", "highlights_add", "highlights_update"]);
+  if (local.highlights_add) {
+    for (const url in local.highlights_add) {
+      const hl_info = local.highlights_add[url];
+      const title = hl_info.title;
+      const hls = hl_info.highlights;
+
+      const reqs: Promise<Awaited<ReturnType<typeof histreAddHighlight>> | HighlightAdd>[] = [];
+      for (const hl of hls as HighlightAdd[]) {
+        reqs.push(histreAddHighlight(histre, {
+           url: url,
+           title: title,
+           text: hl.text,
+           color: hl.color
+        }).catch((_) => hl));
+      }
+
+      const failed: HighlightAdd[] = [];
+      const resps = await Promise.all(reqs);
+      for (const resp of resps) {
+        if (typeof resp === "object") {
+          failed.push(resp);
+        }
+      }
+
+      if (failed.length > 1) {
+        local.highlights_add[url].higlights = failed;
+        no_local_highlights = false;
+      } else {
+        delete local.highlights_add[url];
+      }
+    }
+
+    console.log(local.highlights_add);
+
+    // TODO: save highlight_add to storage
+  }
+
+  // TODO: highlights_update
+  // TODO: highlights_remove
+
+  if (!no_local_highlights) {
+    // TODO: setup interval
   }
 })();
 

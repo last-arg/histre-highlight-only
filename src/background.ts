@@ -248,6 +248,7 @@ browser.runtime.onMessage.addListener((msg: Message, sender: Runtime.MessageSend
 
         if (!result_id) {
           await addLocalHighlight(url, data, title);
+          startSyncInterval();
         }
 
         resolve(result_id);
@@ -281,6 +282,7 @@ browser.runtime.onMessage.addListener((msg: Message, sender: Runtime.MessageSend
           let local = await storage.local.get({highlights_update: {}});
           local.highlights_update[data.id] = data.color;
           await storage.local.set(local);
+          startSyncInterval();
           resolve(true)
           return;
         }
@@ -332,6 +334,7 @@ browser.runtime.onMessage.addListener((msg: Message, sender: Runtime.MessageSend
           let local = await storage.local.get({highlights_remove: []});
           local.highlights_remove.push(data.id);
           await storage.local.set(local);
+          startSyncInterval();
           resolve(true);
           return;
         }

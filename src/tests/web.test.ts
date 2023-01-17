@@ -165,7 +165,7 @@ const TEST_SUITE = {
         let total_marks = 0;
         for (const hl of hls) {
             const dom_hl = document.querySelectorAll(`#overlap-simple [data-hho-id="${hl.highlight_id}"]`);
-            const hl_expect = expect[hl.highlight_id];
+            const hl_expect = expect[hl.highlight_id as any];
             let i = 0;
             for (const el of dom_hl) {
                 assert_equal(hl.color, el.getAttribute("data-hho-color"));

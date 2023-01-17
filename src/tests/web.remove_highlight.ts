@@ -1,7 +1,7 @@
 import { removeHighlightFromDom, removeHighlights } from '../common_dom';
 import $ from "./assert";
 
-const { $mol_assert_ok: assert_ok, $mol_assert_equal: assert_equal, $mol_assert_like: assert_like } = $;
+const { $mol_assert_equal: assert_equal } = $;
 
 function testMark(id: string, text: string, color: string) {
     return `<span class="hho-mark" data-hho-id="${id}" data-hho-color="${color}">${text}</span>`;

@@ -27,7 +27,7 @@
     "manifest": "bun run ./scripts/manifest.ts",
     "dev:js": "vite build --config ./vite.config.content.ts --mode development",
     "dev:web": "vite build --clearScreen=false --mode development",
-    "icon": "cp ./src/assets/icon.svg ./extension/dist/assets/",
+    "icon": "mkdir -p ./extension/dist/assets/ && cp -p ./src/assets/icon.svg ./extension/dist/assets/",
     "build": "NODE_ENV=production run-s clear manifest build:web build:js icon",
     "build:web": "vite build",
     "build:js": "vite build --config vite.config.content.ts",

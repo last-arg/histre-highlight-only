@@ -497,7 +497,7 @@ async function getAndRenderHighlights(url: string) {
         highlights.push(local)
       }
     }
-    if (local_highlights) {
+    if (highlights.length > 0) {
       renderLocalHighlights(body_text, highlights);
     }
 }

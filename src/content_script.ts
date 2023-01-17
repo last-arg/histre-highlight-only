@@ -12,8 +12,6 @@ console.log("==== LOAD 'content_script.js' TD ====")
 type ContextMenuElem = HTMLDivElement;
 enum ContextMenuState { none, create, modify }
 
-const isDev = true;
-
 const MIN_SELECTION_LEN = 3;
 
 class ContextMenu {

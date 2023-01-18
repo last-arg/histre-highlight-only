@@ -17,6 +17,7 @@ TODO: use !important incase something overwrites on site?
 
 .hho-context-menu[data-origin=viewport] {
   position: fixed;
+  margin: 12px;
 }
 
 .hho-context-menu[data-origin=selection] {

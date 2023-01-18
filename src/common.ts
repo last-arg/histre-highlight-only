@@ -26,17 +26,19 @@ export enum Action {
   UpdateUser,
   UpdateSettings,
   GetHighlights,
+  UpdateBadge,
 }
 
 export type DataCreate = { text: string, color: string, id: string }
 export type DataModify = { id: string, color: string }
 export type DataRemove = { id: string, text?: string }
+export type DataBadge = { hl_len: number }
 
 export interface Message {
   action: Action,
   // Delete: highlight_id (might be local_id)
   // Save: text, title, color, local_id
-  data: DataCreate | DataModify | DataRemove | UserData | UserSettings,
+  data: DataCreate | DataModify | DataRemove | UserData | UserSettings | DataBadge,
 }
 
 export type HighlightId = string;

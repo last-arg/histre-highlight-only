@@ -1,8 +1,10 @@
-import { Message, Action, DataModify, DataRemove, DataCreate, local_id_prefix, HighlightAdd, HighlightUpdate, histreResponseSchema, UserData, UserSettings, getDataSchema, HistreHighlight, randomString, addDataSchema } from './common';
+import { Message, Action, DataModify, DataRemove, DataCreate, local_id_prefix, HighlightAdd, HighlightUpdate, histreResponseSchema, UserData, UserSettings, getDataSchema, HistreHighlight, randomString, addDataSchema, DataBadge } from './common';
 import { Histre, isValidResponse } from './histre';
 import { getLocalAuthData, getLocalUser, setLocalAuthData, setLocalUser, setSettings } from './storage';
 import type { Runtime } from 'webextension-polyfill';
 import browser from "webextension-polyfill";
+
+// TODO: update badge text when higlight is added or removed
 
 async function histreAddHighlight(histre: Histre | undefined, hl: HighlightAdd): Promise<string | undefined> {
   if (histre === undefined) {
@@ -108,6 +110,9 @@ let histre: Histre = new Histre();
 
   // Add local highlights to histre
   syncLocalToHistre();
+
+  browser.browserAction.setBadgeBackgroundColor({color: [61, 53, 53, 255]})
+  browser.browserAction.setBadgeTextColor({color: "white"})
 })();
 
 let sync_timeout: number = 0;
@@ -386,6 +391,13 @@ browser.runtime.onMessage.addListener((msg: Message, sender: Runtime.MessageSend
         }
         resolve(highlights);
       });
+    }
+    case Action.UpdateBadge: {
+        if (sender.tab?.id === undefined) { 
+          return;
+        }
+        const data = msg.data as DataBadge;
+        browser.browserAction.setBadgeText({text: data.hl_len.toString(), tabId: sender.tab.id})
     }
   }
 });

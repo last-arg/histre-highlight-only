@@ -37,7 +37,6 @@ class ContextMenu {
   isState(state: ContextMenuState) { return this.state === state; }
 
   updateMenuOrigin = act(() => {
-    console.log("updatemenuorigin:", this.settings().origin)
     this.elem.setAttribute("data-origin", this.settings().origin);
   })
 
@@ -248,12 +247,10 @@ const global = {
 async function getLocalHighlights(current_url: string): Promise<Array<HistreHighlight> | undefined> {
     const local = await browser.storage.local.get("highlights_add");
     if (local.highlights_add === undefined || local.highlights_add[current_url] === undefined) { 
-        console.info(`No highlights for ${current_url}`);
         return; 
     }
     const current_highlights = local.highlights_add[current_url].highlights as Array<HistreHighlight>;
     if (isEmptyObject(current_highlights)) { 
-        console.info(`Found url ${current_url} doesn't contain any highlights`);
         return; 
     }
     return current_highlights;
@@ -499,11 +496,11 @@ async function getAndRenderHighlights(url: string) {
     }
     if (highlights.length > 0) {
       renderLocalHighlights(body_text, highlights);
+      browser.runtime.sendMessage(ext_id, { action: Action.UpdateBadge, data: {hl_len: highlights.length} });
     }
 }
 
 function init() {
-  console.log("init")
   const url = window.location.href;
   if(document.readyState === 'loading') {
     document.addEventListener("DOMContentLoaded", () => getAndRenderHighlights(url));

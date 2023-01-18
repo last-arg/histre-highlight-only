@@ -5,10 +5,11 @@ import { getSettings } from './storage';
 import { createMarkElement, removeHighlightFromDom, renderLocalHighlights } from './common_dom';
 import { settings_default, ext_id } from './config';
 import {act} from '@artalar/act';
+import browser from "webextension-polyfill";
+// const { storage } = browser;
 import './hho.css';
 // import browser from 'webextension-polyfill';
-console.log("==== LOAD 'content_script.js' TD ====")
-    // console.log(browser.storage)
+console.log("==== LOAD 'content_script.js' TD ====");
 
 type ContextMenuElem = HTMLDivElement;
 enum ContextMenuState { none, create, modify }
@@ -245,8 +246,8 @@ const global = {
 };
 
 async function getLocalHighlights(current_url: string): Promise<Array<HistreHighlight> | undefined> {
-    const local = await browser.storage.local.get(["highlights_add"]);
-    if (local.highlights_add[current_url] === undefined) { 
+    const local = await browser.storage.local.get("highlights_add");
+    if (local.highlights_add === undefined || local.highlights_add[current_url] === undefined) { 
         console.info(`No highlights for ${current_url}`);
         return; 
     }

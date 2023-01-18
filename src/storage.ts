@@ -1,5 +1,5 @@
 import { localAuthSchema, localUserSchema, UserData, UserSettings, ValidToken } from "./common";
-
+import browser from "webextension-polyfill";
 
 export async function getLocalAuthData(): Promise<ValidToken | undefined> {
   const data = await browser.storage.local.get(
@@ -29,7 +29,7 @@ export async function setLocalUser(user: UserData): Promise<void> {
 }
 
 export async function getSettings(): Promise<UserSettings | undefined> {
-  const data = await browser.storage.local.get({context_menu_position: undefined});
+  const data = await browser.storage.local.get("context_menu_position");
   return data.context_menu_position;
 }
 

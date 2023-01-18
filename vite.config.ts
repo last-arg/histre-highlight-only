@@ -18,13 +18,13 @@ export const sharedConfig: UserConfig = {
   mode: isDev ? 'development' : 'production',
   plugins: [
     AutoImport({
-      imports: [
-        {
-          'webextension-polyfill': [
-            ['*', 'browser'],
-          ],
-        },
-      ],
+      // imports: [
+      //   {
+      //     'webextension-polyfill': [
+      //       ['*', 'browser'],
+      //     ],
+      //   },
+      // ],
       dts: r('src/auto-imports.d.ts'),
     }),
 

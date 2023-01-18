@@ -2,6 +2,7 @@ import { Message, Action, DataModify, DataRemove, DataCreate, local_id_prefix, H
 import { Histre, isValidResponse } from './histre';
 import { getLocalAuthData, getLocalUser, setLocalAuthData, setLocalUser, setSettings } from './storage';
 import type { Runtime } from 'webextension-polyfill';
+import browser from "webextension-polyfill";
 
 async function histreAddHighlight(histre: Histre | undefined, hl: HighlightAdd): Promise<string | undefined> {
   if (histre === undefined) {

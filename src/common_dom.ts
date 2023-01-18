@@ -88,12 +88,6 @@ export function highlightDOM(ranges: HighlightLocation[], current_entries: Array
 
 export function renderLocalHighlights(body_text: string, current_highlights: Array<HistreHighlight>) {
   console.log("==== renderLocalHighlights() ====")
-
-  console.time("Iter all text nodes")
-  const iter = document.createNodeIterator(document.body, NodeFilter.SHOW_TEXT, null);
-  while (iter.nextNode()) {}
-  console.timeEnd("Iter all text nodes")
-
   console.time("Generate ranges")
   const indices = getHighlightIndices(body_text, current_highlights);
   console.timeEnd("Generate ranges")

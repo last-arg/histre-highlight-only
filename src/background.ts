@@ -257,6 +257,8 @@ browser.runtime.onMessage.addListener((msg: Message, sender: Runtime.MessageSend
     }
     case Action.Modify: {
       return new Promise(async (resolve) => {
+        // TODO: have to do the same dance and song as in Action.Remove.
+        // Don't have real Histre highlight id
         const data = msg.data as DataModify;
         const is_local_id = data.id.startsWith(local_id_prefix);
 

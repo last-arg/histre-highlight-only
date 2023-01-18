@@ -57,7 +57,9 @@ export function getManifest() {
     ],
     web_accessible_resources: [
       './dist/assets/content_script.js',
-      './dist/assets/hho.style.css'
+      './dist/assets/hho.style.css',
+      './dist/assets/icon.svg',
+      './dist/assets/delete.svg',
     ],
     browser_specific_settings: {
       gecko: {

@@ -91,7 +91,7 @@ class ContextMenu {
   }
 
   static renderContextMenu() {
-    // document.querySelector(".hho-context-menu")?.remove();
+    document.querySelector(".hho-context-menu")?.remove();
     const container = document.createElement("div");
     container.classList.add("hho-context-menu");
     container.style.top = "0";
@@ -122,12 +122,8 @@ class ContextMenu {
       const button_text = document.createElement("span");
       button_text.classList.add("sr-only");
       button_text.textContent = `Remove`;
-
-      const new_img = document.createElement("img");
-      new_img.src = `/assets/delete.svg`;
-
       new_button.appendChild(button_text);
-      new_button.appendChild(new_img);
+
       container.appendChild(new_button);
     }
 

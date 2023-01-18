@@ -19,12 +19,14 @@ export async function getLocalUser(): Promise<UserData | undefined> {
   const data = await browser.storage.local.get({username: undefined, password: undefined});
   const user = localUserSchema.safeParse(data);
   if (user.success) {
+    user.data.password = atob(user.data.password);
     return user.data
   }
   return undefined;
 }
 
 export async function setLocalUser(user: UserData): Promise<void> {
+  user.password = btoa(user.password);
   await browser.storage.local.set(user);
 }
 

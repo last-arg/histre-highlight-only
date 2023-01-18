@@ -73,7 +73,7 @@ export default defineConfig(({ command }) => {
         input: {
           background: r('src/background.html'),
           options: r('src/options.html'),
-          popup: r('src/popup.html'),
+          // popup: r('src/popup.html'),
         },
         output: {
           entryFileNames: `assets/[name].js`,

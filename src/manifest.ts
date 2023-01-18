@@ -23,7 +23,8 @@ export function getManifest() {
     description: pkg.description,
     browser_action: {
       default_icon: './dist/assets/icon.svg',
-      default_popup: './dist/popup.html',
+      // TODO: show highlights in popup?
+      // default_popup: './dist/popup.html',
     },
     options_ui: {
       page: './dist/options.html',

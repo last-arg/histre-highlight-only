@@ -248,6 +248,9 @@ browser.runtime.onMessage.addListener((msg: Message, sender: Runtime.MessageSend
           await addLocalHighlight(url, data, title);
           startSyncInterval();
         }
+        if (sender.tab.id) {
+          updateBadgeText(sender.tab.id, undefined, 1);
+        }
 
         resolve(result_id);
       });
@@ -300,6 +303,9 @@ browser.runtime.onMessage.addListener((msg: Message, sender: Runtime.MessageSend
             let local = await browser.storage.local.get({highlights_add: {}});
             delete local.highlights_add[url].highlights[hl_id];
             await browser.storage.local.set(local);
+            if (sender.tab.id) {
+              updateBadgeText(sender.tab.id, undefined, -1);
+            }
             resolve(true); 
             return;
           }
@@ -322,17 +328,15 @@ browser.runtime.onMessage.addListener((msg: Message, sender: Runtime.MessageSend
         let added_to_histre = false;
         if (hl_id) {
           added_to_histre = await histreRemoveHighlight(histre, hl_id);
-          if (added_to_histre) {
-            resolve(true)
-            return;
+          if (!added_to_histre) {
+            let local = await browser.storage.local.get({highlights_remove: []});
+            local.highlights_remove.push(data.id);
+            await browser.storage.local.set(local);
+            startSyncInterval();
           }
-        }
-
-        if (!added_to_histre) {
-          let local = await browser.storage.local.get({highlights_remove: []});
-          local.highlights_remove.push(data.id);
-          await browser.storage.local.set(local);
-          startSyncInterval();
+          if (sender.tab?.id) {
+            updateBadgeText(sender.tab.id, undefined, -1);
+          }
           resolve(true);
           return;
         }
@@ -380,6 +384,7 @@ browser.runtime.onMessage.addListener((msg: Message, sender: Runtime.MessageSend
           resolve(undefined); 
           return;
         }
+
         const highlights = await histreGetHighlights(histre, sender.tab.url);
         if (highlights) {
           // NOTE: histre API doesn't return highlight_id field. Have to make
@@ -397,10 +402,25 @@ browser.runtime.onMessage.addListener((msg: Message, sender: Runtime.MessageSend
           return;
         }
         const data = msg.data as DataBadge;
-        browser.browserAction.setBadgeText({text: data.hl_len.toString(), tabId: sender.tab.id})
+        updateBadgeText(sender.tab.id, data.hl_len.toString());
     }
   }
 });
+
+async function updateBadgeText(tab_id: number, text?: string, change: number = 0) {
+  if (text) {
+    browser.browserAction.setBadgeText({tabId: tab_id, text: text});
+    return;
+  }
+  text = await browser.browserAction.getBadgeText({tabId: tab_id});
+  let count = text.length === 0 ? 0 : Number(text);
+  count += change;
+  if (count <= 0) {
+    browser.browserAction.setBadgeText({tabId: tab_id, text: ""});
+    return;
+  }
+  browser.browserAction.setBadgeText({tabId: tab_id, text: count.toString()});
+}
 
 async function histreGetHighlights(histre: Histre | undefined, url: string): Promise<Array<HistreHighlight> | undefined> {
   if (histre === undefined) {

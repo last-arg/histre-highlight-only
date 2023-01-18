@@ -154,19 +154,23 @@ class ContextMenu {
             let local_id = `${local_id_prefix}-${randomString()}`;
             highlightSelectedText(sel_obj, color, local_id);
             sel_obj.removeAllRanges(); // This fires 'selectionchange' event
-            const data = { text: sel_string, color: color, id: local_id };
+            const data = { text: sel_string, color: color, highlight_id: local_id };
             const result_id = await browser.runtime.sendMessage(
               ext_id, { action: Action.Create, data: data },
             )
             if (!result_id) {
               // TODO: display failure somewhere, somehow?
-              console.error("Failed to save highlight to Histre or local storage");
+              global.histre_highlights.push(data);
+              console.warn("Failed to save highlight to Histre. Higlight was saved locally.");
               return;
             }
 
+            const histre_id = `histre-${result_id}`;
+            data.highlight_id = histre_id;
+            global.histre_highlights.push(data);
             const marks = document.querySelectorAll(`.hho-mark[data-hho-id="${local_id}"]`)
             for (const mark of marks) {
-              mark.setAttribute("data-hho-id", result_id)
+              mark.setAttribute("data-hho-id", histre_id);
             }
 
             // TODO?: save multiple selections/ranges?
@@ -199,25 +203,19 @@ class ContextMenu {
               console.error(`Failed to change highlight '${id}' to color '${color}'`)
               return;
             }
-          } else if (elem.classList.contains("hho-btn-remove")) {
+          } else if (elem.classList.contains("hho-btn-remove") || elem.parentElement?.classList.contains("hho-btn-remove")) {
             const id = ctx_menu.highlight_id;
             if (id === null) {
               return;
             }
 
             let text = undefined;
-            let hl_index = -1;
-            if (id.startsWith("histre")) {
-              hl_index = global.histre_highlights.findIndex(({highlight_id}) => id === highlight_id);
-              if (hl_index !== -1) {
-                text = global.histre_highlights[hl_index].text;
-              } else {
-                console.error(`Failed to delete histre higlight. Could not find histre highlight with id ${id}`);
-                return;
-              }
+            const hl_index = global.histre_highlights.findIndex(({highlight_id}) => id === highlight_id);
+            if (hl_index !== -1 && id.startsWith("histre")) {
+              text = global.histre_highlights[hl_index].text;
             }
             const result = await browser.runtime.sendMessage(
-              "addon@histre-highlight-only.com", 
+              ext_id, 
               { action: Action.Remove , data: {id: id, text: text} },
             )
 
@@ -470,11 +468,10 @@ function startSelection() {
   }, {once: true})
 }
 
+// Data might go out of sync if there are two same pages open
 async function removeHighlight(id: string, url: string) {
-  const local = await browser.storage.local.get({highlights_add: {[url]: undefined}});
-  const highlights = local.highlights_add[url].highlights;
-  const elems = document.querySelectorAll(`[data-hho-id="${id}"]`);
-  removeHighlightFromDom(highlights, elems);
+    const elems = document.querySelectorAll(`[data-hho-id="${id}"]`);
+    removeHighlightFromDom(global.histre_highlights, elems);
 }
 
 async function getAndRenderHighlights(url: string) {
@@ -488,12 +485,12 @@ async function getAndRenderHighlights(url: string) {
 
     const local_highlights = await getLocalHighlights(url);
     const highlights: Array<HistreHighlight> = (await histre_async) || [];
-    global.histre_highlights = highlights;
     if (local_highlights) {
       for (const local of local_highlights) {
         highlights.push(local)
       }
     }
+    global.histre_highlights = highlights;
     if (highlights.length > 0) {
       renderLocalHighlights(body_text, highlights);
       browser.runtime.sendMessage(ext_id, { action: Action.UpdateBadge, data: {hl_len: highlights.length} });
